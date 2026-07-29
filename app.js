@@ -123,12 +123,17 @@ function toast(msg) {
 const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M18 6l-1 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 6"/></svg>';
 
-/* QR 인코딩은 카드당 ~9ms. 300장을 한 번에 만들면 3초를 멈추므로 화면에 들어올 때 만듭니다. */
+/* QR 인코딩은 카드당 ~15ms. 화면에 들어올 때 만들되(전부 미리 만들면 수 초가 멈춤),
+   생성 자체는 유휴 시간에 넘깁니다. 빠르게 스크롤하면 한 프레임에 여러 장이 몰려
+   프레임이 300ms 넘게 멈추기 때문입니다. */
+const idle = window.requestIdleCallback ? window.requestIdleCallback.bind(window) : (fn => setTimeout(fn, 1));
+
 const qrLazy = new IntersectionObserver((entries, obs) => {
   for (const en of entries) {
     if (!en.isIntersecting) continue;
-    en.target.src = qrURL(en.target.dataset.url, QR_MAX_CSS);
     obs.unobserve(en.target);
+    const img = en.target;
+    idle(() => { if (img.isConnected) img.src = qrURL(img.dataset.url, QR_MAX_CSS); });
   }
 }, { rootMargin: '500px' });
 
