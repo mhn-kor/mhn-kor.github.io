@@ -231,7 +231,6 @@ const cards = new Map();
 function render() {
   const grid = $('#grid');
   const filter = activeFilter();
-  $('#filter').disabled = !!query;      // 검색 중에는 체크 필터를 쓰지 않습니다
 
   /* 필터를 먼저 걸고 나서 잘라야 합니다. 자르고 필터를 걸면 앞쪽이 전부
      체크된 사람은 20칸이 통째로 비어 아무것도 못 봅니다. */
@@ -274,7 +273,7 @@ function render() {
   const done = rows.filter(r => checked.has(r.code)).length;
   const shownTxt = page.length < filtered.length ? `${page.length}/${filtered.length}명 표시` : `${page.length}명 표시`;
   $('#count').textContent = query
-    ? `'${query}' 검색 ${total ?? rows.length}명`
+    ? `'${query}' 검색 ${total ?? rows.length}명 · ${shownTxt}`
     : `${shownTxt} · 전체 ${total ?? rows.length}명 · 체크 ${done}명`;
 
   const more = $('#more');
@@ -286,7 +285,10 @@ function render() {
   state.hidden = page.length > 0;
   if (!page.length) {
     state.textContent = query
-      ? `'${query}' 와 일치하는 닉네임이 없습니다.`
+      ? (rows.length
+          // 검색은 걸렸는데 필터가 가린 경우. 왜 0건인지 알려줍니다.
+          ? `'${query}' 검색 결과 ${rows.length}명이 있지만 '${$('#filter').selectedOptions[0].text}' 에 해당하지 않습니다. 보기를 '전체'로 바꿔보세요.`
+          : `'${query}' 와 일치하는 닉네임이 없습니다.`)
       : rows.length === 0
         ? '아직 등록된 친구 코드가 없습니다. 첫 번째로 등록해 보세요!'
         : filter === 'unchecked'
@@ -314,9 +316,9 @@ async function loadChunk() {
   if (got.length < FETCH || rows.length >= MAX) exhausted = true;
 }
 
-/* 검색 중에는 체크 필터를 무시합니다. 이미 추가한 사람을 이름으로 찾는 경우가
-   대부분인데 '미체크만' 이 걸려 있으면 결과가 0건으로 보입니다. */
-const activeFilter = () => (query ? 'all' : $('#filter').value);
+/* 검색 중에도 선택한 필터를 그대로 적용합니다. 이미 체크한 사람을 이름으로 찾으면
+   '미체크만' 상태에서는 0건이 되므로, 그때는 안내 문구로 이유를 알려줍니다. */
+const activeFilter = () => $('#filter').value;
 
 const countFiltered = () => {
   const f = activeFilter();

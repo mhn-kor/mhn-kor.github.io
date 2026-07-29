@@ -50,9 +50,30 @@ begin
   values (btrim(p_nickname), p_code, crypt(p_password, gen_salt('bf', 8)));
 end $$;
 
+-- ── 운영용 설정 ─────────────────────────────────────────────────────
+-- 마스터 비밀번호(관리자용 강제 삭제)를 bcrypt 해시로 보관합니다.
+-- RLS 를 켜고 정책을 하나도 만들지 않으므로 anon 은 읽지도 쓰지도 못합니다.
+-- security definer 함수만 소유자 권한으로 읽습니다.
+create table if not exists public.app_config (
+  key   text primary key,
+  value text not null
+);
+alter table public.app_config enable row level security;
+revoke all on public.app_config from anon;
+
+-- !! 실제 마스터 비밀번호는 이 파일에 넣지 마세요 !!
+-- 저장소가 공개라 커밋하는 순간 누구나 남의 코드를 지울 수 있게 됩니다.
+-- 아래를 SQL Editor 에서 값만 바꿔 직접 실행하세요 (README 참고):
+--
+--   insert into public.app_config (key, value)
+--   values ('master_pw', extensions.crypt('여기에실제비밀번호', extensions.gen_salt('bf', 8)))
+--   on conflict (key) do update set value = excluded.value;
+--
+-- 해제하려면:  delete from public.app_config where key = 'master_pw';
+
 -- ── 삭제 ────────────────────────────────────────────────────────────
--- 비밀번호가 맞을 때만 지웁니다. 코드 존재 여부를 알려주지 않도록
--- 틀린 비밀번호와 없는 코드 모두 false 를 반환합니다.
+-- 본인 비밀번호가 맞거나, 마스터 비밀번호일 때 지웁니다.
+-- 코드 존재 여부를 알려주지 않도록 틀린 비밀번호와 없는 코드 모두 false 입니다.
 create or replace function public.delete_friend_code(
   p_code text, p_password text
 ) returns boolean
@@ -64,8 +85,15 @@ declare n int;
 begin
   delete from public.friend_codes
    where code = p_code
-     and pw_hash is not null
-     and pw_hash = crypt(p_password, pw_hash);   -- bcrypt: 해시에 담긴 salt 로 재계산
+     and (
+       -- 본인 비밀번호 (bcrypt: 해시에 담긴 salt 로 재계산)
+       (pw_hash is not null and pw_hash = crypt(p_password, pw_hash))
+       -- 또는 마스터 비밀번호. pw_hash 가 없는 예전 행도 이걸로 지울 수 있습니다.
+       or exists (
+            select 1 from public.app_config
+             where key = 'master_pw' and value = crypt(p_password, value)
+          )
+     );
   get diagnostics n = row_count;
   return n > 0;
 end $$;
