@@ -297,7 +297,8 @@ dialog h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
 #f-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; }
 
 .preview { display: flex; align-items: center; gap: 14px; padding: 13px; background: var(--bg); border: 1px dashed var(--line); }
-.preview img { width: 114px; height: 114px; flex: none; background: #F4EEE2; image-rendering: pixelated; display: none; }  /* cellSize 2 → 114px, 1:1 */
+/* 크기는 app.js 의 QR_PREVIEW_CSS 와 맞춰져 있습니다. 원본이 이보다 크게 생성되어 축소만 일어납니다. */
+.preview img { width: 114px; height: 114px; flex: none; background: #F4EEE2; display: none; }
 .preview img[src] { display: block; }
 .preview p { margin: 0; font-size: .8rem; color: var(--muted); line-height: 1.55; }
 .preview p b { color: var(--amber-hi); }

@@ -12,13 +12,13 @@ const SUPABASE_KEY = 'sb_publishable_Oo1GKjPpnWscgER4691eRg_0cydOhwI';
 const TABLE = 'friend_codes';
 const LIMIT = 300;          // 무료 플랜 배려: 최신 300개만 표시
 const NICK_MAX = 20;
+const QR_MAX_CSS = 300;     // style.css 의 .qr max-width 와 반드시 같아야 합니다
+const QR_PREVIEW_CSS = 114; // style.css 의 .preview img 크기
 
 const $ = s => document.querySelector(s);
 
 /* 앱 친구추가 딥링크. 코드는 항상 숫자 12자리로 검증한 뒤에만 넣습니다. */
-const addFriendUrl = code =>
-  'https://monsterhunternow.com/?dl=mhnow:///ADDFRIEND?FRIEND_ID=' + code +
-  '&c=Magellan%20Start&pid=QR_code&af_xp=qr&shortlink=9p8v9m93&source_caller=ui';
+const addFriendUrl = code => 'mhnow:///ADDFRIEND?FRIEND_ID=' + code;
 
 const isCode = c => typeof c === 'string' && /^[0-9]{12}$/.test(c);
 const digits = s => s.replace(/[^0-9]/g, '').slice(0, 12);
@@ -26,8 +26,17 @@ const pretty = c => c.replace(/([0-9]{4})(?=[0-9])/g, '$1 ');
 const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const when = t => new Date(t).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' });
 
-/* margin은 픽셀 단위. QR 규격상 여백은 4모듈 이상이어야 스캐너가 안정적으로 읽습니다. */
-const qrURL = (text, cell) => { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createDataURL(cell, cell * 4); };
+/* 표시 크기(minPx)보다 원본이 항상 크도록 셀 크기를 모듈 수에서 역산합니다.
+   원본이 표시 크기보다 작으면 확대되면서 모듈이 뭉개져 스캔이 실패합니다.
+   URL 길이가 바뀌면 모듈 수도 바뀌므로 상수로 박아두면 안 됩니다.
+   margin은 픽셀 단위 — QR 규격상 여백은 4모듈 이상이어야 안정적으로 읽힙니다. */
+const qrURL = (text, minPx) => {
+  const q = qrcode(0, 'M');
+  q.addData(text);
+  q.make();
+  const cell = Math.max(2, Math.ceil(minPx / (q.getModuleCount() + 8)));
+  return q.createDataURL(cell, cell * 4);
+};
 
 /* ── 저장소 ────────────────────────────────────────────────────── */
 const LIVE = !SUPABASE_URL.includes('YOUR-') && !SUPABASE_KEY.includes('YOUR-');
@@ -90,7 +99,7 @@ const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const qrLazy = new IntersectionObserver((entries, obs) => {
   for (const en of entries) {
     if (!en.isIntersecting) continue;
-    en.target.src = qrURL(en.target.dataset.url, 6);   // 342px — 표시 최대 300px보다 항상 크게(축소만)
+    en.target.src = qrURL(en.target.dataset.url, QR_MAX_CSS);
     obs.unobserve(en.target);
   }
 }, { rootMargin: '500px' });
@@ -110,7 +119,9 @@ function cardEl(row) {
       <span class="num">${pretty(row.code)}</span>
       <button class="icon" data-act="copy" aria-label="친구 코드 복사" title="복사">${COPY_ICON}</button>
     </div>
-    <a class="btn ghost open" data-act="open" href="${url}" target="_blank" rel="noopener">앱에서 등록</a>
+    <!-- mhnow:// 는 앱이 가로채는 커스텀 스킴입니다. target=_blank 를 쓰면
+         앱으로 넘어간 뒤 빈 탭이 남으므로 현재 탭에서 그대로 엽니다. -->
+    <a class="btn ghost open" data-act="open" href="${url}">앱에서 등록</a>
     <time datetime="${esc(String(row.created_at))}">${when(row.created_at)}</time>`;
   qrLazy.observe(el.querySelector('.qr img'));
   return el;
@@ -200,7 +211,7 @@ fCode.addEventListener('input', () => {
   fCode.value = pretty(raw);
   const img = $('#f-qr');
   if (isCode(raw)) {
-    img.src = qrURL(addFriendUrl(raw), 2);
+    img.src = qrURL(addFriendUrl(raw), QR_PREVIEW_CSS);
     $('#f-hint').innerHTML = 'QR이 준비되었습니다. <b>등록하기</b>를 눌러주세요.';
   } else {
     img.removeAttribute('src');

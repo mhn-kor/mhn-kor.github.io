@@ -15,8 +15,12 @@ tools/       QR 스캔 회귀 테스트 (선택)
 친구 코드 12자리를 넣어 아래 딥링크를 만들고, 그 URL을 QR로 그립니다.
 
 ```
-https://monsterhunternow.com/?dl=mhnow:///ADDFRIEND?FRIEND_ID=<12자리>&c=Magellan%20Start&pid=QR_code&af_xp=qr&shortlink=9p8v9m93&source_caller=ui
+mhnow:///ADDFRIEND?FRIEND_ID=<숫자 12자리>
 ```
+
+앱이 직접 가로채는 커스텀 스킴이라 앱이 설치돼 있어야 열립니다.
+QR 모듈 수가 URL 길이에 따라 달라지므로, `qrURL()` 이 표시 크기보다 원본이 항상 크도록
+셀 크기를 역산합니다. **URL 형식을 또 바꾸면 `tools/qr-scan-test.js` 를 꼭 돌려보세요.**
 
 ## 1. Supabase (무료 플랜)
 
