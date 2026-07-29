@@ -12,14 +12,19 @@
 <meta property="og:description" content="공지사항과 친구 코드 QR 공유소">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-<link rel="stylesheet" href="style.css">
+<!-- GitHub Pages 는 파일마다 max-age=600 으로 따로 캐시합니다. 새 index.html 과 옛 style.css 가
+     10분간 섞일 수 있으므로 버전을 붙여 강제로 새로 받게 합니다.
+     style.css / app.js 를 고칠 때마다 아래 두 곳의 v= 값을 같이 올려주세요. -->
+<link rel="stylesheet" href="style.css?v=20260729">
 </head>
 <body>
 
 <header class="site">
   <div class="wrap bar">
     <a class="brand" href="#notice">
-      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+      <!-- width/height 를 반드시 붙입니다. viewBox 만 있으면 CSS 가 늦거나 캐시로 어긋났을 때
+           고유 크기가 없어 기본값(최대 300x150)으로 부풀어 오릅니다. CSS 가 오면 그쪽이 이깁니다. -->
+      <svg class="mark" viewBox="0 0 64 64" width="38" height="38" aria-hidden="true">
         <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#F5C56B"/><stop offset="1" stop-color="#D9822B"/>
         </linearGradient></defs>
@@ -35,7 +40,7 @@
     </a>
     <a class="btn ghost chat" href="https://open.kakao.com/o/gn1Vm8yg" target="_blank" rel="noopener noreferrer"
        title="몬스터헌터 나우 한국지부 오픈채팅방 (새 창)">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.2C6.98 3.2 2.9 6.44 2.9 10.44c0 2.55 1.66 4.79 4.17 6.07l-.95 3.5a.35.35 0 0 0 .53.38l4.13-2.73c.4.03.81.05 1.22.05 5.02 0 9.1-3.24 9.1-7.27S17.02 3.2 12 3.2z"/></svg>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 3.2C6.98 3.2 2.9 6.44 2.9 10.44c0 2.55 1.66 4.79 4.17 6.07l-.95 3.5a.35.35 0 0 0 .53.38l4.13-2.73c.4.03.81.05 1.22.05 5.02 0 9.1-3.24 9.1-7.27S17.02 3.2 12 3.2z"/></svg>
       <span>오픈채팅</span>
     </a>
     <button class="btn primary" id="open-reg">친구 코드 등록</button>
@@ -190,7 +195,7 @@
       <span class="switch-txt">앱에서 등록한 후 체크하기</span>
     </label>
     <label class="search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
         <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
       </svg>
       <input id="q" type="search" placeholder="닉네임 검색" autocomplete="off" aria-label="닉네임 검색">
@@ -260,6 +265,6 @@
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="vendor/qrcode.min.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=20260729"></script>
 </body>
 </html>

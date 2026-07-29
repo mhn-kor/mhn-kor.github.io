@@ -65,6 +65,26 @@ publishable(구 `anon`) 키는 **공개를 전제로 설계된 키**입니다. S
 
 > 설정 전에는 **체험 모드**로 동작합니다 — 등록한 코드가 그 브라우저에만 저장되어 UI를 바로 확인할 수 있습니다.
 
+## 캐시 — style.css / app.js 를 고치면 버전을 올리세요
+
+GitHub Pages 는 파일마다 `Cache-Control: max-age=600` 을 붙여 **각각 따로** 캐시합니다.
+그래서 새 `index.html` 과 옛 `style.css` 가 10분 동안 섞일 수 있습니다.
+
+`index.html` 의 두 곳을 같이 올려주세요.
+
+```html
+<link rel="stylesheet" href="style.css?v=20260729">
+<script src="app.js?v=20260729"></script>
+```
+
+### 인라인 SVG 에는 width/height 를 꼭 붙이세요
+
+`viewBox` 만 있는 SVG 는 고유 크기가 없어서, CSS 가 늦거나 캐시로 어긋나면 기본 크기(최대
+300×150)로 부풀어 오릅니다. 실제로 검색 돋보기가 **183×183px** 로 나온 적이 있습니다.
+
+`width`/`height` 속성은 CSS 보다 우선순위가 낮으므로, 붙여도 컨테이너 쿼리로 줄이는 동작은
+그대로입니다 — CSS 가 없을 때만 안전망으로 작동합니다.
+
 ## 2. GitHub Pages
 
 저장소에 push → **Settings → Pages → Source: Deploy from a branch → main / (root)**.
