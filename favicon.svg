@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="몬스터헌터 나우 한국지부">
+  <defs>
+    <linearGradient id="a" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5C56B"/>
+      <stop offset="1" stop-color="#D9822B"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#14110E"/>
+  <!-- QR finder frame with a bevelled corner: "scan me" + Monster Hunter's angular gear silhouette -->
+  <path d="M13 13H41L51 23V51H13Z" fill="none" stroke="url(#a)" stroke-width="6" stroke-linejoin="miter"/>
+  <!-- three claw slashes where a finder pattern's solid core would sit -->
+  <g fill="none" stroke="#F1E7D6" stroke-width="4.4" stroke-linecap="round">
+    <path d="M22 42Q26.5 34 29.5 25"/>
+    <path d="M29.5 43.5Q34.5 35.5 38 27"/>
+    <path d="M37 43Q40.5 37.5 43.5 32"/>
+  </g>
+</svg>

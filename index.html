@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>몬스터헌터 나우 한국지부</title>
+<meta name="description" content="몬스터헌터 나우 한국지부 공지사항과 친구 코드 QR 공유소. 친구 코드를 등록하면 QR이 자동으로 만들어집니다.">
+<meta name="theme-color" content="#100E0C">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:title" content="몬스터헌터 나우 한국지부">
+<meta property="og:description" content="공지사항과 친구 코드 QR 공유소">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="#notice">
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+        <defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#F5C56B"/><stop offset="1" stop-color="#D9822B"/>
+        </linearGradient></defs>
+        <path d="M13 13H41L51 23V51H13Z" fill="none" stroke="url(#bm)" stroke-width="6"/>
+        <g fill="none" stroke="#F1E7D6" stroke-width="4.4" stroke-linecap="round">
+          <path d="M22 42Q26.5 34 29.5 25"/><path d="M29.5 43.5Q34.5 35.5 38 27"/><path d="M37 43Q40.5 37.5 43.5 32"/>
+        </g>
+      </svg>
+      <span class="brand-txt">
+        <b>몬스터헌터 나우</b>
+        <i>한국지부 · MHN KOREA</i>
+      </span>
+    </a>
+    <button class="btn primary" id="open-reg">친구 코드 등록</button>
+  </div>
+  <nav class="wrap tabs" aria-label="섹션">
+    <a href="#notice" data-tab="notice">공지사항</a>
+    <a href="#codes" data-tab="codes">친구 코드</a>
+  </nav>
+</header>
+
+<main>
+
+<!-- ───────────────────────── 공지 ───────────────────────── -->
+<section class="wrap panel" id="panel-notice">
+
+  <div class="hero">
+    <span class="kicker">필독 공지</span>
+    <h1>즐겁고 안전한 사냥터를 위해</h1>
+    <p>본 공지를 위반하여 발생한 제재에 대해서는 책임지지 않습니다.<br>모두가 협조해 주셔야 즐겁고 안전한 채팅방이 됩니다.</p>
+  </div>
+
+  <div class="alert">
+    <b>공지를 읽지 않은 상태에서의 게임 질문은 경고 없이 강퇴됩니다.</b>
+    <span>입장하셨다면 인사가 가장 먼저입니다. 인사는 누구에게나 기본 매너입니다.</span>
+  </div>
+
+  <h2 class="sec">입장 후 <em>20분</em> 안에 끝내주세요</h2>
+  <ol class="steps">
+    <li>
+      <span class="num">1</span>
+      <h3>인사하기</h3>
+      <p>입장 즉시 인사해 주세요. 불이행 시 추방될 수 있습니다.</p>
+    </li>
+    <li>
+      <span class="num">2</span>
+      <h3>닉네임 변경</h3>
+      <p><code>닉네임 / 지역명</code> 형식으로 바꿔주세요. 아래 규칙을 지켜주세요.</p>
+    </li>
+    <li>
+      <span class="num">3</span>
+      <h3>길드카드 인증</h3>
+      <p>인게임 길드카드 스크린샷을 채팅방에 올려주세요. 편집·크롭은 안 됩니다.</p>
+    </li>
+  </ol>
+  <p class="note">닉네임 변경과 길드카드 인증을 포함해 <b>20분 이내</b>에 이루어지지 않으면 이유를 불문하고 강제 추방됩니다. 재입장하신 분에게도 동일하게 적용됩니다.</p>
+
+  <h2 class="sec">닉네임 규칙</h2>
+  <div class="card-box">
+    <ul class="ticks">
+      <li class="ok"><code>닉네임 / 지역명</code></li>
+      <li class="ok"><code>닉네임 / 무기명 / 지역명</code></li>
+      <li class="no">구분자로 <code>-</code> <code>.</code> <code>,</code> 는 사용할 수 없습니다. <code>/</code> 또는 띄어쓰기를 써주세요.</li>
+      <li class="no"><b>초보 · 뉴비 · 복귀</b> 등의 단어는 사용 금지입니다.</li>
+      <li class="ok">단, 무기를 여러 개 적을 때 <code>태도.활</code> 처럼 표기하는 것은 예외로 인정합니다.</li>
+    </ul>
+  </div>
+
+  <h2 class="sec">길드카드 인증 방법</h2>
+  <div class="card-box">
+    <ol class="path">
+      <li>게임 화면 하단의 <b>캐릭터 얼굴(프로필창)</b> 터치</li>
+      <li>프로필 메뉴에서 <b>길드카드</b> 진입</li>
+      <li><b>QR코드와 친구 코드가 보이는 화면</b>을 스크린샷</li>
+      <li>채팅방에 그대로 업로드</li>
+    </ol>
+    <ul class="ticks tight">
+      <li class="no">카카오톡 프로필 사진으로 대체할 수 없습니다.</li>
+      <li class="no">QR코드 <b>숨기기</b>를 사용하지 마세요.</li>
+      <li class="no">일부만 잘라내거나 편집하지 마세요.</li>
+    </ul>
+  </div>
+
+  <div class="examples">
+    <figure class="ex good">
+      <figcaption><b>잘된 예시</b>화면 전체를 그대로 캡처했습니다.</figcaption>
+      <img src="assets/verify-good.png" alt="상태바까지 포함된 전체 화면 길드카드 스크린샷" loading="lazy" width="440" height="957">
+    </figure>
+    <figure class="ex bad">
+      <figcaption><b>잘못된 예시</b>필요한 부분만 잘라냈습니다. 부정행위로 의심받을 수 있습니다.</figcaption>
+      <img src="assets/verify-bad.png" alt="카드 부분만 잘라낸 길드카드 스크린샷" loading="lazy" width="440" height="710">
+    </figure>
+  </div>
+
+  <h2 class="sec">즉시 강퇴 대상</h2>
+  <div class="card-box">
+    <ul class="ticks">
+      <li class="no"><b>부정행위</b> — GPS 조작, 몬스터 핵, 계정 거래, 계정 대리. <b>조작 목적으로 GPS를 언급하는 것만으로도 즉시 강퇴</b>입니다.</li>
+      <li class="no"><b>VPN · 비행기모드</b> 관련 질문 및 언급 금지.</li>
+      <li class="no"><b>운전(드라이브) 중 사냥</b> 적발 시 경고 없이 강퇴합니다.</li>
+      <li class="no">게임 내 부적절한 플레이 방법을 제시하거나 유도하는 행위.</li>
+      <li class="no">헌터 랭크 · 무기 등급 등으로 상대를 비하하는 행위.</li>
+      <li class="no">공지를 읽지 않고 하는 게임 질문.</li>
+    </ul>
+  </div>
+
+  <h2 class="sec">채팅 규칙</h2>
+  <div class="card-box">
+    <ul class="ticks">
+      <li class="no">상업적인 홍보와 도배를 엄격히 금지합니다.</li>
+      <li class="no">전 연령 이용 방입니다. 부적절한 욕설과 성적 언행은 금지입니다.</li>
+      <li class="no">민감한 주제(정치 · 성적 갈등 · 종교)는 꺼내지 말아 주세요.</li>
+      <li class="no">친분이 있더라도 반말은 사용하지 말아 주세요. <b>상호 존대가 기본</b>입니다.</li>
+      <li class="no">타 커뮤니티 · 디시 등의 게시물을 퍼오지 마세요. (마이닝 정보는 예외, 욕설 포함 시 경고)</li>
+      <li class="no">타 게임 및 몬스터헌터 PC 게임 이야기는 자제해 주세요.</li>
+      <li class="ok">비판은 좋지만, 플레이 영상을 보고 남을 깎아내리거나 비방하지 말아주세요. <b>즐거운 플레이가 원칙</b>입니다.</li>
+    </ul>
+  </div>
+
+  <h2 class="sec">스크린샷 · 영상 공유</h2>
+  <div class="card-box">
+    <ul class="ticks">
+      <li class="ok">사냥 영상 · 스샷 · 보상 스샷은 <b>자르지 말고 전체를 올려주세요.</b></li>
+      <li class="no">특정 부분만 잘라 올리면 부정행위 유저로 간주되거나 의심받을 수 있습니다.</li>
+      <li class="ok">경우에 따라 게임 내 정보 인증(스크린샷 · 영상)을 요구받을 수 있습니다.</li>
+    </ul>
+  </div>
+
+  <h2 class="sec">안내</h2>
+  <div class="card-box">
+    <ul class="ticks">
+      <li class="info">친구 코드는 <a href="#codes">친구 코드 탭</a>에서 등록하고 확인하실 수 있습니다.</li>
+      <li class="info">디스코드 및 각종 사이트 안내는 채팅창에 <code>/</code> 를 입력하시면 나옵니다.</li>
+      <li class="info">규칙을 지키지 않아 발생한 불이익에는 책임지지 않습니다.</li>
+    </ul>
+    <p class="stamp-line">※ 오픈 채팅방 재입장 불가입니다 ※</p>
+  </div>
+
+</section>
+
+<!-- ───────────────────────── 친구 코드 ───────────────────────── -->
+<section class="wrap panel" id="panel-codes" hidden>
+
+  <div class="hero tight">
+    <span class="kicker">친구 코드</span>
+    <h1>QR을 스캔하거나 <em>앱에서 등록</em>을 누르세요</h1>
+    <p>등록을 마친 코드는 체크해 두면 목록에서 사라집니다. 체크 정보는 이 기기에만 저장됩니다.</p>
+  </div>
+
+  <div class="toolbar">
+    <label class="field">
+      <span>보기</span>
+      <select id="filter">
+        <option value="unchecked">미체크만</option>
+        <option value="checked">체크한 것만</option>
+        <option value="all">전체</option>
+      </select>
+    </label>
+    <label class="switch">
+      <input type="checkbox" id="auto-check" checked>
+      <span class="track"><span class="knob"></span></span>
+      <span class="switch-txt">앱에서 등록한 후 체크하기</span>
+    </label>
+    <span class="count" id="count"></span>
+  </div>
+
+  <p class="state" id="state">불러오는 중…</p>
+  <div class="grid" id="grid"></div>
+</section>
+
+</main>
+
+<footer class="wrap foot">
+  <p>몬스터헌터 나우 한국지부 · 유저 운영 비공식 사이트</p>
+  <p class="fine">Monster Hunter Now는 CAPCOM 및 Niantic의 상표입니다. 본 사이트는 공식 서비스와 무관합니다.</p>
+</footer>
+
+<!-- 등록 -->
+<dialog id="reg">
+  <form id="reg-form" novalidate>
+    <h2>친구 코드 등록</h2>
+    <label class="f">
+      <span>닉네임</span>
+      <input id="f-nick" type="text" maxlength="20" placeholder="예) 보노보노 / 태도 / 서울" autocomplete="off" required>
+    </label>
+    <label class="f">
+      <span>친구 코드 <i>숫자 12자리</i></span>
+      <input id="f-code" type="text" inputmode="numeric" placeholder="0000 0000 0000" autocomplete="off" required>
+    </label>
+    <div class="preview">
+      <img id="f-qr" alt="" width="180" height="180">
+      <p id="f-hint">길드카드의 <b>내 친구 코드</b> 12자리를 입력하면 QR이 만들어집니다.</p>
+    </div>
+    <p class="err" id="f-err" hidden></p>
+    <menu>
+      <button type="button" class="btn ghost" id="reg-cancel">취소</button>
+      <button type="submit" class="btn primary" id="reg-submit">등록하기</button>
+    </menu>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/qrcode.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
