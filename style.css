@@ -224,6 +224,15 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 .state { color: var(--muted); text-align: center; padding: 56px 0; font-size: .95rem; }
 .state[hidden] { display: none; }
 
+.more {
+  display: block; width: 100%; margin-top: 16px; padding: 15px;
+  font: inherit; font-size: .88rem; font-weight: 600; color: var(--muted);
+  background: rgba(255,255,255,.025); border: 1px dashed var(--line);
+  cursor: pointer; clip-path: var(--bevel);
+}
+.more:hover { color: var(--amber-hi); border-color: rgba(233,161,59,.4); }
+.more[hidden] { display: none; }
+
 /* ── code cards ───────────────────────── */
 /* 하한 215px: 12자리 코드 + 아이콘 2개가 한 줄에 들어가는 최소 폭(실측 여유 약 17px).
    폰트에 따라 글자 폭이 달라지므로 여유를 둡니다. 데스크톱은 그대로 5열입니다. */

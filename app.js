@@ -10,7 +10,13 @@ const SUPABASE_URL = 'https://frmpcahnrclrzfkaerbw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Oo1GKjPpnWscgER4691eRg_0cydOhwI';
 
 const TABLE = 'friend_codes';
-const LIMIT = 300;          // 무료 플랜 배려: 최신 300개만 표시
+/* 목록은 한 번에 받아오고, 화면에 그리는 개수만 늘립니다.
+   체크 여부가 기기 localStorage 에만 있어서 서버는 무엇이 미체크인지 모릅니다.
+   서버에서 20개씩 끊어 오면, 앞쪽이 전부 체크된 재방문자는 빈 화면을 받고
+   스크롤할 내용이 없어 다음 요청이 걸리지 않습니다.
+   300행이라야 40KB 남짓이라 한 번에 받는 편이 요청 수도 적고 무료 플랜에 유리합니다. */
+const LIMIT = 300;          // 서버에서 받아올 최대 개수 (최신순)
+const PAGE = 20;            // 한 번에 더 그리는 개수. PC 5열 기준 4줄
 const NICK_MAX = 20;
 const QR_MAX_CSS = 300;     // style.css 의 .qr max-width 와 반드시 같아야 합니다
 const QR_PREVIEW_CSS = 114; // style.css 의 .preview img 크기
@@ -163,21 +169,28 @@ function cardEl(row) {
 }
 
 /* ── 렌더 ──────────────────────────────────────────────────────── */
-let rows = [];
+let rows = [];        // 서버에서 받아온 전체
+let filtered = [];    // 필터를 통과한 것
+let pageSize = PAGE;  // 그중 지금 그려둔 개수
 const cards = new Map();
 
 function render() {
   const grid = $('#grid');
   const filter = $('#filter').value;
-  let shown = 0, prev = null;
 
-  // 새로고침으로 사라진 코드(남이 지운 것)의 카드를 걷어냅니다.
-  const live = new Set(rows.map(r => r.code));
+  /* 필터를 먼저 걸고 나서 잘라야 합니다. 자르고 필터를 걸면 앞쪽이 전부
+     체크된 사람은 20칸이 통째로 비어 아무것도 못 봅니다. */
+  filtered = rows.filter(r => filter === 'all' || (filter === 'checked') === checked.has(r.code));
+  const page = filtered.slice(0, pageSize);
+  const live = new Set(page.map(r => r.code));
+
+  // 페이지 밖으로 밀려났거나 남이 지운 카드는 DOM 에서 걷어냅니다.
   for (const [code, el] of cards) {
     if (!live.has(code)) { el.remove(); cards.delete(code); }
   }
 
-  for (const row of rows) {
+  let prev = null;
+  for (const row of page) {
     let el = cards.get(row.code);
     if (!el) {                                   // QR 생성은 카드당 딱 한 번
       el = cardEl(row);
@@ -185,18 +198,21 @@ function render() {
       prev ? prev.after(el) : grid.prepend(el);
     }
     prev = el;
-    const done = checked.has(row.code);
-    el.classList.toggle('done', done);
-    el.hidden = !(filter === 'all' || (filter === 'checked') === done);
-    if (!el.hidden) shown++;
+    el.classList.toggle('done', checked.has(row.code));
   }
 
   const done = rows.filter(r => checked.has(r.code)).length;
-  $('#count').textContent = `${shown}명 표시 · 전체 ${rows.length}명 · 체크 ${done}명`;
+  const shownTxt = page.length < filtered.length ? `${page.length}/${filtered.length}명 표시` : `${page.length}명 표시`;
+  $('#count').textContent = `${shownTxt} · 전체 ${rows.length}명 · 체크 ${done}명`;
+
+  const rest = filtered.length - page.length;
+  const more = $('#more');
+  more.hidden = rest <= 0;
+  more.textContent = rest > 0 ? `${rest}명 더 보기` : '';
 
   const state = $('#state');
-  state.hidden = shown > 0;
-  if (!shown) {
+  state.hidden = page.length > 0;
+  if (!page.length) {
     state.textContent = rows.length === 0
       ? '아직 등록된 친구 코드가 없습니다. 첫 번째로 등록해 보세요!'
       : filter === 'unchecked'
@@ -204,6 +220,21 @@ function render() {
         : '해당하는 친구 코드가 없습니다.';
   }
 }
+
+/* 더 그리기. 화면이 아직 안 찼으면 찰 때까지 이어서 늘립니다
+   (관찰 대상이 계속 보이는 상태면 IntersectionObserver 가 다시 안 울립니다). */
+function showMore() {
+  if (pageSize >= filtered.length) return;
+  pageSize += PAGE;
+  render();
+  requestAnimationFrame(() => {
+    if (pageSize < filtered.length && $('#more').getBoundingClientRect().top < innerHeight) showMore();
+  });
+}
+
+$('#more').addEventListener('click', showMore);
+new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) showMore(); }, { rootMargin: '600px' })
+  .observe($('#more'));
 
 function setChecked(code, on) {
   on ? checked.add(code) : checked.delete(code);
@@ -262,7 +293,7 @@ $('#grid').addEventListener('click', e => {
   }
 });
 
-$('#filter').addEventListener('change', render);
+$('#filter').addEventListener('change', () => { pageSize = PAGE; window.scrollTo(0, 0); render(); });
 
 $('#auto-check').addEventListener('change', e => {
   autoCheck = e.target.checked;
