@@ -91,6 +91,9 @@ code {
 .btn.ghost:hover { background: #2E251C; }
 .btn.danger { background: var(--red); color: #2A0F0A; }
 .btn.danger:hover { filter: brightness(1.1); }
+/* 주 행동은 '친구 코드 등록' 이므로 오픈채팅은 한 단계 낮춥니다. */
+.btn.chat svg { width: 16px; height: 16px; flex: none; }
+.btn.chat:hover { color: #FEE500; }
 .btn:disabled { opacity: .5; cursor: default; filter: none; }
 
 /* ── panels / notice ──────────────────── */
@@ -352,9 +355,12 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
 @media (max-width: 560px) {
-  .bar { gap: 10px; }
+  .bar { gap: 8px; }
   .brand-txt b { font-size: .92rem; }
   .btn.primary { padding: 8px 12px; font-size: .82rem; }
+  /* 좁은 화면에서는 오픈채팅을 아이콘만 남깁니다. 셋 다 글자로 두면 헤더가 넘칩니다. */
+  .btn.chat span { display: none; }
+  .btn.chat { padding: 8px 11px; }
   /* 좁은 화면은 1열. 2열로 좁히면 QR이 카메라로 스캔 불가능한 크기가 됩니다(실측 확인). */
   .grid { gap: 10px; }
   .toolbar { gap: 14px; }
