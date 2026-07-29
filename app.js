@@ -15,8 +15,10 @@ const TABLE = 'friend_codes';
    서버에서 20개씩 끊어 오면, 앞쪽이 전부 체크된 재방문자는 빈 화면을 받고
    스크롤할 내용이 없어 다음 요청이 걸리지 않습니다.
    300행이라야 40KB 남짓이라 한 번에 받는 편이 요청 수도 적고 무료 플랜에 유리합니다. */
-const LIMIT = 300;          // 서버에서 받아올 최대 개수 (최신순)
+const FETCH = 200;          // 서버에서 한 번에 받아올 개수 (키셋 커서 방식)
+const MAX = 1000;           // 한 세션에서 받아올 총 상한
 const PAGE = 20;            // 한 번에 더 그리는 개수. PC 5열 기준 4줄
+const BUMP_DAYS = 3;        // schema.sql 의 interval '3 days' 와 동일해야 합니다
 const NICK_MAX = 20;
 const QR_MAX_CSS = 300;     // style.css 의 .qr max-width 와 반드시 같아야 합니다
 const QR_PREVIEW_CSS = 114; // style.css 의 .preview img 크기
@@ -65,11 +67,17 @@ const rest = (path, opts = {}) => fetch(SUPABASE_URL + '/rest/v1/' + path, {
    anon 키로 REST DELETE 를 직접 부르는 것만으로 뚫리기 때문입니다.
    pw_hash 는 컬럼 권한으로 막혀 있어 select 로도 못 읽습니다. */
 const store = LIVE ? {
-  async list() {
+  /* 키셋 커서(created_at 미만)로 끊어 옵니다. offset 방식은 끌어올리기로 순서가
+     바뀌는 순간 행이 중복되거나 통째로 건너뛰어집니다. */
+  async page({ before, limit }) {
     // select=* 로 바꾸지 마세요. pw_hash 는 컬럼 권한이 없어 전체 조회가 통째로 거부됩니다.
-    const r = await rest(`${TABLE}?select=nickname,code,created_at&order=created_at.desc&limit=${LIMIT}`);
+    const q = `${TABLE}?select=nickname,code,created_at&order=created_at.desc&limit=${limit}`
+      + (before ? `&created_at=lt.${encodeURIComponent(before)}` : '');
+    const r = await rest(q, { headers: { Prefer: 'count=exact' } });
     if (!r.ok) throw new Error(await r.text());
-    return r.json();
+    // "0-199/1234" 의 뒤쪽이 전체 개수. before 가 걸리면 필터된 개수라 첫 장에서만 씁니다.
+    const total = Number((r.headers.get('content-range') || '').split('/')[1]);
+    return { rows: await r.json(), total: Number.isFinite(total) ? total : null };
   },
   async add({ nickname, code, password }) {
     const r = await rest('rpc/add_friend_code', {
@@ -92,21 +100,48 @@ const store = LIVE ? {
     if (!r.ok) throw new Error(await r.text());
     return await r.json() === true;      // 비밀번호 불일치·없는 코드 모두 false
   },
+  async bump(code, password) {
+    const r = await rest('rpc/bump_friend_code', {
+      method: 'POST',
+      body: JSON.stringify({ p_code: code, p_password: password }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();                     // { ok } | { ok:false, reason, next_at? }
+  },
 } : {
-  async list() { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); },
+  _all() {
+    return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]')
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  },
+  _save(rows) { localStorage.setItem(LOCAL_KEY, JSON.stringify(rows)); },
+  async page({ before, limit }) {
+    const all = this._all();
+    const from = before ? all.findIndex(r => String(r.created_at) < before) : 0;
+    return { rows: from < 0 ? [] : all.slice(from, from + limit), total: all.length };
+  },
   async add({ nickname, code, password }) {
-    const rows = await this.list();
-    if (rows.some(r => r.code === code)) throw new Error('DUP');
+    const all = this._all();
+    if (all.some(r => r.code === code)) throw new Error('DUP');
     // 체험 모드는 이 브라우저 안에서만 도는 더미 데이터라 비밀번호를 그대로 둡니다.
     const saved = { nickname, code, password, created_at: new Date().toISOString() };
-    localStorage.setItem(LOCAL_KEY, JSON.stringify([saved, ...rows].slice(0, LIMIT)));
+    this._save([saved, ...all].slice(0, MAX));
     return saved;
   },
   async remove(code, password) {
-    const rows = await this.list();
-    const keep = rows.filter(r => !(r.code === code && r.password === password));
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(keep));
-    return keep.length < rows.length;
+    const all = this._all();
+    const keep = all.filter(r => !(r.code === code && r.password === password));
+    this._save(keep);
+    return keep.length < all.length;
+  },
+  async bump(code, password) {
+    const all = this._all();
+    const row = all.find(r => r.code === code && r.password === password);
+    if (!row) return { ok: false, reason: 'BAD_PASSWORD' };
+    const next = new Date(row.created_at).getTime() + BUMP_DAYS * 864e5;
+    if (Date.now() < next) return { ok: false, reason: 'TOO_SOON', next_at: new Date(next).toISOString() };
+    row.created_at = new Date().toISOString();
+    this._save(all);
+    return { ok: true };
   },
 };
 
@@ -128,6 +163,17 @@ function toast(msg) {
 /* ── 카드 ──────────────────────────────────────────────────────── */
 const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M18 6l-1 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 6"/></svg>';
+const BUMP_ICON  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16M12 21V9M6.5 14.5 12 9l5.5 5.5"/></svg>';
+
+const BUMP_MS = BUMP_DAYS * 864e5;
+const bumpAt = row => new Date(row.created_at).getTime() + BUMP_MS;
+/* 남은 시간을 사람이 읽는 형태로. 서버가 최종 판정이고 이건 안내용입니다. */
+function untilBump(row) {
+  const ms = bumpAt(row) - Date.now();
+  if (ms <= 0) return null;
+  const h = Math.ceil(ms / 36e5);
+  return h >= 24 ? `${Math.ceil(h / 24)}일` : `${h}시간`;
+}
 
 /* QR 인코딩은 카드당 ~15ms. 화면에 들어올 때 만들되(전부 미리 만들면 수 초가 멈춤),
    생성 자체는 유휴 시간에 넘깁니다. 빠르게 스크롤하면 한 프레임에 여러 장이 몰려
@@ -157,6 +203,7 @@ function cardEl(row) {
     <div class="code-row">
       <span class="num">${pretty(row.code)}</span>
       <button class="icon danger" data-act="del" aria-label="친구 코드 삭제" title="삭제 (비밀번호 필요)">${TRASH_ICON}</button>
+      <button class="icon bump" data-act="bump" aria-label="끌어올리기">${BUMP_ICON}</button>
       <button class="icon" data-act="copy" aria-label="친구 코드 복사" title="복사">${COPY_ICON}</button>
     </div>
     <!-- mhnow:// 는 앱이 가로채는 커스텀 스킴입니다. target=_blank 를 쓰면
@@ -195,20 +242,35 @@ function render() {
     if (!el) {                                   // QR 생성은 카드당 딱 한 번
       el = cardEl(row);
       cards.set(row.code, el);
-      prev ? prev.after(el) : grid.prepend(el);
     }
+    /* 끌어올리기로 순서가 바뀌므로 기존 카드도 자리를 다시 잡습니다.
+       이미 제자리면 건드리지 않습니다(불필요한 DOM 이동 방지). */
+    const want = prev ? prev.nextElementSibling : grid.firstElementChild;
+    if (el !== want) prev ? prev.after(el) : grid.prepend(el);
     prev = el;
+
     el.classList.toggle('done', checked.has(row.code));
+
+    // 끌어올리기 후 갱신된 등록일과 남은 시간을 캐시된 카드에도 반영합니다.
+    const time = el.querySelector('time');
+    if (time.dateTime !== String(row.created_at)) {
+      time.dateTime = String(row.created_at);
+      time.textContent = when(row.created_at);
+    }
+    const left = untilBump(row);
+    const bump = el.querySelector('.icon.bump');
+    bump.classList.toggle('wait', !!left);
+    bump.title = left ? `${left} 뒤에 끌어올릴 수 있습니다` : '끌어올리기 (비밀번호 필요)';
   }
 
   const done = rows.filter(r => checked.has(r.code)).length;
   const shownTxt = page.length < filtered.length ? `${page.length}/${filtered.length}명 표시` : `${page.length}명 표시`;
-  $('#count').textContent = `${shownTxt} · 전체 ${rows.length}명 · 체크 ${done}명`;
+  $('#count').textContent = `${shownTxt} · 전체 ${total ?? rows.length}명 · 체크 ${done}명`;
 
-  const rest = filtered.length - page.length;
   const more = $('#more');
-  more.hidden = rest <= 0;
-  more.textContent = rest > 0 ? `${rest}명 더 보기` : '';
+  const rest = filtered.length - page.length;
+  more.hidden = rest <= 0 && exhausted;
+  more.textContent = rest > 0 ? `${rest}명 더 보기` : '더 불러오기';
 
   const state = $('#state');
   state.hidden = page.length > 0;
@@ -221,14 +283,50 @@ function render() {
   }
 }
 
+/* ── 받아오기 (서버 200개씩, 화면 20개씩) ──────────────────────── */
+const valid = r => isCode(r.code) && typeof r.nickname === 'string' && r.nickname.trim();
+
+let cursor = null;      // 마지막으로 받아온 created_at (키셋 커서)
+let exhausted = false;  // 서버에 더 없음
+let total = null;       // 서버가 알려준 전체 개수
+let loading = null;
+
+async function loadChunk() {
+  if (exhausted || rows.length >= MAX) { exhausted = true; return; }
+  const { rows: got, total: t } = await store.page({ before: cursor, limit: FETCH });
+  if (cursor === null && t != null) total = t;
+  const have = new Set(rows.map(r => r.code));
+  rows.push(...got.filter(valid).filter(r => !have.has(r.code)));
+  if (got.length) cursor = got[got.length - 1].created_at;
+  if (got.length < FETCH || rows.length >= MAX) exhausted = true;
+}
+
+const countFiltered = () => {
+  const f = $('#filter').value;
+  return rows.reduce((n, r) => n + (f === 'all' || (f === 'checked') === checked.has(r.code) ? 1 : 0), 0);
+};
+
+/* 그릴 게 n개 모일 때까지 서버에서 끌어옵니다. 앞쪽이 전부 체크된 사람은
+   200개를 받아도 화면에 0개일 수 있어, 여기서 멈추면 스크롤할 내용이 없어
+   다음 요청이 영영 안 걸립니다. */
+async function ensure(n) {
+  while (countFiltered() < n && !exhausted) await loadChunk();
+}
+
 /* 더 그리기. 화면이 아직 안 찼으면 찰 때까지 이어서 늘립니다
    (관찰 대상이 계속 보이는 상태면 IntersectionObserver 가 다시 안 울립니다). */
-function showMore() {
-  if (pageSize >= filtered.length) return;
-  pageSize += PAGE;
-  render();
+async function showMore() {
+  if (loading) return loading;
+  loading = (async () => {
+    await ensure(pageSize + PAGE);
+    if (pageSize >= filtered.length && exhausted) return;
+    pageSize += PAGE;
+    render();
+  })().catch(err => { console.error(err); toast('더 불러오지 못했습니다'); })
+      .finally(() => { loading = null; });
+  await loading;
   requestAnimationFrame(() => {
-    if (pageSize < filtered.length && $('#more').getBoundingClientRect().top < innerHeight) showMore();
+    if (!$('#more').hidden && $('#more').getBoundingClientRect().top < innerHeight) showMore();
   });
 }
 
@@ -278,7 +376,11 @@ $('#grid').addEventListener('click', e => {
   const code = btn.closest('.card').dataset.code;
 
   if (btn.dataset.act === 'del') {
-    askDelete(code);
+    askPassword('del', code);
+  } else if (btn.dataset.act === 'bump') {
+    // 아직 3일이 안 됐으면 비밀번호를 묻지 않고 남은 시간만 알려줍니다.
+    const left = untilBump(rows.find(r => r.code === code) || {});
+    left ? toast(`${left} 뒤에 끌어올릴 수 있습니다`) : askPassword('bump', code);
   } else if (btn.dataset.act === 'check') {
     const on = !checked.has(code);
     setChecked(code, on);
@@ -358,14 +460,23 @@ $('#reg-form').addEventListener('submit', async e => {
   }
 });
 
-/* ── 삭제 ──────────────────────────────────────────────────────── */
+/* ── 삭제 / 끌어올리기 (같은 비밀번호 확인 창을 씁니다) ────────── */
 const del = $('#del');
 const dErr = $('#d-err');
-let pendingCode = null;
+let pending = null;      // { mode, code }
 
-function askDelete(code) {
-  pendingCode = code;
+function askPassword(mode, code) {
+  pending = { mode, code };
+  const bump = mode === 'bump';
+  $('#d-title').textContent = bump ? '친구 코드 끌어올리기' : '친구 코드 삭제';
+  $('#d-what').textContent = bump
+    ? '등록할 때 정한 비밀번호를 입력하면 목록 맨 위로 올라갑니다.'
+    : '등록할 때 정한 비밀번호를 입력하세요. 삭제하면 되돌릴 수 없습니다.';
   $('#d-code').textContent = pretty(code);
+  const sub = $('#del-submit');
+  sub.textContent = bump ? '끌어올리기' : '삭제하기';
+  sub.classList.toggle('danger', !bump);
+  sub.classList.toggle('primary', bump);
   $('#d-pw').value = '';
   dErr.hidden = true;
   del.showModal();
@@ -375,26 +486,39 @@ function askDelete(code) {
 $('#del-cancel').addEventListener('click', () => del.close());
 del.addEventListener('click', e => { if (e.target === del) del.close(); });
 
+const fail = msg => { dErr.textContent = msg; dErr.hidden = false; };
+
 $('#del-form').addEventListener('submit', async e => {
   e.preventDefault();
   const password = $('#d-pw').value;
-  if (!password) { dErr.textContent = '비밀번호를 입력해 주세요.'; dErr.hidden = false; return; }
+  if (!password) return fail('비밀번호를 입력해 주세요.');
 
   const btn = $('#del-submit');
   btn.disabled = true;
   dErr.hidden = true;
   try {
-    /* 서버가 참/거짓만 돌려줍니다. 비밀번호가 틀렸는지 코드가 없는지는
-       구분해 주지 않으므로 목록에 없는 코드를 캐낼 수 없습니다. */
-    if (!await store.remove(pendingCode, password)) {
-      dErr.textContent = '비밀번호가 일치하지 않습니다.';
-      dErr.hidden = false;
+    if (pending.mode === 'bump') {
+      const res = await store.bump(pending.code, password);
+      if (!res.ok) {
+        return fail(res.reason === 'TOO_SOON'
+          ? `아직 끌어올릴 수 없습니다. ${BUMP_DAYS}일에 한 번만 가능합니다.`
+          : '비밀번호가 일치하지 않습니다.');
+      }
+      del.close();
+      disarm();
+      await refresh();          // 맨 위로 올라간 순서를 서버 기준으로 다시 받습니다
+      window.scrollTo(0, 0);
+      toast('맨 위로 끌어올렸습니다');
       return;
     }
-    rows = rows.filter(r => r.code !== pendingCode);
-    cards.get(pendingCode)?.remove();
-    cards.delete(pendingCode);
-    checked.delete(pendingCode);
+
+    /* 삭제는 서버가 참/거짓만 돌려줍니다. 비밀번호가 틀렸는지 코드가 없는지
+       구분해 주지 않으므로 목록에 없는 코드를 캐낼 수 없습니다. */
+    if (!await store.remove(pending.code, password)) return fail('비밀번호가 일치하지 않습니다.');
+    rows = rows.filter(r => r.code !== pending.code);
+    cards.get(pending.code)?.remove();
+    cards.delete(pending.code);
+    checked.delete(pending.code);
     saveChecked();
     disarm();
     render();
@@ -402,33 +526,38 @@ $('#del-form').addEventListener('submit', async e => {
     toast('삭제되었습니다');
   } catch (err) {
     console.error(err);
-    dErr.textContent = '삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.';
-    dErr.hidden = false;
+    fail(pending.mode === 'bump'
+      ? '끌어올리기에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+      : '삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.');
   } finally {
     btn.disabled = false;
   }
 });
 
 /* ── 목록 새로고침 ─────────────────────────────────────────────── */
-const valid = r => isCode(r.code) && typeof r.nickname === 'string' && r.nickname.trim();
 let refreshing = null;
 
-/* 친구 코드 탭에 들어올 때마다 다시 불러옵니다. 페이지를 열어둔 사이에
-   남이 등록한 코드가 보이도록. 동시 호출은 하나로 합칩니다. */
+/* 친구 코드 탭에 들어올 때마다 처음부터 다시 받습니다. 끌어올리기로 순서가
+   바뀌기 때문에 이어받기는 의미가 없습니다. 동시 호출은 하나로 합칩니다. */
 function refresh() {
   if (refreshing) return refreshing;
-  refreshing = store.list()
-    .then(list => {
-      const fresh = list.filter(valid);
-      const before = new Set(rows.map(r => r.code));
-      rows = fresh;
-      render();
-      const added = fresh.filter(r => !before.has(r.code)).length;
-      if (added && before.size) toast(`새 친구 코드 ${added}개`);
-    })
+  refreshing = (async () => {
+    const before = new Set(rows.map(r => r.code));
+    const keep = { rows, cursor, exhausted, total };
+    rows = []; cursor = null; exhausted = false; pageSize = PAGE;
+    try {
+      await ensure(pageSize);
+    } catch (err) {
+      // 통신 실패로 이미 보고 있던 목록을 날리지 않습니다.
+      ({ rows, cursor, exhausted, total } = keep);
+      throw err;
+    }
+    render();
+    const added = rows.filter(r => !before.has(r.code)).length;
+    if (added && before.size) toast(`새 친구 코드 ${added}개`);
+  })()
     .catch(err => {
       console.error(err);
-      // 이미 목록이 있으면 통신 실패로 화면을 날리지 않습니다.
       if (rows.length) return toast('새로고침에 실패했습니다');
       $('#state').hidden = false;
       $('#state').textContent = '목록을 불러오지 못했습니다. 새로고침해 주세요.';

@@ -172,7 +172,7 @@
     <span class="kicker">친구 코드</span>
     <h1>QR을 스캔하거나 <em>앱에서 등록</em>을 누르세요</h1>
     <p>등록을 마친 코드는 체크해 두면 목록에서 사라집니다. 체크 정보는 이 기기에만 저장됩니다.<br>
-       내 코드를 지우려면 <b>휴지통 버튼</b>을 누르세요. 카드를 길게 누르거나 우클릭해도 됩니다.</p>
+       내 코드는 <b>휴지통</b>으로 지우고, <b>화살표</b>로 맨 위에 끌어올릴 수 있습니다(3일에 한 번, 비밀번호 필요).</p>
   </div>
 
   <div class="toolbar">
@@ -237,8 +237,8 @@
 <!-- 삭제 -->
 <dialog id="del">
   <form id="del-form" novalidate>
-    <h2>친구 코드 삭제</h2>
-    <p class="del-what">등록할 때 정한 비밀번호를 입력하세요.<br><b id="d-code"></b></p>
+    <h2 id="d-title">친구 코드 삭제</h2>
+    <p class="del-what"><span id="d-what"></span><br><b id="d-code"></b></p>
     <label class="f">
       <span>비밀번호</span>
       <input id="d-pw" type="password" maxlength="40" autocomplete="off" required>

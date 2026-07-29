@@ -234,12 +234,14 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 .more[hidden] { display: none; }
 
 /* ── code cards ───────────────────────── */
-/* 하한 215px: 12자리 코드 + 아이콘 2개가 한 줄에 들어가는 최소 폭(실측 여유 약 17px).
-   폰트에 따라 글자 폭이 달라지므로 여유를 둡니다. 데스크톱은 그대로 5열입니다. */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 14px; }
+/* 하한 225px: 12자리 코드 + 아이콘 3개(삭제·끌어올리기·복사)가 들어가는 최소 폭.
+   이 때문에 1160px 화면에서 5열 -> 4열이 됩니다. 대신 카드가 280px 로 커져
+   QR 도 196 -> 256px 가 되니, 스캔이 본업인 사이트에는 오히려 낫습니다. */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 14px; }
 
 .card {
   position: relative;
+  container-type: inline-size;   /* 아이콘/코드 크기를 카드 폭 기준으로 줄이기 위해 */
   display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--line);
   clip-path: var(--bevel); padding: 12px;
@@ -299,6 +301,17 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 .icon:hover { color: var(--amber-hi); border-color: rgba(233,161,59,.4); }
 .icon svg { width: 15px; height: 15px; }
 .icon.danger:hover { color: var(--red); border-color: rgba(228,112,94,.55); }
+.icon.bump:hover { color: var(--jade); border-color: rgba(75,196,154,.55); }
+.icon.bump.wait { opacity: .38; }   /* 3일이 안 지났을 때. 눌러도 남은 시간만 알려줍니다 */
+
+/* PC 5열이면 카드 안쪽이 197px 뿐이라 12자리 코드 + 아이콘 3개가 빠듯합니다.
+   뷰포트가 아니라 카드 폭을 기준으로 줄여야 1열 모바일에서는 큼직하게 남습니다. */
+@container (max-width: 250px) {
+  .code-row { gap: 3px; }
+  .code-row .num { font-size: .76rem; }
+  .icon { width: 25px; height: 25px; }
+  .icon svg { width: 13px; height: 13px; }
+}
 
 .card .open { width: 100%; margin-bottom: 9px; }
 .card time { font-size: .74rem; color: var(--muted); font-variant-numeric: tabular-nums; }

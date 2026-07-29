@@ -70,10 +70,42 @@ begin
   return n > 0;
 end $$;
 
+-- ── 끌어올리기 ──────────────────────────────────────────────────────
+-- created_at 을 지금으로 갱신해 목록 맨 위로 올립니다. 3일에 한 번만 가능합니다.
+-- 비밀번호를 먼저 확인하므로, 모르는 사람은 남은 시간도 알 수 없습니다.
+create or replace function public.bump_friend_code(
+  p_code text, p_password text
+) returns json
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare r record; next_at timestamptz;
+begin
+  select id, created_at into r
+    from public.friend_codes
+   where code = p_code
+     and pw_hash is not null
+     and pw_hash = crypt(p_password, pw_hash);
+  if not found then
+    return json_build_object('ok', false, 'reason', 'BAD_PASSWORD');
+  end if;
+
+  next_at := r.created_at + interval '3 days';
+  if now() < next_at then
+    return json_build_object('ok', false, 'reason', 'TOO_SOON', 'next_at', next_at);
+  end if;
+
+  update public.friend_codes set created_at = now() where id = r.id;
+  return json_build_object('ok', true);
+end $$;
+
 revoke all on function public.add_friend_code(text, text, text)    from public, anon;
 revoke all on function public.delete_friend_code(text, text)       from public, anon;
+revoke all on function public.bump_friend_code(text, text)         from public, anon;
 grant execute on function public.add_friend_code(text, text, text) to anon;
 grant execute on function public.delete_friend_code(text, text)    to anon;
+grant execute on function public.bump_friend_code(text, text)      to anon;
 
 -- 확인용: pw_hash 가 권한에서 막혔는지 보려면 아래를 anon 으로 호출해 보세요.
 select count(*) from public.friend_codes;
