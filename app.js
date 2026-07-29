@@ -69,11 +69,14 @@ const rest = (path, opts = {}) => fetch(SUPABASE_URL + '/rest/v1/' + path, {
 const store = LIVE ? {
   /* 키셋 커서(created_at 미만)로 끊어 옵니다. offset 방식은 끌어올리기로 순서가
      바뀌는 순간 행이 중복되거나 통째로 건너뛰어집니다. */
-  async page({ before, limit }) {
+  async page({ before, limit, q }) {
     // select=* 로 바꾸지 마세요. pw_hash 는 컬럼 권한이 없어 전체 조회가 통째로 거부됩니다.
-    const q = `${TABLE}?select=nickname,code,created_at&order=created_at.desc&limit=${limit}`
-      + (before ? `&created_at=lt.${encodeURIComponent(before)}` : '');
-    const r = await rest(q, { headers: { Prefer: 'count=exact' } });
+    /* 검색은 서버에서 겁니다. 받아온 200개 안에서만 걸면 아직 안 받은 코드는 안 잡힙니다.
+       encodeURIComponent 는 * 를 남겨두므로 PostgREST 의 와일드카드로 그대로 동작합니다. */
+    const path = `${TABLE}?select=nickname,code,created_at&order=created_at.desc&limit=${limit}`
+      + (before ? `&created_at=lt.${encodeURIComponent(before)}` : '')
+      + (q ? `&nickname=ilike.${encodeURIComponent(`*${q}*`)}` : '');
+    const r = await rest(path, { headers: { Prefer: 'count=exact' } });
     if (!r.ok) throw new Error(await r.text());
     // "0-199/1234" 의 뒤쪽이 전체 개수. before 가 걸리면 필터된 개수라 첫 장에서만 씁니다.
     const total = Number((r.headers.get('content-range') || '').split('/')[1]);
@@ -114,8 +117,12 @@ const store = LIVE ? {
       .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   },
   _save(rows) { localStorage.setItem(LOCAL_KEY, JSON.stringify(rows)); },
-  async page({ before, limit }) {
-    const all = this._all();
+  async page({ before, limit, q }) {
+    let all = this._all();
+    if (q) {
+      const s = q.toLowerCase();
+      all = all.filter(r => String(r.nickname).toLowerCase().includes(s));
+    }
     const from = before ? all.findIndex(r => String(r.created_at) < before) : 0;
     return { rows: from < 0 ? [] : all.slice(from, from + limit), total: all.length };
   },
@@ -223,7 +230,8 @@ const cards = new Map();
 
 function render() {
   const grid = $('#grid');
-  const filter = $('#filter').value;
+  const filter = activeFilter();
+  $('#filter').disabled = !!query;      // 검색 중에는 체크 필터를 쓰지 않습니다
 
   /* 필터를 먼저 걸고 나서 잘라야 합니다. 자르고 필터를 걸면 앞쪽이 전부
      체크된 사람은 20칸이 통째로 비어 아무것도 못 봅니다. */
@@ -265,7 +273,9 @@ function render() {
 
   const done = rows.filter(r => checked.has(r.code)).length;
   const shownTxt = page.length < filtered.length ? `${page.length}/${filtered.length}명 표시` : `${page.length}명 표시`;
-  $('#count').textContent = `${shownTxt} · 전체 ${total ?? rows.length}명 · 체크 ${done}명`;
+  $('#count').textContent = query
+    ? `'${query}' 검색 ${total ?? rows.length}명`
+    : `${shownTxt} · 전체 ${total ?? rows.length}명 · 체크 ${done}명`;
 
   const more = $('#more');
   const rest = filtered.length - page.length;
@@ -275,11 +285,13 @@ function render() {
   const state = $('#state');
   state.hidden = page.length > 0;
   if (!page.length) {
-    state.textContent = rows.length === 0
-      ? '아직 등록된 친구 코드가 없습니다. 첫 번째로 등록해 보세요!'
-      : filter === 'unchecked'
-        ? '모든 친구 코드를 등록하셨습니다. 새 코드가 올라오면 여기에 표시됩니다.'
-        : '해당하는 친구 코드가 없습니다.';
+    state.textContent = query
+      ? `'${query}' 와 일치하는 닉네임이 없습니다.`
+      : rows.length === 0
+        ? '아직 등록된 친구 코드가 없습니다. 첫 번째로 등록해 보세요!'
+        : filter === 'unchecked'
+          ? '모든 친구 코드를 등록하셨습니다. 새 코드가 올라오면 여기에 표시됩니다.'
+          : '해당하는 친구 코드가 없습니다.';
   }
 }
 
@@ -290,10 +302,11 @@ let cursor = null;      // 마지막으로 받아온 created_at (키셋 커서)
 let exhausted = false;  // 서버에 더 없음
 let total = null;       // 서버가 알려준 전체 개수
 let loading = null;
+let query = '';         // 닉네임 검색어 (서버에서 ilike 로 거릅니다)
 
 async function loadChunk() {
   if (exhausted || rows.length >= MAX) { exhausted = true; return; }
-  const { rows: got, total: t } = await store.page({ before: cursor, limit: FETCH });
+  const { rows: got, total: t } = await store.page({ before: cursor, limit: FETCH, q: query });
   if (cursor === null && t != null) total = t;
   const have = new Set(rows.map(r => r.code));
   rows.push(...got.filter(valid).filter(r => !have.has(r.code)));
@@ -301,8 +314,12 @@ async function loadChunk() {
   if (got.length < FETCH || rows.length >= MAX) exhausted = true;
 }
 
+/* 검색 중에는 체크 필터를 무시합니다. 이미 추가한 사람을 이름으로 찾는 경우가
+   대부분인데 '미체크만' 이 걸려 있으면 결과가 0건으로 보입니다. */
+const activeFilter = () => (query ? 'all' : $('#filter').value);
+
 const countFiltered = () => {
-  const f = $('#filter').value;
+  const f = activeFilter();
   return rows.reduce((n, r) => n + (f === 'all' || (f === 'checked') === checked.has(r.code) ? 1 : 0), 0);
 };
 
@@ -565,6 +582,43 @@ function refresh() {
     .finally(() => { refreshing = null; });
   return refreshing;
 }
+
+/* ── 닉네임 검색 ───────────────────────────────────────────────── */
+let qSeq = 0;
+let qChain = Promise.resolve();
+let qTimer;
+
+async function doSearch(q) {
+  query = q;
+  rows = []; cursor = null; exhausted = false; total = null; pageSize = PAGE;
+  cards.forEach(el => el.remove());
+  cards.clear();
+  $('#more').hidden = true;
+  $('#state').hidden = false;
+  $('#state').textContent = q ? '검색 중…' : '불러오는 중…';
+  try {
+    await ensure(pageSize);
+  } catch (err) {
+    console.error(err);
+    toast('검색에 실패했습니다');
+  }
+  render();
+  window.scrollTo(0, 0);
+}
+
+/* 입력이 겹쳐도 순서가 꼬이지 않도록 직렬화하고, 낡은 검색은 건너뜁니다.
+   rows/cursor 를 공유하기 때문에 동시에 돌면 목록이 섞입니다. */
+function search(q) {
+  const mine = ++qSeq;
+  qChain = qChain.then(() => (mine === qSeq ? doSearch(q) : undefined));
+  return qChain;
+}
+
+$('#q').addEventListener('input', e => {
+  const q = e.target.value.trim();
+  clearTimeout(qTimer);
+  qTimer = setTimeout(() => { if (q !== query) search(q); }, 300);
+});
 
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {

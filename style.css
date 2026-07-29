@@ -220,7 +220,19 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 .switch input:focus-visible + .track { outline: 2px solid var(--amber); outline-offset: 2px; }
 .switch-txt { font-size: .88rem; font-weight: 600; }
 
-.count { margin-left: auto; font-size: .84rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.search {
+  margin-left: auto; display: flex; align-items: center; gap: 7px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 0 11px;
+}
+.search:focus-within { border-color: rgba(233,161,59,.5); }
+.search svg { width: 15px; height: 15px; flex: none; color: var(--muted); }
+.search input {
+  font: inherit; font-size: .86rem; color: var(--bone);
+  background: none; border: 0; outline: none; padding: 8px 0; width: 150px;
+}
+.search input::placeholder { color: var(--muted); }
+
+.count { font-size: .84rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .state { color: var(--muted); text-align: center; padding: 56px 0; font-size: .95rem; }
 .state[hidden] { display: none; }
 
@@ -386,7 +398,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   /* 좁은 화면은 1열. 2열로 좁히면 QR이 카메라로 스캔 불가능한 크기가 됩니다(실측 확인). */
   .grid { gap: 10px; }
   .toolbar { gap: 14px; }
-  .count { margin-left: 0; width: 100%; }
+  .count { width: 100%; }
+  /* 좁은 화면에서는 오른쪽 정렬이 어색한 빈칸을 만듭니다. 한 줄 전체로 폅니다. */
+  .search { margin-left: 0; width: 100%; }
+  .search input { width: 100%; }
   .panel { padding: 28px 0 56px; }
 }
 
