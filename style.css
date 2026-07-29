@@ -89,6 +89,8 @@ code {
 .btn.primary:hover { filter: brightness(1.1); }
 .btn.ghost { background: var(--surface-2); color: var(--bone); box-shadow: inset 0 0 0 1px var(--line); }
 .btn.ghost:hover { background: #2E251C; }
+.btn.danger { background: var(--red); color: #2A0F0A; }
+.btn.danger:hover { filter: brightness(1.1); }
 .btn:disabled { opacity: .5; cursor: default; filter: none; }
 
 /* ── panels / notice ──────────────────── */
@@ -223,13 +225,30 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 14px; }
 
 .card {
+  position: relative;
   display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--line);
   clip-path: var(--bevel); padding: 12px;
   transition: border-color .15s, transform .15s;
+  /* 길게 누르기를 쓰므로 텍스트 선택과 iOS 콜아웃을 막습니다. */
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 .card:hover { border-color: rgba(233,161,59,.4); transform: translateY(-2px); }
 .card[hidden] { display: none; }
+
+/* 길게 누르거나 우클릭하면 나타나는 삭제 버튼 */
+.card .del {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  display: none; align-items: center; gap: 5px;
+  font: inherit; font-size: .78rem; font-weight: 700;
+  padding: 6px 12px; border: 0; cursor: pointer;
+  background: var(--red); color: #2A0F0A;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  box-shadow: 0 4px 16px rgba(0,0,0,.6);
+}
+.card.armed { border-color: var(--red); }
+.card.armed .del { display: inline-flex; }
+.card.armed .qr img { filter: brightness(.55); }
 
 /* max-width는 두 가지를 동시에 잡습니다: 표시 크기가 원본(342px)을 넘지 않게 해 확대 흐림을 막고,
    좁은 화면 1열에서 QR이 우스꽝스럽게 커지는 것도 막습니다. */
@@ -289,6 +308,9 @@ dialog h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
 .f { display: grid; gap: 6px; }
 .f > span { font-size: .84rem; font-weight: 600; color: var(--muted); }
 .f > span i { font-style: normal; font-weight: 400; opacity: .7; }
+.f small { font-size: .76rem; color: var(--muted); line-height: 1.5; }
+.del-what { margin: 0; font-size: .86rem; color: var(--muted); line-height: 1.6; }
+.del-what b { color: var(--amber-hi); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .f input {
   font: inherit; font-size: .95rem; color: var(--bone);
   background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 10px 13px;

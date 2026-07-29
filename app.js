@@ -14,6 +14,7 @@ const LIMIT = 300;          // 무료 플랜 배려: 최신 300개만 표시
 const NICK_MAX = 20;
 const QR_MAX_CSS = 300;     // style.css 의 .qr max-width 와 반드시 같아야 합니다
 const QR_PREVIEW_CSS = 114; // style.css 의 .preview img 크기
+const PW_MIN = 4;           // schema.sql 의 add_friend_code 검사와 동일해야 합니다
 
 const $ = s => document.querySelector(s);
 
@@ -54,26 +55,50 @@ const rest = (path, opts = {}) => fetch(SUPABASE_URL + '/rest/v1/' + path, {
   },
 });
 
+/* 쓰기는 전부 DB 함수를 거칩니다. 비밀번호 검증을 브라우저에서 하면
+   anon 키로 REST DELETE 를 직접 부르는 것만으로 뚫리기 때문입니다.
+   pw_hash 는 컬럼 권한으로 막혀 있어 select 로도 못 읽습니다. */
 const store = LIVE ? {
   async list() {
+    // select=* 로 바꾸지 마세요. pw_hash 는 컬럼 권한이 없어 전체 조회가 통째로 거부됩니다.
     const r = await rest(`${TABLE}?select=nickname,code,created_at&order=created_at.desc&limit=${LIMIT}`);
     if (!r.ok) throw new Error(await r.text());
     return r.json();
   },
-  async add(row) {
-    const r = await rest(TABLE, { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(row) });
-    if (r.status === 409) throw new Error('DUP');
+  async add({ nickname, code, password }) {
+    const r = await rest('rpc/add_friend_code', {
+      method: 'POST',
+      body: JSON.stringify({ p_nickname: nickname, p_code: code, p_password: password }),
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      throw new Error(t.includes('23505') ? 'DUP' : t);   // unique_violation
+    }
+    return { nickname, code, created_at: new Date().toISOString() };
+  },
+  async remove(code, password) {
+    const r = await rest('rpc/delete_friend_code', {
+      method: 'POST',
+      body: JSON.stringify({ p_code: code, p_password: password }),
+    });
     if (!r.ok) throw new Error(await r.text());
-    return (await r.json())[0];
+    return await r.json() === true;      // 비밀번호 불일치·없는 코드 모두 false
   },
 } : {
   async list() { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); },
-  async add(row) {
+  async add({ nickname, code, password }) {
     const rows = await this.list();
-    if (rows.some(r => r.code === row.code)) throw new Error('DUP');
-    const saved = { ...row, created_at: new Date().toISOString() };
+    if (rows.some(r => r.code === code)) throw new Error('DUP');
+    // 체험 모드는 이 브라우저 안에서만 도는 더미 데이터라 비밀번호를 그대로 둡니다.
+    const saved = { nickname, code, password, created_at: new Date().toISOString() };
     localStorage.setItem(LOCAL_KEY, JSON.stringify([saved, ...rows].slice(0, LIMIT)));
     return saved;
+  },
+  async remove(code, password) {
+    const rows = await this.list();
+    const keep = rows.filter(r => !(r.code === code && r.password === password));
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(keep));
+    return keep.length < rows.length;
   },
 };
 
@@ -122,7 +147,8 @@ function cardEl(row) {
     <!-- mhnow:// 는 앱이 가로채는 커스텀 스킴입니다. target=_blank 를 쓰면
          앱으로 넘어간 뒤 빈 탭이 남으므로 현재 탭에서 그대로 엽니다. -->
     <a class="btn ghost open" data-act="open" href="${url}">앱에서 등록</a>
-    <time datetime="${esc(String(row.created_at))}">${when(row.created_at)}</time>`;
+    <time datetime="${esc(String(row.created_at))}">${when(row.created_at)}</time>
+    <button class="del" data-act="del">삭제</button>`;
   qrLazy.observe(el.querySelector('.qr img'));
   return el;
 }
@@ -171,12 +197,43 @@ function setChecked(code, on) {
 }
 
 /* ── 이벤트 ────────────────────────────────────────────────────── */
+/* 길게 누르기 / 우클릭 → 삭제 버튼 노출 ─────────────────────────── */
+const disarm = () => document.querySelectorAll('.card.armed').forEach(c => c.classList.remove('armed'));
+function arm(card) { disarm(); card.classList.add('armed'); }
+
+let press = null;         // 길게 누르는 중인 카드
+let swallowClick = false; // 길게 누른 뒤 따라오는 click 이 체크를 토글하지 않도록
+
+$('#grid').addEventListener('pointerdown', e => {
+  const card = e.target.closest('.card');
+  if (!card || e.button === 2) return;
+  press = { x: e.clientX, y: e.clientY, t: setTimeout(() => { press = null; swallowClick = true; arm(card); }, 550) };
+});
+$('#grid').addEventListener('pointermove', e => {
+  // 스크롤이나 손떨림으로 취소되지 않도록 10px 여유를 둡니다.
+  if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) { clearTimeout(press.t); press = null; }
+});
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
+  $('#grid').addEventListener(ev, () => { if (press) { clearTimeout(press.t); press = null; } });
+}
+$('#grid').addEventListener('contextmenu', e => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  e.preventDefault();
+  arm(card);
+});
+// 카드 밖을 누르면 해제. capture 로 먼저 돌지만 armed 카드 내부 클릭은 살려둡니다.
+document.addEventListener('click', e => { if (!e.target.closest('.card.armed')) disarm(); }, true);
+
 $('#grid').addEventListener('click', e => {
+  if (swallowClick) { swallowClick = false; return; }
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
   const code = btn.closest('.card').dataset.code;
 
-  if (btn.dataset.act === 'check') {
+  if (btn.dataset.act === 'del') {
+    askDelete(code);
+  } else if (btn.dataset.act === 'check') {
     const on = !checked.has(code);
     setChecked(code, on);
     toast(on ? '체크했습니다' : '체크를 해제했습니다');
@@ -223,10 +280,12 @@ $('#reg-form').addEventListener('submit', async e => {
   e.preventDefault();
   const nickname = $('#f-nick').value.trim().replace(/\s+/g, ' ');
   const code = digits(fCode.value);
+  const password = $('#f-pw').value;
 
   const bad = !nickname ? '닉네임을 입력해 주세요.'
     : nickname.length > NICK_MAX ? `닉네임은 ${NICK_MAX}자 이내로 입력해 주세요.`
     : !isCode(code) ? '친구 코드는 숫자 12자리입니다.'
+    : password.length < PW_MIN ? `삭제용 비밀번호는 ${PW_MIN}자 이상 입력해 주세요.`
     : null;
   if (bad) { fErr.textContent = bad; fErr.hidden = false; return; }
 
@@ -234,7 +293,7 @@ $('#reg-form').addEventListener('submit', async e => {
   submit.disabled = true;
   fErr.hidden = true;
   try {
-    const saved = await store.add({ nickname, code });
+    const saved = await store.add({ nickname, code, password });
     rows.unshift(saved || { nickname, code, created_at: new Date().toISOString() });
     render();
     reg.close();
@@ -250,6 +309,57 @@ $('#reg-form').addEventListener('submit', async e => {
     if (err.message !== 'DUP') console.error(err);
   } finally {
     submit.disabled = false;
+  }
+});
+
+/* ── 삭제 ──────────────────────────────────────────────────────── */
+const del = $('#del');
+const dErr = $('#d-err');
+let pendingCode = null;
+
+function askDelete(code) {
+  pendingCode = code;
+  $('#d-code').textContent = pretty(code);
+  $('#d-pw').value = '';
+  dErr.hidden = true;
+  del.showModal();
+  $('#d-pw').focus();
+}
+
+$('#del-cancel').addEventListener('click', () => del.close());
+del.addEventListener('click', e => { if (e.target === del) del.close(); });
+
+$('#del-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const password = $('#d-pw').value;
+  if (!password) { dErr.textContent = '비밀번호를 입력해 주세요.'; dErr.hidden = false; return; }
+
+  const btn = $('#del-submit');
+  btn.disabled = true;
+  dErr.hidden = true;
+  try {
+    /* 서버가 참/거짓만 돌려줍니다. 비밀번호가 틀렸는지 코드가 없는지는
+       구분해 주지 않으므로 목록에 없는 코드를 캐낼 수 없습니다. */
+    if (!await store.remove(pendingCode, password)) {
+      dErr.textContent = '비밀번호가 일치하지 않습니다.';
+      dErr.hidden = false;
+      return;
+    }
+    rows = rows.filter(r => r.code !== pendingCode);
+    cards.get(pendingCode)?.remove();
+    cards.delete(pendingCode);
+    checked.delete(pendingCode);
+    saveChecked();
+    disarm();
+    render();
+    del.close();
+    toast('삭제되었습니다');
+  } catch (err) {
+    console.error(err);
+    dErr.textContent = '삭제에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+    dErr.hidden = false;
+  } finally {
+    btn.disabled = false;
   }
 });
 

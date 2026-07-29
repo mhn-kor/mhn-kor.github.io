@@ -166,7 +166,8 @@
   <div class="hero tight">
     <span class="kicker">친구 코드</span>
     <h1>QR을 스캔하거나 <em>앱에서 등록</em>을 누르세요</h1>
-    <p>등록을 마친 코드는 체크해 두면 목록에서 사라집니다. 체크 정보는 이 기기에만 저장됩니다.</p>
+    <p>등록을 마친 코드는 체크해 두면 목록에서 사라집니다. 체크 정보는 이 기기에만 저장됩니다.<br>
+       내 코드를 지우려면 카드를 <b>길게 누르거나 우클릭</b>한 뒤 삭제 버튼을 누르세요.</p>
   </div>
 
   <div class="toolbar">
@@ -209,6 +210,11 @@
       <span>친구 코드 <i>숫자 12자리</i></span>
       <input id="f-code" type="text" inputmode="numeric" placeholder="0000 0000 0000" autocomplete="off" required>
     </label>
+    <label class="f">
+      <span>삭제용 비밀번호 <i>4자 이상</i></span>
+      <input id="f-pw" type="password" maxlength="40" autocomplete="new-password" required>
+      <small>나중에 내 코드를 지울 때 필요합니다. 분실 시 복구할 수 없습니다.</small>
+    </label>
     <div class="preview">
       <img id="f-qr" alt="" width="180" height="180">
       <p id="f-hint">길드카드의 <b>내 친구 코드</b> 12자리를 입력하면 QR이 만들어집니다.</p>
@@ -217,6 +223,23 @@
     <menu>
       <button type="button" class="btn ghost" id="reg-cancel">취소</button>
       <button type="submit" class="btn primary" id="reg-submit">등록하기</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- 삭제 -->
+<dialog id="del">
+  <form id="del-form" novalidate>
+    <h2>친구 코드 삭제</h2>
+    <p class="del-what">등록할 때 정한 비밀번호를 입력하세요.<br><b id="d-code"></b></p>
+    <label class="f">
+      <span>비밀번호</span>
+      <input id="d-pw" type="password" maxlength="40" autocomplete="off" required>
+    </label>
+    <p class="err" id="d-err" hidden></p>
+    <menu>
+      <button type="button" class="btn ghost" id="del-cancel">취소</button>
+      <button type="submit" class="btn danger" id="del-submit">삭제하기</button>
     </menu>
   </form>
 </dialog>

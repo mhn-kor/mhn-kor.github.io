@@ -25,10 +25,10 @@ QR 모듈 수가 URL 길이에 따라 달라지므로, `qrURL()` 이 표시 크�
 ## 1. Supabase (무료 플랜)
 
 [`supabase/schema.sql`](supabase/schema.sql) 을 열어 통째로 복사한 뒤,
-대시보드 → **SQL Editor** 에 붙여넣고 **Run**. 여러 번 실행해도 안전합니다.
+대시보드 → **SQL Editor** 에 붙여넣고 **Run**. 여러 번 실행해도 안전하고,
+이미 데이터가 있는 테이블에 다시 실행해도 됩니다. **스키마를 고칠 때마다 다시 실행하세요.**
 
-테이블 + 인덱스 + RLS 활성화 + 정책 2개 + grant 가 한 덩어리로 들어 있습니다.
-마지막 `select count(*)` 가 **0** 을 반환하면 성공입니다.
+테이블 + 인덱스 + RLS + 컬럼 권한 + 등록/삭제 함수가 한 덩어리로 들어 있습니다.
 
 검증은 DB의 `check` 제약이 최종 방어선입니다. 브라우저 검사는 우회할 수 있으니 위 제약을 지우지 마세요.
 
@@ -76,6 +76,39 @@ publishable(구 `anon`) 키는 **공개를 전제로 설계된 키**입니다. S
 - 목록은 최신 300개만 불러옵니다 (`app.js`의 `LIMIT`).
 - QR은 화면에 들어올 때 만듭니다. 한 장에 ~9ms라 전부 미리 만들면 3초가 멈춥니다.
 - 공지의 인증 예시 이미지는 440px로 줄여 넣었습니다 (4.5MB → 353KB).
+
+## 삭제 비밀번호
+
+등록할 때 받은 비밀번호로 본인 코드를 지울 수 있습니다.
+카드를 **길게 누르거나(550ms) 우클릭** → 삭제 버튼 → 비밀번호 입력.
+
+검증은 전부 DB 안에서 일어납니다. 브라우저에서 비교하면 anon 키로 REST `DELETE` 를
+직접 부르는 것만으로 뚫리기 때문입니다.
+
+| 경로 | anon 권한 |
+|---|---|
+| `select nickname, code, created_at` | 허용 |
+| `select pw_hash` 또는 `select *` | **거부** (컬럼 권한 없음) |
+| 직접 `insert` / `update` / `delete` | **거부** (테이블 권한 없음) |
+| `rpc/add_friend_code` | 허용 — 비밀번호는 DB 안에서 bcrypt 해싱 |
+| `rpc/delete_friend_code` | 허용 — 비밀번호 일치 시에만 삭제 |
+
+- 비밀번호는 **평문으로 저장되지 않습니다.** `crypt(pw, gen_salt('bf', 8))` — 행마다 salt 가 달라 같은 비밀번호도 해시가 다릅니다.
+- 삭제 함수는 **참/거짓만** 돌려줍니다. 비밀번호가 틀렸는지 코드가 없는지 구분해 주지 않아 목록에 없는 코드를 캐낼 수 없습니다.
+- `app.js` 의 목록 조회를 `select=*` 로 바꾸면 `pw_hash` 권한이 없어 **전체 조회가 통째로 거부됩니다.** 컬럼을 명시해야 합니다.
+- 비밀번호 기능 도입 전에 등록된 행은 `pw_hash` 가 비어 있어 **사이트에서 지울 수 없습니다.** 대시보드에서 직접 지우세요.
+- 무차별 대입은 bcrypt cost 8(시도당 수십 ms)이 늦춰줄 뿐입니다. 짧은 숫자 비밀번호는 결국 뚫립니다 — 최소 길이를 늘리려면 `schema.sql` 의 `char_length(p_password) < 4` 와 `app.js` 의 `PW_MIN` 을 함께 고치세요.
+
+### 스키마 테스트
+
+보안 경로라 실제 Postgres 로 검증했습니다. Docker 가 있으면 재현 가능합니다.
+
+```bash
+docker run -d --name mhnpg -e POSTGRES_PASSWORD=pw postgres:16-alpine
+docker exec mhnpg psql -U postgres -c "create schema extensions; create role anon nologin;
+  grant usage on schema public, extensions to anon;"
+docker cp supabase/schema.sql mhnpg:/tmp/ && docker exec mhnpg psql -U postgres -f /tmp/schema.sql
+```
 
 ## 실제로 신경 써야 할 것: 무제한 insert
 
