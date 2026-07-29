@@ -71,8 +71,10 @@ const store = LIVE ? {
       body: JSON.stringify({ p_nickname: nickname, p_code: code, p_password: password }),
     });
     if (!r.ok) {
-      const t = await r.text();
-      throw new Error(t.includes('23505') ? 'DUP' : t);   // unique_violation
+      /* SQLSTATE 를 정확히 봅니다. 본문 전체를 문자열로 훑으면 details 안에 실린
+         입력값 때문에 오판합니다 (예: 코드 123505123456 의 제약 위반이 중복으로 보임). */
+      const e = await r.json().catch(() => ({}));
+      throw new Error(e.code === '23505' ? 'DUP' : (e.message || `HTTP ${r.status}`));
     }
     return { nickname, code, created_at: new Date().toISOString() };
   },
@@ -163,6 +165,12 @@ function render() {
   const grid = $('#grid');
   const filter = $('#filter').value;
   let shown = 0, prev = null;
+
+  // 새로고침으로 사라진 코드(남이 지운 것)의 카드를 걷어냅니다.
+  const live = new Set(rows.map(r => r.code));
+  for (const [code, el] of cards) {
+    if (!live.has(code)) { el.remove(); cards.delete(code); }
+  }
 
   for (const row of rows) {
     let el = cards.get(row.code);
@@ -365,6 +373,34 @@ $('#del-form').addEventListener('submit', async e => {
   }
 });
 
+/* ── 목록 새로고침 ─────────────────────────────────────────────── */
+const valid = r => isCode(r.code) && typeof r.nickname === 'string' && r.nickname.trim();
+let refreshing = null;
+
+/* 친구 코드 탭에 들어올 때마다 다시 불러옵니다. 페이지를 열어둔 사이에
+   남이 등록한 코드가 보이도록. 동시 호출은 하나로 합칩니다. */
+function refresh() {
+  if (refreshing) return refreshing;
+  refreshing = store.list()
+    .then(list => {
+      const fresh = list.filter(valid);
+      const before = new Set(rows.map(r => r.code));
+      rows = fresh;
+      render();
+      const added = fresh.filter(r => !before.has(r.code)).length;
+      if (added && before.size) toast(`새 친구 코드 ${added}개`);
+    })
+    .catch(err => {
+      console.error(err);
+      // 이미 목록이 있으면 통신 실패로 화면을 날리지 않습니다.
+      if (rows.length) return toast('새로고침에 실패했습니다');
+      $('#state').hidden = false;
+      $('#state').textContent = '목록을 불러오지 못했습니다. 새로고침해 주세요.';
+    })
+    .finally(() => { refreshing = null; });
+  return refreshing;
+}
+
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {
   const tab = location.hash === '#codes' ? 'codes' : 'notice';
@@ -373,21 +409,14 @@ function showTab() {
   for (const a of document.querySelectorAll('.tabs a')) {
     a.toggleAttribute('aria-current', a.dataset.tab === tab);
   }
+  if (tab === 'codes') refresh();
 }
 window.addEventListener('hashchange', () => { showTab(); window.scrollTo(0, 0); });
+// 이미 친구 코드 탭에 있을 때 탭을 다시 눌러도 새로고침되도록 (hashchange 가 안 뜸)
+document.querySelector('.tabs a[data-tab="codes"]').addEventListener('click', refresh);
 
 /* ── 시작 ──────────────────────────────────────────────────────── */
 showTab();
 $('#auto-check').checked = autoCheck;
 
-store.list()
-  .then(list => {
-    rows = list.filter(r => isCode(r.code) && typeof r.nickname === 'string' && r.nickname.trim());
-    render();
-    if (!LIVE) toast('체험 모드 — 이 브라우저에만 저장됩니다');
-  })
-  .catch(err => {
-    console.error(err);
-    $('#state').hidden = false;
-    $('#state').textContent = '목록을 불러오지 못했습니다. 새로고침해 주세요.';
-  });
+refresh().then(() => { if (!LIVE) toast('체험 모드 — 이 브라우저에만 저장됩니다'); });
