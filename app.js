@@ -6,8 +6,8 @@
 
    키는 publishable(sb_publishable_...) 또는 레거시 anon(eyJ...) 둘 다 됩니다.
    공개용 키이니 커밋해도 되지만, secret/service_role 키는 절대 넣지 마세요. */
-const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_KEY = 'YOUR-PUBLISHABLE-KEY';
+const SUPABASE_URL = 'https://frmpcahnrclrzfkaerbw.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Oo1GKjPpnWscgER4691eRg_0cydOhwI';
 
 const TABLE = 'friend_codes';
 const LIMIT = 300;          // 무료 플랜 배려: 최신 300개만 표시
