@@ -119,6 +119,7 @@ function toast(msg) {
 
 /* ── 카드 ──────────────────────────────────────────────────────── */
 const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M18 6l-1 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 6"/></svg>';
 
 /* QR 인코딩은 카드당 ~9ms. 300장을 한 번에 만들면 3초를 멈추므로 화면에 들어올 때 만듭니다. */
 const qrLazy = new IntersectionObserver((entries, obs) => {
@@ -142,6 +143,7 @@ function cardEl(row) {
     <p class="nick">${esc(row.nickname)}</p>
     <div class="code-row">
       <span class="num">${pretty(row.code)}</span>
+      <button class="icon danger" data-act="del" aria-label="친구 코드 삭제" title="삭제 (비밀번호 필요)">${TRASH_ICON}</button>
       <button class="icon" data-act="copy" aria-label="친구 코드 복사" title="복사">${COPY_ICON}</button>
     </div>
     <!-- mhnow:// 는 앱이 가로채는 커스텀 스킴입니다. target=_blank 를 쓰면

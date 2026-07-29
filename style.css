@@ -222,7 +222,9 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 .state[hidden] { display: none; }
 
 /* ── code cards ───────────────────────── */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 14px; }
+/* 하한 215px: 12자리 코드 + 아이콘 2개가 한 줄에 들어가는 최소 폭(실측 여유 약 17px).
+   폰트에 따라 글자 폭이 달라지므로 여유를 둡니다. 데스크톱은 그대로 5열입니다. */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 14px; }
 
 .card {
   position: relative;
@@ -271,19 +273,20 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
   margin: 11px 0 7px; font-weight: 700; font-size: .95rem; letter-spacing: -.02em;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.code-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.code-row { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
 .code-row .num {
   flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: .84rem; letter-spacing: .01em; color: var(--amber-hi);
+  font-size: .8rem; letter-spacing: 0; color: var(--amber-hi);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .icon {
-  flex: none; width: 30px; height: 30px; display: grid; place-items: center;
+  flex: none; width: 28px; height: 28px; display: grid; place-items: center;
   background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px;
   color: var(--muted); cursor: pointer; padding: 0;
 }
 .icon:hover { color: var(--amber-hi); border-color: rgba(233,161,59,.4); }
 .icon svg { width: 15px; height: 15px; }
+.icon.danger:hover { color: var(--red); border-color: rgba(228,112,94,.55); }
 
 .card .open { width: 100%; margin-bottom: 9px; }
 .card time { font-size: .74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
