@@ -20,26 +20,11 @@ https://monsterhunternow.com/?dl=mhnow:///ADDFRIEND?FRIEND_ID=<12자리>&c=Magel
 
 ## 1. Supabase (무료 플랜)
 
-SQL Editor에 그대로 붙여넣으세요.
+[`supabase/schema.sql`](supabase/schema.sql) 을 열어 통째로 복사한 뒤,
+대시보드 → **SQL Editor** 에 붙여넣고 **Run**. 여러 번 실행해도 안전합니다.
 
-```sql
-create table public.friend_codes (
-  id         bigint generated always as identity primary key,
-  nickname   text        not null check (char_length(btrim(nickname)) between 1 and 20),
-  code       text        not null unique check (code ~ '^[0-9]{12}$'),
-  created_at timestamptz not null default now()
-);
-
-create index on public.friend_codes (created_at desc);
-
-alter table public.friend_codes enable row level security;
-
--- 누구나 읽고 추가할 수 있게. 수정/삭제는 대시보드에서만 (정책 없음 = 거부).
-create policy "public read"   on public.friend_codes for select to anon using (true);
-create policy "public insert" on public.friend_codes for insert to anon with check (true);
-
-grant select, insert on public.friend_codes to anon;
-```
+테이블 + 인덱스 + RLS 활성화 + 정책 2개 + grant 가 한 덩어리로 들어 있습니다.
+마지막 `select count(*)` 가 **0** 을 반환하면 성공입니다.
 
 검증은 DB의 `check` 제약이 최종 방어선입니다. 브라우저 검사는 우회할 수 있으니 위 제약을 지우지 마세요.
 
