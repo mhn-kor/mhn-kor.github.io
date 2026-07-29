@@ -77,6 +77,14 @@ GitHub Pages 는 파일마다 `Cache-Control: max-age=600` 을 붙여 **각각 �
 <script src="app.js?v=20260729"></script>
 ```
 
+### 터치 기기 입력칸은 16px 이상이어야 합니다
+
+iOS 는 글자 16px **미만**인 입력칸에 포커스하면 페이지를 자동 확대하고, 그 결과 가로 스크롤이
+생깁니다. `@media (pointer: coarse)` 로 입력칸·셀렉트를 16px 로 올려 막았습니다.
+데스크톱은 그대로 작은 글자를 씁니다. 폭이 아니라 **터치 여부**로 걸어야 아이패드도 잡힙니다.
+
+`viewport` 에 `user-scalable=no` 를 넣어도 막히지만, 손가락 확대까지 막혀 접근성을 해칩니다.
+
 ### 인라인 SVG 에는 width/height 를 꼭 붙이세요
 
 `viewBox` 만 있는 SVG 는 고유 크기가 없어서, CSS 가 늦거나 캐시로 어긋나면 기본 크기(최대

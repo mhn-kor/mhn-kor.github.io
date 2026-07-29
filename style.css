@@ -343,7 +343,12 @@ dialog {
   background: var(--surface); border: 1px solid var(--line); clip-path: var(--bevel);
 }
 dialog::backdrop { background: rgba(8,7,6,.72); backdrop-filter: blur(3px); }
-dialog form { padding: 24px; display: grid; gap: 15px; }
+/* minmax(0,1fr): 기본 auto 열은 min-content 아래로 못 줄어듭니다. input 의 기본 폭(약 20자)
+   때문에 열이 창보다 넓어져 좁은 화면에서 다이얼로그 오른쪽이 잘렸습니다. */
+dialog form { padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 15px; }
+dialog form > * { min-width: 0; }
+.f input { min-width: 0; }
+.preview p { min-width: 0; }
 dialog h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
 .f { display: grid; gap: 6px; }
 .f > span { font-size: .84rem; font-weight: 600; color: var(--muted); }
@@ -403,6 +408,14 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   .search { margin-left: 0; width: 100%; }
   .search input { width: 100%; }
   .panel { padding: 28px 0 56px; }
+}
+
+/* iOS 는 글자 16px 미만인 입력칸에 포커스하면 페이지를 자동으로 확대합니다.
+   그 결과 화면이 넘쳐 가로 스크롤이 생기고, 포커스를 풀어도 원래 배율로 돌아오지 않습니다.
+   viewport 에 user-scalable=no 를 넣어도 막히지만 손가락 확대까지 막혀 접근성을 해칩니다.
+   폭이 아니라 터치 기기 기준으로 걸어야 합니다 — 아이패드(768px)도 똑같이 확대됩니다. */
+@media (pointer: coarse) {
+  .f input, .search input, .field select { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
