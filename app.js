@@ -2,9 +2,12 @@
 
 /* ── 설정 ──────────────────────────────────────────────────────────
    Supabase 프로젝트를 만든 뒤 아래 두 값을 채워주세요 (README.md 참고).
-   그대로 두면 이 브라우저에만 저장되는 "체험 모드"로 동작합니다.        */
+   그대로 두면 이 브라우저에만 저장되는 "체험 모드"로 동작합니다.
+
+   키는 publishable(sb_publishable_...) 또는 레거시 anon(eyJ...) 둘 다 됩니다.
+   공개용 키이니 커밋해도 되지만, secret/service_role 키는 절대 넣지 마세요. */
 const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+const SUPABASE_KEY = 'YOUR-PUBLISHABLE-KEY';
 
 const TABLE = 'friend_codes';
 const LIMIT = 300;          // 무료 플랜 배려: 최신 300개만 표시
@@ -27,14 +30,16 @@ const when = t => new Date(t).toLocaleString('ko-KR', { dateStyle: 'short', time
 const qrURL = (text, cell) => { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createDataURL(cell, cell * 4); };
 
 /* ── 저장소 ────────────────────────────────────────────────────── */
-const LIVE = !SUPABASE_URL.includes('YOUR-') && !SUPABASE_ANON_KEY.includes('YOUR-');
+const LIVE = !SUPABASE_URL.includes('YOUR-') && !SUPABASE_KEY.includes('YOUR-');
 const LOCAL_KEY = 'mhnkr.rows';
 
 const rest = (path, opts = {}) => fetch(SUPABASE_URL + '/rest/v1/' + path, {
   ...opts,
   headers: {
-    apikey: SUPABASE_ANON_KEY,
-    Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
+    apikey: SUPABASE_KEY,
+    /* Authorization 은 레거시 anon 키(JWT)일 때만 붙입니다.
+       신규 publishable 키를 Bearer 로 보내면 JWT 파싱에 실패해 요청이 거부됩니다. */
+    ...(SUPABASE_KEY.startsWith('eyJ') ? { Authorization: 'Bearer ' + SUPABASE_KEY } : null),
     'Content-Type': 'application/json',
     ...opts.headers,
   },

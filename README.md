@@ -5,7 +5,7 @@
 ```
 index.html   공지 / 친구 코드 두 탭
 style.css
-app.js       ← Supabase 설정은 이 파일 맨 위 2줄
+app.js       ← Supabase URL + publishable 키, 이 파일 맨 위 2줄
 favicon.svg  로고 겸 파비콘
 vendor/      qrcode-generator (MIT)
 assets/      공지용 인증 예시 이미지
@@ -43,21 +43,34 @@ grant select, insert on public.friend_codes to anon;
 
 검증은 DB의 `check` 제약이 최종 방어선입니다. 브라우저 검사는 우회할 수 있으니 위 제약을 지우지 마세요.
 
-그다음 **Project Settings → API** 에서 값을 복사해 `app.js` 맨 위를 채웁니다.
+그다음 **Project Settings → API Keys** 에서 **Publishable key** (`sb_publishable_...`)를 복사해 `app.js` 맨 위를 채웁니다.
 
 ```js
 const SUPABASE_URL = 'https://xxxxxxxx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOi...';
+const SUPABASE_KEY = 'sb_publishable_...';
 ```
+
+### publishable 키 vs 레거시 anon 키
+
+새 프로젝트라면 **publishable 키를 쓰세요.** 레거시 `anon` 키(`eyJ...` JWT)도 아직 동작하지만 **2026년 말 지원 종료** 예정입니다. 둘은 동시에 사용 가능해서 나중에 갈아끼워도 됩니다.
+
+호출 방식이 다르다는 점이 중요합니다. `app.js`의 `rest()`가 이걸 자동으로 처리합니다.
+
+| 키 | 보내는 헤더 |
+|---|---|
+| `sb_publishable_...` | `apikey` **만** |
+| 레거시 `anon` (`eyJ...`) | `apikey` + `Authorization: Bearer` |
+
+publishable 키를 `Authorization: Bearer` 로 보내면 JWT로 파싱하려다 실패해 요청이 거부됩니다. 그래서 키가 `eyJ`로 시작할 때만 `Authorization`을 붙입니다 — 어느 쪽을 넣어도 그대로 동작합니다.
 
 ### 이 키를 공개 저장소에 커밋해도 되나요? — 네
 
-`anon`(= publishable) 키는 **공개를 전제로 설계된 키**입니다. Supabase 문서 표현으로는 "비밀을 지킬 수 없는 환경에서 동작하는 공개 구성요소를 식별하는 값"입니다.
+publishable(구 `anon`) 키는 **공개를 전제로 설계된 키**입니다. Supabase 문서 표현으로는 "비밀을 지킬 수 없는 환경에서 동작하는 공개 구성요소를 식별하는 값"입니다.
 이 키는 *어떤 앱이* 접속하는지만 알려주고, *어떤 데이터를 만질 수 있는지*는 전적으로 **RLS 정책**이 결정합니다. 위에서 RLS를 켜고 정책을 select/insert로만 제한한 게 진짜 방어선입니다.
 
 **GitHub Actions로 빌드해서 주입해도 보안은 나아지지 않습니다.** 어떤 방식으로 넣든 그 키는 브라우저가 내려받는 JS에 그대로 들어가고, 개발자도구에서 바로 보입니다. Actions는 "커밋 없이 키를 교체하고 싶다"는 운영 편의 용도일 뿐 보안 조치가 아닙니다.
 
-> **절대 넣지 말아야 할 것: `service_role`(= secret) 키.**
+> **절대 넣지 말아야 할 것: `sb_secret_...` (= 구 `service_role`) 키.**
 > 이건 RLS를 통째로 우회합니다. 브라우저·저장소·Actions 산출물 어디에도 들어가면 안 됩니다.
 > Supabase 데이터 유출의 대부분은 키 노출이 아니라 RLS 미설정/오설정에서 나옵니다.
 
