@@ -365,6 +365,19 @@ function setChecked(code, on) {
 }
 
 /* ── 이벤트 ────────────────────────────────────────────────────── */
+/* 이미지를 끌면 반투명 유령 이미지가 따라옵니다. QR·아이콘을 살짝 밀기만 해도 튀어나와
+   길게 누르기나 스크롤을 방해하므로 전부 막습니다. CSS 의 -webkit-user-drag 는
+   파이어폭스에서 안 먹고, 이 한 줄이면 새로 그려지는 이미지까지 같이 걸립니다. */
+document.addEventListener('dragstart', e => { if (e.target.tagName === 'IMG') e.preventDefault(); });
+
+/* 좁은 화면의 햄버거 메뉴. 토글을 누르면 열고 닫고, 그 밖의 어디를 눌러도 닫힙니다 —
+   탭을 고른 뒤 저절로 닫히는 동작과 바깥 클릭 닫기가 이 한 줄로 같이 처리됩니다. */
+document.addEventListener('click', e => {
+  const open = !!e.target.closest('#nav-toggle') && !document.body.classList.contains('nav-open');
+  document.body.classList.toggle('nav-open', open);
+  $('#nav-toggle').setAttribute('aria-expanded', open);
+});
+
 /* 길게 누르기 / 우클릭 → 삭제 버튼 노출 ─────────────────────────── */
 const disarm = () => document.querySelectorAll('.card.armed').forEach(c => c.classList.remove('armed'));
 function arm(card) { disarm(); card.classList.add('armed'); }
@@ -698,11 +711,14 @@ monDlg.addEventListener('click', e => { if (e.target === monDlg) monDlg.close();
 
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {
-  const tab = location.hash === '#codes' ? 'codes' : location.hash === '#smelt' ? 'smelt' : 'notice';
-  $('#panel-notice').hidden = tab !== 'notice';
-  $('#panel-codes').hidden = tab !== 'codes';
-  $('#panel-smelt').hidden = tab !== 'smelt';
+  const h = location.hash.slice(1);
+  const tab = ['codes', 'smelt', 'build', 'material'].includes(h) ? h : 'notice';
+  for (const t of ['notice', 'codes', 'smelt', 'build', 'material']) $('#panel-' + t).hidden = tab !== t;
   if (tab === 'smelt') drawSmelt();
+  // build.js 는 app.js 의 $ / esc / toast 를 쓰므로 뒤에 로드됩니다.
+  // 첫 호출 시점에는 아직 없을 수 있어 확인 후 부릅니다(로드 직후 스스로 한 번 그립니다).
+  if (tab === 'build' && typeof drawBuild === 'function') drawBuild();
+  if (tab === 'material') drawMaterial();
   for (const a of document.querySelectorAll('.tabs a')) {
     a.toggleAttribute('aria-current', a.dataset.tab === tab);
   }

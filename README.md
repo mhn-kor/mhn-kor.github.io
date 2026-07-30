@@ -6,6 +6,8 @@
 index.html   공지 / 친구 코드 두 탭
 style.css
 app.js       ← Supabase URL + publishable 키, 이 파일 맨 위 2줄
+material.js       재료 탭 계산·화면
+material-data.js  재료 탭 데이터 (몬스터 · 레시피 · 한국어 이름)
 favicon.svg  로고 겸 파비콘
 vendor/      qrcode-generator (MIT)
 assets/      공지용 인증 예시 이미지
@@ -133,6 +135,54 @@ docker compose down -v    # DB 까지 삭제
 
 저장소에 push → **Settings → Pages → Source: Deploy from a branch → main / (root)**.
 빌드 단계가 없으니 몇 초 뒤 바로 열립니다.
+
+## 재료 탭
+
+몬스터 · 무기/방어구 · 현재 등급 → 목표 등급을 고르면 그 구간의 강화 재료와 제니를 합산합니다.
+데이터는 [mhnow.me/material](https://mhnow.me/material?lang=ko) 의 공개 데이터에서 뽑아 `material-data.js` 에 넣었습니다.
+
+```
+material-data.js   monsters(67) · catalog · recipes · names(한국어) · parts · biomes
+material.js        matTotals() 계산 + 화면 그리기
+assets/material/   재료 아이콘 147개 (제니 동전 포함, 64px 로 줄였습니다. 원본은 200px·30KB → 4MB)
+assets/monster/    고룡 8종 아이콘 추가 (표류연성 탭이 쓰던 59개는 그대로 재사용)
+assets/biome/      출현 구역 아이콘 4개 (삼림 · 사막 · 늪지 · 설원)
+tools/build-materialdata.js   위 셋을 다시 만드는 스크립트
+tools/material-test.js        계산 회귀 테스트
+```
+
+출처가 둘입니다. **재료·레시피·이름은 mhnow.me**, **출현 구역은 [mhn.quest](https://mhn.quest)** 입니다
+(mhnow.me 에는 구역 정보가 없습니다). mhn.quest 의 몬스터 키가 표류연성 탭 아이콘 키와 같아서 그대로 이어지고,
+고룡만 `QUEST_KEY` 로 짝지어 줍니다. 같은 자리에 약점 속성(`weakness`)도 들어 있으니 필터를 늘릴 때 쓰면 됩니다.
+
+### 계산 규칙 — 여기만 이해하면 됩니다
+
+- 강화 단계는 `제작 전(0_0)` → `G1-1` … `G10-5` 로 51칸입니다. **현재 등급 다음 칸부터 목표 등급까지** 더합니다.
+- 현재 등급이 그 몬스터의 **제작 등급보다 낮으면 제작 비용을 넣고**, 제작 등급 다음 칸부터 이어 더합니다.
+  (안쟈나프는 G4 부터라 G1~G3 버튼이 잠깁니다.)
+- 레시피의 칸 이름(`r1_1`, `r3_2` …)은 몬스터의 `commons` 로 실제 재료가 됩니다. 몬스터가 그 칸을 안 가지면
+  `catalog` 의 `fb`(뾰족한 발톱 · 제련 소재 · 용옥 조각)로 대체됩니다.
+- 몬스터 전용 소재는 `exclusive[i]` 의 순서가 곧 희귀도(R1~R6)입니다. R1 과 무기/방어구가 갈리는 칸만
+  `_w` / `_a` 로 나뉩니다.
+- 예외 규칙은 `craft` → 그룹(`rare` · `sub` · `elder`) → 몬스터 id 순으로 덮어씁니다.
+  희소종과 고룡은 제니가 수십 배 비쌉니다.
+
+### 게임이 패치돼서 몬스터가 늘었다면
+
+```bash
+node tools/build-materialdata.js     # material-data.js + 새 아이콘만 받아옵니다
+node tools/material-test.js          # 계산이 안 깨졌는지 확인 (필수)
+```
+
+빌드 스크립트는 mhnow.me 의 스크립트를 **브라우저 흉내를 낸 node 샌드박스에서 실행해** 데이터를 꺼냅니다.
+난독화되어 있지만 데이터는 그냥 상수라 그대로 나옵니다. 이미 있는 아이콘 파일은 건너뛰니 여러 번 돌려도 안전합니다.
+새 몬스터의 아이콘이 저장소에 없으면 `NAME_FIX` / `FETCH_MONSTER` 를 채우라고 알려줍니다.
+
+테스트는 원본 사이트가 같은 조건에서 내놓은 표본 14건(제작부터 만렙 / 아종·희소종·고룡 / 한 단계만)과
+대조하고, 재료 이름과 아이콘 파일이 빠지지 않았는지도 함께 봅니다. 의존성 없이 node 만으로 돕니다.
+
+> 제니 값은 원본 사이트의 데이터를 그대로 씁니다. 일반 몬스터는 강등급이 올라가는 칸(G5-1, G6-1 …)에만
+> 제니가 붙어 있고 소단계는 0 입니다. 희소종·고룡은 칸마다 붙어 있어 총액이 수십 배입니다.
 
 ## 알아두면 좋은 것
 
