@@ -15,7 +15,7 @@
 <!-- GitHub Pages 는 파일마다 max-age=600 으로 따로 캐시합니다. 새 index.html 과 옛 style.css 가
      10분간 섞일 수 있으므로 버전을 붙여 강제로 새로 받게 합니다.
      style.css / app.js 를 고칠 때마다 아래 두 곳의 v= 값을 같이 올려주세요. -->
-<link rel="stylesheet" href="style.css?v=20260730">
+<link rel="stylesheet" href="style.css?v=20260730d">
 </head>
 <body>
 
@@ -48,6 +48,7 @@
   <nav class="wrap tabs" aria-label="섹션">
     <a href="#notice" data-tab="notice">공지사항</a>
     <a href="#codes" data-tab="codes">친구 코드</a>
+    <a href="#smelt" data-tab="smelt">표류연성</a>
   </nav>
 </header>
 
@@ -209,6 +210,24 @@
   <button class="more" id="more" hidden></button>
 </section>
 
+<!-- ───────────────────────── 표류연성 ───────────────────────── -->
+<section class="wrap panel" id="panel-smelt" hidden>
+
+  <div class="hero tight">
+    <span class="kicker">표류연성</span>
+    <h1>표류석별 <em>스킬 확률</em>과 드롭 몬스터</h1>
+    <p>스킬 이름을 누르면 효과 설명이 펼쳐집니다. ★ 표시는 해당 색 표류석에서만 나오는 특수 스킬입니다.<br>
+       제목 옆 <b>몬스터</b> 버튼을 누르면 그 표류석을 주는 몬스터를 이름과 함께 볼 수 있습니다.</p>
+  </div>
+
+  <h2 class="sec">색상 표류석</h2>
+  <div class="stones" id="stones-color"></div>
+
+  <h2 class="sec">수수께끼의 표류석</h2>
+  <div class="stones" id="stones-mystery"></div>
+
+</section>
+
 </main>
 
 <footer class="wrap foot">
@@ -262,9 +281,19 @@
   </form>
 </dialog>
 
+<!-- 드롭 몬스터 목록 -->
+<dialog id="mon">
+  <h2 id="mon-title"></h2>
+  <ul id="mon-list"></ul>
+  <menu>
+    <button type="button" class="btn ghost" id="mon-close">닫기</button>
+  </menu>
+</dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="smelt-data.js?v=20260730d"></script>
 <script src="vendor/qrcode.min.js"></script>
-<script src="app.js?v=20260730"></script>
+<script src="app.js?v=20260730d"></script>
 </body>
 </html>

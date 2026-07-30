@@ -337,6 +337,111 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 }
 .card.done:hover { opacity: 1; }
 
+/* ── 표류연성 ─────────────────────────── */
+.stones { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; align-items: start; }
+
+.stone {
+  background: var(--surface); border: 1px solid var(--line);
+  border-top: 2px solid var(--c); clip-path: var(--bevel); padding: 16px 18px 18px;
+}
+.stone h3 {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 12px; font-size: 1.05rem; letter-spacing: -.02em;
+}
+.stone h3 .sicon {
+  width: 26px; height: 26px; flex: none;
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--c) 55%, transparent));
+}
+.stone h3 i { font-style: normal; font-size: .7rem; font-weight: 500; color: var(--muted); letter-spacing: .04em; }
+.stone h3 .monbtn {
+  margin-left: auto; flex: none;
+  font: inherit; font-size: .72rem; font-weight: 700;
+  padding: 4px 10px; cursor: pointer;
+  color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+  border-radius: 999px;
+}
+.stone h3 .monbtn:hover { background: color-mix(in srgb, var(--c) 26%, transparent); }
+
+/* 드롭 몬스터 모달 */
+#mon { width: min(100% - 28px, 470px); max-height: min(84vh, 720px); }
+#mon h2 {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  margin: 0; padding: 18px 22px 14px; font-size: 1.05rem; letter-spacing: -.02em;
+  border-bottom: 1px solid var(--line);
+}
+#mon h2 img { width: 24px; height: 24px; flex: none; filter: drop-shadow(0 0 7px color-mix(in srgb, var(--c) 55%, transparent)); }
+#mon h2 i { font-style: normal; font-size: .74rem; font-weight: 500; color: var(--muted); margin-left: auto; }
+#mon-list {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px;
+  margin: 0; padding: 16px 22px; list-style: none;
+  overflow-y: auto; max-height: calc(min(84vh, 720px) - 150px);
+}
+#mon-list li {
+  display: flex; align-items: center; gap: 9px; min-width: 0;
+  padding: 6px 8px; background: rgba(255,255,255,.03); border-radius: 8px;
+}
+#mon-list img { width: 40px; height: 40px; flex: none; }
+#mon-list span { font-size: .86rem; line-height: 1.3; }
+#mon menu { padding: 0 22px 20px; }
+
+.stone-label {
+  display: flex; align-items: center; gap: 6px;
+  margin: 14px 0 7px; padding-bottom: 5px; border-bottom: 1px solid var(--line);
+  font-size: .74rem; font-weight: 700; color: var(--muted); letter-spacing: .06em;
+}
+.stone-label i { font-style: normal; font-weight: 500; opacity: .7; }
+.stone .sk + .stone-label { margin-top: 16px; }
+
+/* 스킬 한 줄 = details. 설명 펼치기를 브라우저에 맡깁니다. */
+.sk details { border-bottom: 1px solid rgba(255,255,255,.045); }
+.sk details:last-child { border-bottom: 0; }
+.sk summary {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 6px 0; cursor: pointer; list-style: none; font-size: .88rem;
+}
+.sk summary::-webkit-details-marker { display: none; }
+.sk summary:hover .n { color: var(--amber-hi); }
+.sk .star { width: 11px; flex: none; color: var(--amber); font-size: .72rem; }
+.sk .n { flex: 1; min-width: 0; }
+.sk .lvmax {
+  flex: none; font-size: .64rem; font-weight: 700; letter-spacing: .02em;
+  color: var(--muted); background: rgba(255,255,255,.06);
+  border-radius: 3px; padding: 1px 4px; align-self: center;
+}
+.sk .r { flex: none; font-size: .82rem; font-weight: 700; color: var(--jade); font-variant-numeric: tabular-nums; }
+.sk details[open] summary .n { color: var(--amber-hi); }
+.sk details.nodesc .n { opacity: .75; }
+
+/* 레벨별 효과 표 */
+.lv { margin: 0 0 10px 17px; border-left: 2px solid var(--c); background: rgba(255,255,255,.03); }
+.lv .one { margin: 0; padding: 9px 12px; font-size: .82rem; line-height: 1.6; color: var(--muted); }
+.lv table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+.lv thead th {
+  padding: 5px 10px; text-align: left; font-size: .68rem; font-weight: 700;
+  letter-spacing: .06em; color: var(--muted); background: rgba(255,255,255,.04);
+  border-bottom: 1px solid var(--line);
+}
+.lv thead th:first-child { width: 2.6em; text-align: center; }
+.lv td { padding: 6px 10px; line-height: 1.55; color: var(--muted); vertical-align: top; }
+.lv tbody tr + tr td { border-top: 1px solid rgba(255,255,255,.05); }
+.lv td:first-child {
+  text-align: center; font-weight: 700; color: var(--amber);
+  font-variant-numeric: tabular-nums;
+}
+/* 최대 레벨은 실전에서 가장 자주 보는 값이라 눈에 띄게 둡니다. */
+.lv tbody tr:last-child td { color: var(--bone); }
+.lv tbody tr:last-child td:first-child { color: var(--amber-hi); }
+
+.mons { display: flex; flex-wrap: wrap; gap: 5px; }
+.mons img {
+  width: 34px; height: 34px; border-radius: 7px;
+  background: rgba(255,255,255,.05); padding: 1px;
+  transition: transform .12s, background .12s;
+}
+.mons img:hover { transform: scale(1.18); background: rgba(233,161,59,.2); }
+
+
 /* ── dialog ───────────────────────────── */
 dialog {
   width: min(100% - 28px, 400px); padding: 0; color: var(--bone);

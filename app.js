@@ -627,11 +627,82 @@ $('#q').addEventListener('input', e => {
   qTimer = setTimeout(() => { if (q !== query) search(q); }, 300);
 });
 
+/* ── 표류연성 ──────────────────────────────────────────────────── */
+/* 데이터는 smelt-data.js 의 SMELT. 설명 펼치기는 <details> 로 처리해 JS 가 필요 없습니다. */
+let smeltDrawn = false;
+
+function drawSmelt() {
+  if (smeltDrawn || typeof SMELT === 'undefined') return;
+  smeltDrawn = true;
+
+  /* 레벨별 설명은 표로. 레벨이 하나뿐이면 표가 과해서 문장만 보여줍니다. */
+  const body = s => {
+    if (!s.levels) return '<p class="one">레벨별 정보를 확인하지 못했습니다.</p>';
+    if (s.levels.length === 1) return `<p class="one">${esc(s.levels[0][1])}</p>`;
+    return `<table><thead><tr><th>Lv</th><th>효과</th></tr></thead><tbody>${
+      s.levels.map(([lv, d]) => `<tr><td>${esc(lv)}</td><td>${esc(d)}</td></tr>`).join('')
+    }</tbody></table>`;
+  };
+
+  const card = g => `
+    <article class="stone" style="--c:${g.color}">
+      <h3>
+        <img class="sicon" src="assets/stone/${esc(g.icon)}.png" width="26" height="26" alt="" loading="lazy">
+        ${esc(g.group)}<i>${esc(g.en)}</i>
+        ${g.monsters.length ? `<button class="monbtn" data-mon="${esc(g.group)}">몬스터 ${g.monsters.length}</button>` : ''}
+      </h3>
+      <p class="stone-label">${esc(g.label)}</p>
+      <div class="sk">${g.skills.map(s => `
+        <details${s.levels ? '' : ' class="nodesc"'}>
+          <summary>
+            <span class="star">${s.star ? '★' : ''}</span>
+            <span class="n">${esc(s.name)}</span>
+            ${s.levels && s.levels.length > 1 ? `<span class="lvmax">Lv${s.levels.length}</span>` : ''}
+            <span class="r">${esc(s.rate)}</span>
+          </summary>
+          <div class="lv">${body(s)}</div>
+        </details>`).join('')}</div>
+      ${g.monsters.length ? `
+        <p class="stone-label">드롭 몬스터 <i>${g.monsters.length}</i></p>
+        <div class="mons">${g.monsters.map(m => `
+          <img src="assets/monster/${esc(m.key)}.png" width="34" height="34" loading="lazy"
+               alt="${esc(m.name)}" title="${esc(m.name)}">`).join('')}</div>` : ''}
+    </article>`;
+
+  $('#stones-color').innerHTML = SMELT.groups.filter(g => !g.mystery).map(card).join('');
+  $('#stones-mystery').innerHTML = SMELT.groups.filter(g => g.mystery).map(card).join('');
+}
+
+/* 드롭 몬스터 모달 — 아이콘만으로는 누가 누군지 몰라서 이름을 붙여 한눈에 보여줍니다. */
+const monDlg = $('#mon');
+
+$('#panel-smelt').addEventListener('click', e => {
+  const btn = e.target.closest('.monbtn');
+  if (!btn) return;
+  const g = SMELT.groups.find(x => x.group === btn.dataset.mon);
+  if (!g) return;
+  $('#mon-title').innerHTML =
+    `<img src="assets/stone/${esc(g.icon)}.png" width="24" height="24" alt="">`
+    + `표류석【${esc(g.group)}】<i>드롭 몬스터 ${g.monsters.length}</i>`;
+  $('#mon-list').innerHTML = g.monsters.map(m => `
+    <li>
+      <img src="assets/monster/${esc(m.key)}.png" width="40" height="40" alt="" loading="lazy">
+      <span>${esc(m.name)}</span>
+    </li>`).join('');
+  monDlg.style.setProperty('--c', g.color);
+  monDlg.showModal();
+});
+
+$('#mon-close').addEventListener('click', () => monDlg.close());
+monDlg.addEventListener('click', e => { if (e.target === monDlg) monDlg.close(); });
+
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {
-  const tab = location.hash === '#codes' ? 'codes' : 'notice';
+  const tab = location.hash === '#codes' ? 'codes' : location.hash === '#smelt' ? 'smelt' : 'notice';
   $('#panel-notice').hidden = tab !== 'notice';
   $('#panel-codes').hidden = tab !== 'codes';
+  $('#panel-smelt').hidden = tab !== 'smelt';
+  if (tab === 'smelt') drawSmelt();
   for (const a of document.querySelectorAll('.tabs a')) {
     a.toggleAttribute('aria-current', a.dataset.tab === tab);
   }
