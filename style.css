@@ -181,16 +181,6 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
   text-align: center; font-weight: 700; color: var(--red); letter-spacing: .02em;
 }
 
-/* 세로로 긴 폰 스크린샷이라 열 너비를 묶어둡니다. 안 그러면 공지가 사진으로 도배됩니다. */
-.examples { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 290px)); gap: 16px; margin-top: 18px; align-items: start; justify-content: start; }
-.ex { margin: 0; background: var(--surface); border: 1px solid var(--line); clip-path: var(--bevel); overflow: hidden; }
-.ex img { display: block; width: 100%; height: auto; }
-.ex figcaption { display: grid; gap: 2px; padding: 13px 16px 15px; font-size: .86rem; color: var(--muted); border-bottom: 1px solid var(--line); }
-.ex figcaption b { font-size: .95rem; }
-.ex.good { border-top: 2px solid var(--jade); }
-.ex.good figcaption b { color: var(--jade); }
-.ex.bad { border-top: 2px solid var(--red); }
-.ex.bad figcaption b { color: var(--red); }
 
 /* ── toolbar ──────────────────────────── */
 .toolbar {

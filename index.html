@@ -7,15 +7,24 @@
 <meta name="description" content="몬스터헌터 나우 한국지부 공지사항과 친구 코드 QR 공유소. 친구 코드를 등록하면 QR이 자동으로 만들어집니다.">
 <meta name="theme-color" content="#100E0C">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<!-- 카카오톡·트위터·디스코드 링크 미리보기. og:image 는 반드시 절대 URL 이어야 하고,
+     크롤러가 캐시하므로 이미지를 바꿀 때는 파일명을 함께 바꿔야 즉시 반영됩니다. -->
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://mhn-kor.github.io/qr/">
+<meta property="og:site_name" content="몬스터헌터 나우 한국지부">
 <meta property="og:title" content="몬스터헌터 나우 한국지부">
-<meta property="og:description" content="공지사항과 친구 코드 QR 공유소">
+<meta property="og:description" content="공지사항 · 친구 코드 QR · 표류연성 정보">
+<meta property="og:image" content="https://mhn-kor.github.io/qr/assets/og.jpg?v=20260730">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="사막에서 번개를 두른 몬스터와 마주 선 헌터">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <!-- GitHub Pages 는 파일마다 max-age=600 으로 따로 캐시합니다. 새 index.html 과 옛 style.css 가
      10분간 섞일 수 있으므로 버전을 붙여 강제로 새로 받게 합니다.
      style.css / app.js 를 고칠 때마다 아래 두 곳의 v= 값을 같이 올려주세요. -->
-<link rel="stylesheet" href="style.css?v=20260730d">
+<link rel="stylesheet" href="style.css?v=20260730e">
 </head>
 <body>
 
@@ -114,16 +123,6 @@
     </ul>
   </div>
 
-  <div class="examples">
-    <figure class="ex good">
-      <figcaption><b>잘된 예시</b>화면 전체를 그대로 캡처했습니다.</figcaption>
-      <img src="assets/verify-good.png" alt="상태바까지 포함된 전체 화면 길드카드 스크린샷" loading="lazy" width="440" height="957">
-    </figure>
-    <figure class="ex bad">
-      <figcaption><b>잘못된 예시</b>필요한 부분만 잘라냈습니다. 부정행위로 의심받을 수 있습니다.</figcaption>
-      <img src="assets/verify-bad.png" alt="카드 부분만 잘라낸 길드카드 스크린샷" loading="lazy" width="440" height="710">
-    </figure>
-  </div>
 
   <h2 class="sec">즉시 강퇴 대상</h2>
   <div class="card-box">
@@ -292,8 +291,8 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 
-<script src="smelt-data.js?v=20260730d"></script>
+<script src="smelt-data.js?v=20260730e"></script>
 <script src="vendor/qrcode.min.js"></script>
-<script src="app.js?v=20260730d"></script>
+<script src="app.js?v=20260730e"></script>
 </body>
 </html>
