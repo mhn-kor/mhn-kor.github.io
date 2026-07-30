@@ -119,6 +119,10 @@ const BD_OG = (document.querySelector('meta[property="og:image"]') || {}).conten
 const BD_BASE = (((document.querySelector('meta[property="og:url"]') || {}).content) || '/').replace(/\/?$/, '/');
 const bdMonURL = key => BD_BASE + bdIcon(key);
 const bdShareAbs = bi => `${BD_BASE}?build=${bdShareParam(bi)}#build`;
+/* 카카오 카드는 한 줄에 들어가는 글자 수가 빡빡해서 공백을 전부 뺍니다.
+   스킬명 안의 공백과 레벨 앞 공백까지 포함합니다(마비 내성 3 → 마비내성3).
+   URL·이미지 인자에는 쓰지 않습니다. */
+const bdTight = v => String(v).replace(/[\s\u3000]+/g, '');
 
 /* 콘솔에 등록한 리스트형 사용자 템플릿에 넘길 인자. 방어구 5부위를 한 줄씩 씁니다.
    줄마다 그 부위의 스킬과 표류석 스킬만 적고, 이미지는 그 방어구의 재료 몬스터입니다.
@@ -127,7 +131,7 @@ function bdKakaoArgs(bi) {
   const b = bdState.builds[bi];
   const w = bdWeaponOf(b);
   const args = {
-    HEADER: [bdShareText(b).title, w ? w.name : ''].filter(Boolean).join('·'),
+    HEADER: bdTight([bdShareText(b).title, w ? w.name : ''].filter(Boolean).join('·')),
     /* 링크 칸에 쓰는 두 형태를 모두 보냅니다. 어느 쪽을 템플릿에 넣었든 맞습니다.
          ${URL}                                    → 전체 주소 (단독으로 넣을 때)
          https://mhn-kor.github.io/qr/?build=${BUILD}#build  → 쿼리 값 자리에 넣을 때
@@ -140,13 +144,12 @@ function bdKakaoArgs(bi) {
     const piece = set && set.pieces[k];
     const stones = (b.ds[k] || []).slice(0, bdSlotCount(b, k)).filter(d => d && d.s);
     const j = i + 1;
-    args['P' + j] = `${n}·${piece ? set.name : '없음'}`;
-    /* 카드 한 줄에 들어가는 글자 수가 빡빡해서 구분자만 두고 공백을 넣지 않습니다.
-       방어구 스킬과 표류석 스킬은 | 로 가릅니다('표류석'이라 적을 자리가 없습니다). */
-    args['D' + j] = piece
-      ? [piece.skills.map(x => `${x.s} ${x.lv}`).join('·'), stones.map(d => d.s).join('·')]
+    args['P' + j] = bdTight(`${n}·${piece ? set.name : '없음'}`);
+    /* 방어구 스킬과 표류석 스킬은 | 로 가릅니다('표류석'이라 적을 자리가 없습니다). */
+    args['D' + j] = bdTight(piece
+      ? [piece.skills.map(x => `${x.s}${x.lv}`).join('·'), stones.map(d => d.s).join('·')]
           .filter(Boolean).join('|')
-      : '비어 있음';
+      : '비어 있음');
     /* 재료 몬스터 아이콘. 빈 칸은 부위 실루엣, 아이콘 없는 이벤트 장비는 bdIcon 이 대신 고릅니다.
        콘솔 이미지 칸은 값이 ${...} 로 시작해야 하므로 인자가 URL 전체를 담습니다. */
     args['I' + j] = BD_BASE + (piece ? bdIcon(set.key) : `assets/part/${k}.png`);
@@ -169,9 +172,9 @@ function bdKakaoList(bi) {
   if (w) {
     const style = bdStylesOf(b.wt)[b.st - 1];
     rows.push({
-      title: w.name,
-      description: [wt && wt.n, w.atk ? `공격 ${w.atk}` : '', w.e ? `${w.e} ${w.ele}` : '무속성',
-        style ? `스타일 ${style}` : ''].filter(Boolean).join('·'),
+      title: bdTight(w.name),
+      description: bdTight([wt && wt.n, w.atk ? `공격${w.atk}` : '', w.e ? `${w.e}${w.ele}` : '무속성',
+        style ? `스타일${style}` : ''].filter(Boolean).join('·')),
       imageUrl: bdMonURL(bdSet(b.w).key), link,
     });
   }
@@ -179,8 +182,8 @@ function bdKakaoList(bi) {
   const worn = BD_PARTS().map(p => ({ p, s: bdSet(b[p.k]) })).filter(x => x.s && x.s.pieces[x.p.k]);
   if (worn.length) {
     rows.push({
-      title: `방어구 ${worn.length}부위`,
-      description: worn.map(x => `${x.p.n} ${x.s.name}`).join('·'),
+      title: bdTight(`방어구${worn.length}부위`),
+      description: bdTight(worn.map(x => `${x.p.n}·${x.s.name}`).join('/')),
       imageUrl: bdMonURL(worn[0].s.key), link,
     });
   }
@@ -192,19 +195,19 @@ function bdKakaoList(bi) {
   if (stones.length) {
     const g = bdStones().find(x => x.group === stones[0].c);
     rows.push({
-      title: `표류석 ${stones.length}개`,
-      description: stones.map(d => `${d.c} ${d.s}`).join('·'),
+      title: bdTight(`표류석${stones.length}개`),
+      description: bdTight(stones.map(d => `${d.c}·${d.s}`).join('/')),
       imageUrl: g ? `${BD_BASE}assets/stone/${g.icon}.png` : BD_OG, link,
     });
   } else {
     const top = bdTotals(b).slice(0, 5).map(([n, lv]) => `${n} ${lv}`).join(' · ');
-    if (top) rows.push({ title: '스킬', description: top, imageUrl: BD_OG, link });
+    if (top) rows.push({ title: '스킬', description: bdTight(top), imageUrl: BD_OG, link });
   }
 
   if (rows.length < 2) return null;
   return {
     objectType: 'list',
-    headerTitle: bdShareText(b).title,
+    headerTitle: bdTight(bdShareText(b).title),
     headerLink: link,
     contents: rows.slice(0, 3),
     buttons: [{ title: '빌드 보기', link }],
