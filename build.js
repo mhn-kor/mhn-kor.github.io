@@ -127,7 +127,7 @@ function bdKakaoArgs(bi) {
   const b = bdState.builds[bi];
   const w = bdWeaponOf(b);
   const args = {
-    HEADER: [bdShareText(b).title, w ? w.name : ''].filter(Boolean).join(' · '),
+    HEADER: [bdShareText(b).title, w ? w.name : ''].filter(Boolean).join('·'),
     /* 링크 칸에 쓰는 두 형태를 모두 보냅니다. 어느 쪽을 템플릿에 넣었든 맞습니다.
          ${URL}                                    → 전체 주소 (단독으로 넣을 때)
          https://mhn-kor.github.io/qr/?build=${BUILD}#build  → 쿼리 값 자리에 넣을 때
@@ -140,11 +140,12 @@ function bdKakaoArgs(bi) {
     const piece = set && set.pieces[k];
     const stones = (b.ds[k] || []).slice(0, bdSlotCount(b, k)).filter(d => d && d.s);
     const j = i + 1;
-    args['P' + j] = `${n} · ${piece ? set.name : '없음'}`;
+    args['P' + j] = `${n}·${piece ? set.name : '없음'}`;
+    /* 카드 한 줄에 들어가는 글자 수가 빡빡해서 구분자만 두고 공백을 넣지 않습니다.
+       방어구 스킬과 표류석 스킬은 | 로 가릅니다('표류석'이라 적을 자리가 없습니다). */
     args['D' + j] = piece
-      ? [piece.skills.map(x => `${x.s} ${x.lv}`).join(' · '),
-         stones.length ? `표류석 ${stones.map(d => d.s).join(' · ')}` : '',
-        ].filter(Boolean).join('  |  ')
+      ? [piece.skills.map(x => `${x.s} ${x.lv}`).join('·'), stones.map(d => d.s).join('·')]
+          .filter(Boolean).join('|')
       : '비어 있음';
     /* 재료 몬스터 아이콘. 빈 칸은 부위 실루엣, 아이콘 없는 이벤트 장비는 bdIcon 이 대신 고릅니다.
        콘솔 이미지 칸은 값이 ${...} 로 시작해야 하므로 인자가 URL 전체를 담습니다. */
@@ -170,7 +171,7 @@ function bdKakaoList(bi) {
     rows.push({
       title: w.name,
       description: [wt && wt.n, w.atk ? `공격 ${w.atk}` : '', w.e ? `${w.e} ${w.ele}` : '무속성',
-        style ? `스타일 ${style}` : ''].filter(Boolean).join(' · '),
+        style ? `스타일 ${style}` : ''].filter(Boolean).join('·'),
       imageUrl: bdMonURL(bdSet(b.w).key), link,
     });
   }
@@ -179,7 +180,7 @@ function bdKakaoList(bi) {
   if (worn.length) {
     rows.push({
       title: `방어구 ${worn.length}부위`,
-      description: worn.map(x => `${x.p.n} ${x.s.name}`).join(' · '),
+      description: worn.map(x => `${x.p.n} ${x.s.name}`).join('·'),
       imageUrl: bdMonURL(worn[0].s.key), link,
     });
   }
@@ -192,7 +193,7 @@ function bdKakaoList(bi) {
     const g = bdStones().find(x => x.group === stones[0].c);
     rows.push({
       title: `표류석 ${stones.length}개`,
-      description: stones.map(d => `${d.c} ${d.s}`).join(' · '),
+      description: stones.map(d => `${d.c} ${d.s}`).join('·'),
       imageUrl: g ? `${BD_BASE}assets/stone/${g.icon}.png` : BD_OG, link,
     });
   } else {
