@@ -10,6 +10,8 @@ favicon.svg  로고 겸 파비콘
 vendor/      qrcode-generator (MIT)
 assets/      공지용 인증 예시 이미지
 tools/       QR 스캔 회귀 테스트 (선택)
+dev/         로컬 미리보기용 초기화·시드·nginx 설정
+docker-compose.yml   Postgres + PostgREST + nginx
 ```
 
 친구 코드 12자리를 넣어 아래 딥링크를 만들고, 그 URL을 QR로 그립니다.
@@ -92,6 +94,40 @@ iOS 는 글자 16px **미만**인 입력칸에 포커스하면 페이지를 자�
 
 `width`/`height` 속성은 CSS 보다 우선순위가 낮으므로, 붙여도 컨테이너 쿼리로 줄이는 동작은
 그대로입니다 — CSS 가 없을 때만 안전망으로 작동합니다.
+
+## 로컬 미리보기 (docker compose)
+
+Supabase 대신 **Postgres + PostgREST** 를 띄웁니다. Supabase 의 `/rest/v1` 도 같은 PostgREST 라
+스키마·권한·RLS·`Content-Range` 까지 그대로 검증됩니다. 프로덕션에 SQL 을 직접 돌리기 전에
+여기서 먼저 확인하세요.
+
+```bash
+docker compose up -d      # → http://localhost:8080
+docker compose down -v    # DB 까지 삭제
+```
+
+`supabase/schema.sql` 이나 `dev/03-seed.sql` 을 고쳤으면 **`down -v` 후 다시 `up`** 해야
+초기화 스크립트가 다시 돕니다 (Postgres 는 데이터가 있으면 건너뜁니다).
+
+| 포트 | 용도 |
+|---|---|
+| 8080 | 사이트. `/rest/v1/` 은 PostgREST 로 프록시됩니다 |
+| 54321 | PostgREST 직접 (`curl http://localhost:54321/friend_codes`) |
+| 54322 | Postgres (`psql -h localhost -p 54322 -U postgres`, 비번 `postgres`) |
+
+### 시드 데이터
+
+`dev/03-seed.sql` — 등록 비밀번호는 전부 **`test1234`**, 로컬 마스터 비밀번호는 **`devmaster`**
+입니다. 실제 운영 비밀번호는 저장소에 넣지 마세요.
+
+- 앞 3건은 4일 전으로 만들어 **끌어올리기를 바로 시험**할 수 있습니다.
+- `555566667777` 은 `pw_hash` 가 없는 예전 행 재현 — 마스터키로만 지워집니다.
+
+### app.js 를 건드리지 않는 방법
+
+`dev/nginx.conf` 가 `index.html` 에 `window.MHNKR_API="http://localhost:8080"` 를 끼워 넣고,
+`app.js` 는 그 값이 있으면 그쪽을 씁니다. 배포본에는 없으므로 그대로 Supabase 로 갑니다.
+`/rest/v1/` 을 nginx 가 프록시하므로 같은 출처가 되어 CORS 설정도 필요 없습니다.
 
 ## 2. GitHub Pages
 

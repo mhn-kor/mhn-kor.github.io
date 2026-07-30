@@ -48,10 +48,15 @@ const qrURL = (text, minPx) => {
 };
 
 /* ── 저장소 ────────────────────────────────────────────────────── */
-const LIVE = !SUPABASE_URL.includes('YOUR-') && !SUPABASE_KEY.includes('YOUR-');
+/* docker compose 로 띄운 로컬 PostgREST 를 쓰기 위한 갈고리. dev/nginx.conf 가
+   index.html 에 window.MHNKR_API 를 끼워 넣습니다. 배포본에는 없으므로 그대로
+   Supabase 를 씁니다. 로컬 PostgREST 는 apikey 를 무시하니 키는 아무 값이어도 됩니다. */
+const API = (typeof window !== 'undefined' && window.MHNKR_API) || SUPABASE_URL;
+const LIVE = API !== SUPABASE_URL
+  || (!SUPABASE_URL.includes('YOUR-') && !SUPABASE_KEY.includes('YOUR-'));
 const LOCAL_KEY = 'mhnkr.rows';
 
-const rest = (path, opts = {}) => fetch(SUPABASE_URL + '/rest/v1/' + path, {
+const rest = (path, opts = {}) => fetch(API + '/rest/v1/' + path, {
   ...opts,
   headers: {
     apikey: SUPABASE_KEY,

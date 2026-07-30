@@ -1,0 +1,46 @@
+# 로컬 미리보기 환경. Supabase 대신 Postgres + PostgREST 를 띄웁니다.
+# 프로덕션과 같은 조합이라 스키마·권한·RLS 를 그대로 검증할 수 있습니다.
+#
+#   docker compose up -d      →  http://localhost:8080
+#   docker compose down -v    →  DB 까지 깨끗하게 삭제
+#
+# 스키마를 고쳤으면 down -v 로 지우고 다시 up 해야 초기화 스크립트가 다시 돕니다.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports: ['54322:5432']          # psql -h localhost -p 54322 -U postgres
+    volumes:
+      # 파일명 순서대로 실행됩니다. anon 롤과 extensions 스키마가 먼저 있어야
+      # supabase/schema.sql 이 통과합니다.
+      - ./dev/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./supabase/schema.sql:/docker-entrypoint-initdb.d/02-schema.sql:ro
+      - ./dev/03-seed.sql:/docker-entrypoint-initdb.d/03-seed.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Supabase 의 /rest/v1 도 이 PostgREST 입니다. CORS 와 Content-Range 노출
+  # 헤더까지 동일하게 내보내므로 앱을 그대로 붙일 수 있습니다.
+  rest:
+    image: postgrest/postgrest
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_DB_SCHEMAS: public
+      PGRST_SERVER_PORT: 3000
+    ports: ['54321:3000']
+    depends_on:
+      db: { condition: service_healthy }
+
+  web:
+    image: nginx:alpine
+    ports: ['8080:80']
+    volumes:
+      - ./:/site:ro
+      - ./dev/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [rest]
