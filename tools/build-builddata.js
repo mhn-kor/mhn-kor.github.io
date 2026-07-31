@@ -1,6 +1,10 @@
 /* 빌드 탭 데이터 생성기.
  *
- *   node tools/build-builddata.js <bundle.js> <official-names.json> [skill-urls.json] > build-data.js
+ *   node tools/build-builddata.js > build-data.js
+ *
+ * 인자가 없습니다. mhn.quest 번들은 직접 받고, 장비 이름표는 tools/data/ 에서,
+ * 스킬 최대 레벨은 skill-desc.js 에서 읽습니다. 번들을 미리 받아 뒀다면
+ * MHNKR_BUNDLE=경로 로 넘겨 오프라인에서도 돌릴 수 있습니다.
  *
  * 스킬·표류슬롯·공격력 곡선은 mhn.quest 번들에서, 장비 이름은 monsterhunternow.com
  * 공식 목록에서 가져온다. 두 곳의 키가 달라 영문 몬스터명을 다리로 매핑한다.
@@ -10,6 +14,7 @@
  * 갱신 방법은 README 의 빌드 탭 절 참고.
  */
 const fs = require('fs');
+const path = require('path');
 
 const SLOTS = ['helm', 'mail', 'gloves', 'belt', 'greaves'];
 const PART_SUFFIX = { helm: 'head', mail: 'chest', gloves: 'arms', belt: 'waist', greaves: 'legs' };
@@ -190,30 +195,57 @@ function weaponExtra(wkey, mon, X) {
   return out.length ? out : null;
 }
 
-function main() {
-  const src = fs.readFileSync(process.argv[2], 'utf8');
-  const off = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
-  const official = process.argv[4] ? Object.keys(JSON.parse(fs.readFileSync(process.argv[4], 'utf8'))) : [];
-  // 5번째 인자(선택): 병·탄·포격 등의 한국어 이름표
-  const X = process.argv[5] ? JSON.parse(fs.readFileSync(process.argv[5], 'utf8')) : {};
-  /* 공식 방어구 페이지의 세트 나열 순서. 일괄 선택 모달이 이 순서로 보여 줍니다. */
-  const armorOrder = process.argv[8] ? JSON.parse(fs.readFileSync(process.argv[8], 'utf8')) : [];
-  /* 6·7번째 인자(선택): 스킬별 최대 레벨. 합계 막대를 칸으로 나누는 데 쓴다.
-     공식 스킬 상세의 레벨 표 행 수가 곧 상한이다. */
+const DATA = require('path').join(__dirname, 'data');
+const QUEST = 'https://mhn.quest/';
+
+/* mhn.quest 의 번들 주소는 배포 때마다 바뀝니다. 첫 페이지에서 script 태그를 읽어 찾습니다. */
+async function fetchBundle() {
+  const home = await (await fetch(QUEST, { headers: { 'user-agent': 'Mozilla/5.0' } })).text();
+  const cands = [...home.matchAll(/<script[^>]+src="([^"]+\.js[^"]*)"/g)].map(m => m[1]);
+  let best = null;
+  for (const c of cands) {
+    const url = new URL(c, QUEST).href;
+    const t = await (await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0' } })).text();
+    /* 장비 표(B8)와 곡선 표(K7)가 같이 든 파일이 우리가 찾는 번들입니다. */
+    if (t.includes('B8={') && t.includes('K7={')) { best = t; break; }
+    if (!best && t.length > 500000) best = null;
+  }
+  if (!best) throw new Error('mhn.quest 번들을 찾지 못했습니다 (사이트 구조가 바뀌었을 수 있습니다)');
+  return best;
+}
+
+async function main() {
+  const src = process.env.MHNKR_BUNDLE
+    ? fs.readFileSync(process.env.MHNKR_BUNDLE, 'utf8')   // 오프라인 재생성용
+    : await fetchBundle();
+  const off = JSON.parse(fs.readFileSync(path.join(DATA, 'official-names.json'), 'utf8'));
+  /* 병·탄·포격 등의 한국어 이름표. 게임 패치와 무관하게 거의 바뀌지 않아 저장소에 둡니다. */
+  const X = JSON.parse(fs.readFileSync(path.join(DATA, 'wextra.json'), 'utf8'));
+
+  /* 스킬 최대 레벨은 공식 스킬 페이지의 레벨 표 행 수입니다.
+     skill-desc.js 가 그 표를 그대로 담고 있어 따로 표를 두지 않습니다. */
+  const descSrc = fs.readFileSync(path.join(__dirname, '..', 'skill-desc.js'), 'utf8');
+  const SKILLDESC = new Function(descSrc + ';return SKILLDESC;')();
+  const official = Object.keys(SKILLDESC);
+
+  /* 공식 방어구 목록의 세트 나열 순서. official-names.json 의 키 순서가 곧 그 순서입니다. */
+  const armorOrder = [];
+  for (const k of Object.keys(off.armor)) {
+    const set = k.replace(/_(head|chest|arms|waist|legs)$/, '');
+    if (!armorOrder.includes(set)) armorOrder.push(set);
+  }
+
   const skillMax = {};   // 이름은 maxLv() 함수와 겹치지 않게 둔다
-  /* 최대레벨 파일의 키는 별칭 적용 전 이름일 수 있다. 장비 스킬과 같은 규칙으로
-     정규화해야 짝이 맞는다(예: '공격 활성화' → '공격 활성'). */
+  /* 스킬 이름은 별칭 적용 전 표기일 수 있어, 장비 스킬과 같은 규칙으로 정규화해야
+     짝이 맞습니다(예: '공격 활성화' → '공격 활성'). */
   const normName = (n) => {
     const a = SKILL_ALIAS[n] || n;
     const key = String(a).replace(/[\s　]+/g, '');
     return official.find(o => String(o).replace(/[\s　]+/g, '') === key) || a;
   };
-  for (const f of [process.argv[6], process.argv[7]].filter(Boolean)) {
-    const t = JSON.parse(fs.readFileSync(f, 'utf8'));
-    for (const [k, v] of Object.entries(t)) {
-      const n = Array.isArray(v) ? v.length : Number(v);
-      if (n > 0) skillMax[normName(k)] = n;
-    }
+  for (const [k, rows] of Object.entries(SKILLDESC)) {
+    const n = rows[rows.length - 1][0];
+    if (n > 0) skillMax[normName(k)] = n;
   }
 
   const B8 = objAt(src, src.indexOf('B8={') + 3);       // 장비 스킬·표류슬롯
@@ -326,8 +358,13 @@ function main() {
     + `무기 ${nw} (공격력 있음 ${withAtk})\n`);
   if (warn.length) process.stderr.write(`공식 이름 없어 대체 ${warn.length}개 (이벤트 장비)\n`);
 
+  /* 아이콘 받는 도구가 쓸 영문 이름표. 참조 사이트가 «great_jagras» 처럼 영문
+     스네이크로 파일을 두어서, 짧은 키(g-jagr)만으로는 주소를 만들 수 없습니다. */
+  fs.writeFileSync(path.join(DATA, 'monster-en.json'),
+    JSON.stringify(Object.fromEntries(sets.map(s => [s.key, monEn[s.key] || s.key])), null, 1) + '\n');
+
   process.stdout.write('/* 자동 생성 파일 — tools/build-builddata.js 로 다시 만듭니다. 직접 수정하지 마세요. */\n'
     + 'const BUILD = ' + JSON.stringify(out) + ';\n');
 }
 
-main();
+main().catch(e => { process.stderr.write('실패: ' + e.message + '\n'); process.exit(1); });

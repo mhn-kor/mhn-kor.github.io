@@ -169,6 +169,9 @@ tools/material-test.js        계산 회귀 테스트
 
 ### 게임이 패치돼서 몬스터가 늘었다면
 
+`node tools/update.js` 하나로 빌드 탭까지 같이 맞춥니다 — 아래 **게임 패치로 몬스터·장비가
+늘었다면** 절을 보세요. 재료만 다시 만들려면:
+
 ```bash
 node tools/build-materialdata.js     # material-data.js + 새 아이콘만 받아옵니다
 node tools/material-test.js          # 계산이 안 깨졌는지 확인 (필수)
@@ -183,6 +186,68 @@ node tools/material-test.js          # 계산이 안 깨졌는지 확인 (필수
 
 > 제니 값은 원본 사이트의 데이터를 그대로 씁니다. 일반 몬스터는 강등급이 올라가는 칸(G5-1, G6-1 …)에만
 > 제니가 붙어 있고 소단계는 0 입니다. 희소종·고룡은 칸마다 붙어 있어 총액이 수십 배입니다.
+
+## 게임 패치로 몬스터·장비가 늘었다면
+
+```bash
+node tools/update.js          # 이거 하나면 됩니다
+```
+
+빌드 탭·재료 탭·아이콘을 한 번에 맞춥니다. 끝나면 무엇이 몇 개 늘었는지 보여 주고,
+바뀐 게 있으면 `index.html` 의 `?v=` 를 올리라고 알려 줍니다 (**안 올리면 방문자가
+열 시간 동안 옛 파일을 봅니다** — 위의 캐시 절 참고).
+
+돌린 뒤에는 브라우저에서 **빌드 탭에서 새 몬스터의 무기·방어구가 보이는지**,
+**재료 탭에 새 몬스터가 있는지** 눈으로 확인하고 커밋하세요.
+
+| 옵션 | 언제 |
+|---|---|
+| `--all` | 장비 이름이 바뀌었을 때 (평소엔 새 것만 받습니다) |
+| `--skip-material` | 재료 탭은 그대로 두고 빌드만 고칠 때 |
+
+### 무엇이 어디서 오는가
+
+| 자료 | 출처 | 만드는 것 |
+|---|---|---|
+| 장비 스킬·표류석 칸·공격력 곡선 | mhn.quest 번들 | `build-data.js` |
+| 장비 한국어 이름, 방어구 나열 순서 | monsterhunternow.com | `tools/data/official-names.json` |
+| 스킬 레벨별 설명(=점수 계산의 근거) | monsterhunternow.com | `skill-desc.js` |
+| 몬스터 아이콘 | mhnow.me | `assets/monster/*.png` |
+| 재료·서식지 | mhnow.me + mhn.quest | `material-data.js`, `assets/material/*.png` |
+
+두 사이트의 키가 달라 **영문 몬스터 이름을 다리로 이어 붙입니다.** 그래서
+`tools/data/monster-en.json`(자동 생성)이 아이콘 주소를 만드는 데 쓰입니다.
+
+`tools/data/wextra.json` 만 손으로 관리합니다 — 탄·병·포격 이름표라 게임 패치와
+거의 무관합니다.
+
+### 단계별로 돌리고 싶다면
+
+```bash
+node tools/fetch-official.js                                   # 이름·순서
+node tools/build-skilldesc.js tools/data/skill-urls.json > skill-desc.js
+node tools/build-builddata.js > build-data.js                  # 인자 없음
+node tools/fetch-icons.js                                      # 빠진 아이콘만
+node tools/build-materialdata.js && node tools/material-test.js
+```
+
+순서에 이유가 있습니다. `build-builddata.js` 는 스킬 최대 레벨을 `skill-desc.js` 에서,
+방어구 나열 순서를 `official-names.json` 의 키 순서에서 읽습니다. `fetch-icons.js` 는
+`build-data.js` 를 보고 빠진 아이콘을 찾습니다.
+
+### 잘 안 될 때
+
+- **`mhn.quest 번들을 찾지 못했습니다`** — 그 사이트 구조가 바뀐 것입니다.
+  `tools/build-builddata.js` 의 `fetchBundle()` 이 `B8={` 와 `K7={` 이 같이 든
+  스크립트를 찾습니다. 번들을 손으로 받았다면 `MHNKR_BUNDLE=경로` 로 넘기세요.
+- **아이콘을 못 받음** — 이벤트 장비는 참조 사이트에도 그림이 없습니다.
+  그 키를 `build.js` 의 `BD_NOICON` 에 넣으면 이벤트 표류석 아이콘으로 대신 나옵니다.
+- **새 이벤트 무기가 전 종류(14종)로 나옴** — 이벤트 무기는 제작비용 표에 종류가
+  적혀 있을 때만 좁힐 수 있습니다. 표가 없으면(재료 미상) 게임에서 확인한 값을
+  `tools/build-builddata.js` 의 `EVENT_WEAPONS` 에 직접 적으세요.
+- **새 스킬이 점수에 안 들어감** — 설명 문장을 읽어 계산하므로, 문장 형태가 새로우면
+  `build.js` 의 `bdEffects()` 에 규칙을 하나 더해야 합니다. 조건이 붙은 스킬은
+  일부러 빼고 화면에서 켜고 끄게 되어 있습니다.
 
 ## 알아두면 좋은 것
 
