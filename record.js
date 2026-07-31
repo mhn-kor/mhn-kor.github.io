@@ -118,6 +118,7 @@ async function rkLoad() {
     if (!r.ok) throw new Error(await r.text());
     rkRows = await r.json();
     rkRender();
+    rkOpenFromUrl();
   } catch (err) {
     console.error(err);
     $('#rk-state').hidden = false;
@@ -164,7 +165,9 @@ function rkItem(r, i, rank) {
       <span class="rk-pi" aria-hidden="true">▶</span>${badges}
     </button>` : `<div class="rk-play none">${badges}<p class="rk-noembed">영상을 표시할 수 없습니다</p></div>`}
     <div class="rk-info">
-      <p class="rk-nick">${esc(r.nickname)}
+      <p class="rk-nick"><span>${esc(r.nickname)}</span>
+        <button class="icon rk-kakao" data-act="kakao" aria-label="카카오톡으로 공유" title="카카오톡으로 공유">${BD_I.kakao}</button>
+        <button class="icon" data-act="copy" aria-label="링크 복사" title="링크 복사">${BD_I.link}</button>
         <button class="icon danger rk-del" data-act="del" aria-label="기록 삭제" title="삭제 (비밀번호 필요)">${TRASH_ICON}</button>
       </p>
       <div class="rk-tags">
@@ -296,8 +299,14 @@ function rkModalUI() {
 /* ── 크게 보기 · 삭제 ──────────────────────────────────────────────── */
 function rkListUI() {
   $('#rk-list').addEventListener('click', e => {
-    const del = e.target.closest('[data-act="del"]');
-    if (del) return rkAskDelete(del.closest('.rk-item').dataset.id);
+    const act = e.target.closest('[data-act]');
+    if (act) {
+      const id = act.closest('.rk-item').dataset.id;
+      if (act.dataset.act === 'del') return rkAskDelete(id);
+      const row = rkRows.find(x => String(x.id) === String(id));
+      if (!row) return;
+      return act.dataset.act === 'kakao' ? rkShare(row) : bdCopyLink(rkShareUrl(row));
+    }
     const play = e.target.closest('.rk-play');
     if (play) rkOpenView(Number(play.dataset.i));
   });
@@ -313,9 +322,77 @@ function rkListUI() {
   });
   // 닫을 때 iframe 을 걷어냅니다. 남겨두면 뒤에서 소리가 계속 납니다.
   $('#rk-view').addEventListener('close', () => { $('#rk-v-body').innerHTML = ''; rkAt = -1; });
+
+  $('#rk-v-kakao').addEventListener('click', () => rkShare(rkShown[rkAt]));
+  $('#rk-v-copy').addEventListener('click', () => {
+    const r = rkShown[rkAt];
+    if (r) bdCopyLink(rkShareUrl(r));
+  });
 }
 
 let rkAt = -1;      // rkShown 안에서 지금 보고 있는 자리
+
+/* ── 공유 ──────────────────────────────────────────────────────────
+   카카오 SDK 준비·링크 복사는 빌드 탭 것을 그대로 씁니다(bdKakaoReady/bdCopyLink).
+   같은 일을 두 벌 두면 키를 바꿀 때 한쪽만 낡습니다. */
+const rkShareUrl = r => `${location.origin}${location.pathname}?rec=${r.id}#record`;
+/* 카카오로 나가는 링크는 받는 사람이 열 수 있어야 하므로 배포 절대 주소를 씁니다
+   (BD_BASE 는 og:url). 배포 환경에서는 위와 같은 값입니다. */
+const rkShareAbs = r => (typeof BD_BASE === 'string' ? BD_BASE : location.origin + location.pathname)
+  + `?rec=${r.id}#record`;
+
+function rkShareText(r) {
+  const mon = rkMon(r.monster);
+  return {
+    title: `${rkTime(r.time_sec)} · ${mon ? mon.name : r.monster} ★${r.star}`
+      + (r.variant === 'dim' ? ' 차원변이' : ''),
+    desc: `${r.nickname} · ${rkWeaponName(r.weapon)}${r.style ? ' ' + r.style : ''}`,
+  };
+}
+
+async function rkShare(r) {
+  if (!r) return;
+  const url = rkShareAbs(r);
+  const { title, desc } = rkShareText(r);
+  const v = rkVid(r.video_url);
+  const link = { mobileWebUrl: url, webUrl: url };
+
+  if (typeof bdKakaoReady === 'function' && await bdKakaoReady()) {
+    try {
+      /* 빌드용 리스트 템플릿(KAKAO_TEMPLATE_ID)은 방어구 5줄짜리라 영상에는 안 맞습니다.
+         썸네일 한 장이 그림이 되는 feed 를 씁니다. */
+      window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title, description: desc,
+          imageUrl: (v && rkThumb(v)) || (typeof BD_OG === 'string' ? BD_OG : ''),
+          link,
+        },
+        buttons: [{ title: '영상 보기', link }],
+      });
+      return;
+    } catch (e) { toast('카카오톡 공유에 실패했습니다'); }
+  }
+  if (navigator.share) {
+    try { await navigator.share({ title, text: desc, url }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }   // 사용자가 취소한 건 실패가 아닙니다
+  }
+  /* 카카오 키도 공유 시트도 없는 환경(대개 PC). 링크를 붙여넣으면 카톡이 og 태그로
+     카드를 만들어 주므로 그 방법을 알려 줍니다. */
+  bdCopyLink(rkShareUrl(r), '링크 복사됨 · 카카오톡에 붙여넣으세요');
+}
+
+/* ?rec=<id> 로 들어오면 그 기록을 바로 크게 띄웁니다(공유 링크로 들어온 사람). */
+let rkFromUrlDone = false;
+function rkOpenFromUrl() {
+  if (rkFromUrlDone) return;
+  rkFromUrlDone = true;
+  const id = new URLSearchParams(location.search).get('rec');
+  if (!id) return;
+  const at = rkShown.findIndex(r => String(r.id) === String(id));
+  if (at >= 0) rkOpenView(at);
+  else toast('그 기록을 찾지 못했습니다');
+}
 
 function rkOpenView(i) {
   const r = rkShown[i];

@@ -1159,10 +1159,13 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 
 .rk-info { padding: 9px 10px 11px; display: grid; gap: 7px; }
 .rk-nick {
-  display: flex; align-items: center; gap: 4px; margin: 0;
+  display: flex; align-items: center; gap: 3px; margin: 0;
   font-size: .85rem; font-weight: 700; letter-spacing: -.02em;
 }
-.rk-del { flex: none; margin-left: auto; }
+/* 아이콘 세 개가 오른쪽에 붙고, 닉네임이 길면 말줄임으로 잘립니다. */
+.rk-nick > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-nick .icon { width: 26px; height: 26px; }
+.rk-nick .icon svg { width: 14px; height: 14px; }
 /* 칩(.chip)이 inline-flex + gap 이라 여백은 칩이 알아서 줍니다. */
 .rk-mi { flex: none; width: 16px; height: 16px; object-fit: contain; }
 .rk-tags { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -1194,11 +1197,13 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 #rk-v-title b { font-size: 1.3rem; color: var(--amber-hi); font-variant-numeric: tabular-nums; }
 /* min-width:0 이 있어야 닉네임이 길 때 말줄임으로 잘립니다(없으면 닫기 버튼을 밀어냅니다). */
 #rk-v-title span { min-width: 0; font-size: .88rem; font-weight: 600; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#rk-v-close {
-  flex: none; margin-left: auto; width: 30px; height: 30px; display: grid; place-items: center;
+/* 제목 오른쪽의 공유·닫기 아이콘. 제목이 남는 폭을 다 먹고 아이콘은 오른쪽에 붙습니다. */
+#rk-v-title { flex: 1; }
+.rk-vh button {
+  flex: none; width: 30px; height: 30px; display: grid; place-items: center;
   color: var(--muted); background: rgba(255,255,255,.06); border: 0; border-radius: 8px; cursor: pointer;
 }
-#rk-v-close:hover { color: var(--bone); background: rgba(255,255,255,.12); }
+.rk-vh button:hover { color: var(--bone); background: rgba(255,255,255,.12); }
 /* 창에서 남는 높이를 영상칸이 전부 씁니다. 제목이 길거나 태그가 두 줄이 되면
    여기만 줄어들고 아래 버튼줄은 제자리에 남습니다. */
 .rk-v-body { flex: 1; min-height: 0; background: #000; border-radius: 8px; overflow: hidden; }
@@ -1221,6 +1226,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
    차지하면, 이전/다음으로 넘길 때마다 버튼이 왼쪽으로 늘었다 줄었다 합니다. */
 .rk-vlinks { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .rk-vlinks .btn { justify-content: center; }
+/* .rk-vh button:hover 가 «클래스+요소»라 더 세므로, 창 안쪽도 함께 적어 이깁니다. */
+.rk-kakao:hover, .rk-vh .rk-kakao:hover {
+  color: #3C1E1E; background: #FEE500; border-color: #FEE500;
+}
 /* display:none 이면 자리까지 사라집니다. 자리는 남기고 보이지만 않게 합니다
    (visibility:hidden 은 스크린리더에서도 함께 빠집니다). */
 #rk-v-build[hidden] { display: inline-flex; visibility: hidden; }

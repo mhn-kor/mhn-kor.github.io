@@ -24,7 +24,7 @@
 <!-- GitHub Pages 는 파일마다 max-age=600 으로 따로 캐시합니다. 새 index.html 과 옛 style.css 가
      10분간 섞일 수 있으므로 버전을 붙여 강제로 새로 받게 합니다.
      style.css / app.js 를 고칠 때마다 아래 두 곳의 v= 값을 같이 올려주세요. -->
-<link rel="stylesheet" href="style.css?v=20260802a">
+<link rel="stylesheet" href="style.css?v=20260802b">
 </head>
 <body>
 
@@ -475,6 +475,12 @@
 <dialog id="rk-view">
   <div class="rk-vh">
     <h2 id="rk-v-title"></h2>
+    <button type="button" class="rk-kakao" id="rk-v-kakao" aria-label="카카오톡으로 공유" title="카카오톡으로 공유">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 3.2C6.98 3.2 2.9 6.44 2.9 10.44c0 2.55 1.66 4.79 4.17 6.07l-.95 3.5a.35.35 0 0 0 .53.38l4.13-2.73c.4.03.81.05 1.22.05 5.02 0 9.1-3.24 9.1-7.27S17.02 3.2 12 3.2z"/></svg>
+    </button>
+    <button type="button" id="rk-v-copy" aria-label="링크 복사" title="링크 복사">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+    </button>
     <button type="button" id="rk-v-close" aria-label="닫기" title="닫기">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
@@ -487,6 +493,7 @@
     <button type="button" class="btn ghost" id="rk-v-prev" aria-label="이전 영상">← 이전</button>
     <span class="count" id="rk-v-pos"></span>
     <button type="button" class="btn ghost" id="rk-v-next" aria-label="다음 영상">다음 →</button>
+    <!-- 빌드가 없는 기록도 자리를 남겨 버튼 위치가 안 바뀝니다. -->
     <div class="rk-vlinks">
       <a class="btn ghost" id="rk-v-build" href="#build">빌드 보기</a>
       <a class="btn ghost" id="rk-v-src" href="#" target="_blank" rel="noopener noreferrer">원본 열기</a>
@@ -625,24 +632,24 @@
      됩니다(SDK 기본 템플릿은 3줄 제한). 비우면 3줄 예비 카드로 내려갑니다. */
   window.KAKAO_TEMPLATE_ID = 135805;
 </script>
-<script src="smelt-data.js?v=20260802a"></script>
-<script src="build-data.js?v=20260802a"></script>
-<script src="build-styles.js?v=20260802a"></script>
-<script src="skill-desc.js?v=20260802a"></script>
+<script src="smelt-data.js?v=20260802b"></script>
+<script src="build-data.js?v=20260802b"></script>
+<script src="build-styles.js?v=20260802b"></script>
+<script src="skill-desc.js?v=20260802b"></script>
 <!-- material.js 는 app.js 보다 먼저 읽혀야 합니다. 첫 화면이 #material 이면
      app.js 가 곧바로 drawMaterial() 을 부릅니다. -->
-<script src="material-data.js?v=20260802a"></script>
-<script src="material.js?v=20260802a"></script>
+<script src="material-data.js?v=20260802b"></script>
+<script src="material.js?v=20260802b"></script>
 <!-- record.js 도 app.js 의 showTab() 이 곧바로 부를 수 있으므로 먼저 읽힙니다.
      app.js 의 $ / esc / rest 는 함수 안에서만 쓰므로 순서가 앞서도 됩니다. -->
-<script src="record.js?v=20260802a"></script>
+<script src="record.js?v=20260802b"></script>
 <script src="vendor/qrcode.min.js"></script>
-<script src="app.js?v=20260802a"></script>
+<script src="app.js?v=20260802b"></script>
 <!-- build.js 는 app.js 의 $ / esc / toast 를 씁니다. 반드시 뒤에 둡니다.
      showTab() 은 DOMContentLoaded 이후 호출되므로 순서가 늦어도 됩니다. -->
-<script src="build.js?v=20260802a"></script>
+<script src="build.js?v=20260802b"></script>
 <!-- recommend.js 는 app.js 의 $ / rest / toast 와 build.js 의 bdAdopt 를 씁니다.
      둘 다 로드된 뒤여야 하므로 맨 뒤에 둡니다. -->
-<script src="recommend.js?v=20260802a"></script>
+<script src="recommend.js?v=20260802b"></script>
 </body>
 </html>
