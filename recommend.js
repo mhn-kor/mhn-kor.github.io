@@ -1,0 +1,333 @@
+/* 추천 빌드 탭 — 남들이 쓰라고 올려 둔 빌드 목록.
+ *
+ * 데이터: Supabase 의 public.recommended_ranked (supabase/schema.sql).
+ * 추천도(score)는 DB 가 계산합니다 — 오래될수록 낮아지고, 좋아요는 올리고
+ * 싫어요는 더 크게 내리고, 초보자 + 파밍 쉬움이면 크게 올립니다.
+ * 브라우저에서 계산하면 사람마다 기준이 달라질 수 있어 서버에 둡니다.
+ *
+ * 읽기는 한 번에 다 받아 브라우저에서 거릅니다. 필터가 여섯 종류라 조합마다
+ * 서버를 다시 부르면 요청이 폭발합니다.
+ *
+ * app.js 의 $ / esc / toast / rest / when / TRASH_ICON 을 함수 안에서만 씁니다.
+ * 무기 목록은 build-data.js 의 BUILD 를 그대로 씁니다.
+ */
+
+const RC_LIMIT = 300;
+const RC_TIER = { beginner: '초보자', expert: '숙련자' };
+const RC_SCENE = { field: '필드사냥', intercept: '요격전', swarm: '대량출현', chain: '대연속', elder: '고룡토벌' };
+const RC_PARTY = { solo: '개인전', party: '파티사냥' };
+const RC_COLS = 'id,nickname,title,build,weapon,tier,scenes,party,easy_farm,up,down,created_at,score';
+
+let rcRows = [];
+let rcMine = {};                 // { 빌드id: 1 | -1 }  내가 누른 것
+let rcFilter = { weapon: '', tier: '', scene: '', party: '', easy: false };
+let rcLoaded = false;
+
+/* 기기 식별자. 표를 기기당 한 번으로 묶는 데만 씁니다(서버는 여기에 IP 를 더해 해싱).
+   지우면 다시 누를 수 있지만, IP 가 같으면 서버가 같은 사람으로 봅니다. */
+function rcDevice() {
+  let d = localStorage.getItem('mhnkr.device');
+  if (!d) {
+    d = (crypto.randomUUID && crypto.randomUUID()) || String(Math.random()).slice(2) + Date.now();
+    localStorage.setItem('mhnkr.device', d);
+  }
+  return d;
+}
+
+const rcWeapons = () => (typeof BUILD !== 'undefined' ? BUILD.weaponTypes : []);
+const rcWeaponName = (k) => (rcWeapons().find(w => w.k === k) || {}).n || k;
+
+/* ── 목록 ─────────────────────────────────────────────────────────── */
+async function rcLoad() {
+  const box = $('#rc-list');
+  box.innerHTML = '<p class="bd-empty">불러오는 중…</p>';
+  try {
+    const r = await rest(`recommended_ranked?select=${RC_COLS}&order=score.desc,created_at.desc&limit=${RC_LIMIT}`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    rcRows = await r.json();
+  } catch (e) {
+    box.innerHTML = '<p class="bd-empty">목록을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.</p>';
+    return;
+  }
+  /* 내가 무엇을 눌렀는지는 따로 물어봅니다. 표 자체는 남에게 보이면 안 되므로
+     목록에 섞어 내려주지 않습니다. */
+  try {
+    const r = await rest('rpc/my_recommended_votes', {
+      method: 'POST',
+      body: JSON.stringify({ p_ids: rcRows.map(x => x.id), p_device: rcDevice() }),
+    });
+    rcMine = r.ok ? await r.json() : {};
+  } catch (e) { rcMine = {}; }
+  rcRender();
+}
+
+function rcMatch(r) {
+  const f = rcFilter;
+  if (f.weapon && r.weapon !== f.weapon) return false;
+  if (f.tier && r.tier !== f.tier) return false;
+  if (f.scene && !(r.scenes || []).includes(f.scene)) return false;
+  if (f.party && !(r.party || []).includes(f.party)) return false;
+  if (f.easy && !r.easy_farm) return false;
+  return true;
+}
+
+function rcRender() {
+  rcChips();
+  const rows = rcRows.filter(rcMatch);
+  $('#rc-count').textContent = `${rows.length}개`;
+  $('#rc-list').innerHTML = rows.length
+    ? rows.map((r, i) => rcCard(r, i + 1)).join('')
+    : `<p class="bd-empty">${rcRows.length ? '조건에 맞는 빌드가 없습니다.' : '아직 등록된 추천 빌드가 없습니다. 빌드 탭에서 올려 보세요.'}</p>`;
+}
+
+function rcCard(r, rank) {
+  const mine = rcMine[r.id];
+  const tags = [
+    `<span class="rc-t tier ${r.tier}">${RC_TIER[r.tier] || r.tier}</span>`,
+    ...(r.scenes || []).map(s => `<span class="rc-t">${esc(RC_SCENE[s] || s)}</span>`),
+    ...(r.party || []).map(s => `<span class="rc-t">${esc(RC_PARTY[s] || s)}</span>`),
+    r.easy_farm ? '<span class="rc-t easy">파밍 쉬움</span>' : '',
+  ].filter(Boolean).join('');
+
+  return `<article class="rc-card" data-rc="${r.id}">
+    <header>
+      <span class="rc-rank">${rank}</span>
+      <b class="rc-title">${esc(r.title || rcWeaponName(r.weapon) + ' 빌드')}</b>
+      <span class="rc-wp">${esc(rcWeaponName(r.weapon))}</span>
+    </header>
+    <p class="rc-by">${esc(r.nickname)} · ${when(r.created_at)}</p>
+    ${rcBrief(r)}
+    <div class="rc-tags">${tags}</div>
+    <div class="rc-act">
+      <button class="rc-v up${mine === 1 ? ' on' : ''}" data-vote="${r.id}:1" title="좋아요">▲ <b>${r.up}</b></button>
+      <button class="rc-v down${mine === -1 ? ' on' : ''}" data-vote="${r.id}:-1" title="싫어요">▼ <b>${r.down}</b></button>
+      <span class="rc-score" title="추천도 — 오래될수록 낮아지고 좋아요·싫어요가 반영됩니다">${r.score}</span>
+      <button class="btn ghost" data-rc-view="${r.id}">미리보기</button>
+      <button class="btn ghost" data-rc-use="${r.id}">가져오기</button>
+    </div>
+  </article>`;
+}
+
+/* 카드에 얹는 간략 정보 — 장비 여섯 칸과 합산 스킬. 그리는 일은 build.js 가 합니다.
+   빌드 문자열을 푸는 규칙이 한 군데만 있어야 옛 등록이 안 깨집니다. */
+function rcBrief(r) {
+  if (typeof bdParse !== 'function') return '';
+  const b = bdParse(r.build, r.title);
+  if (!b) return '';
+  return `<div class="rc-brief" data-rc-open="${r.id}" title="눌러서 자세히 보기">
+    ${bdIconRow(b)}${bdChipRow(b)}
+  </div>`;
+}
+
+/* 미리보기 모달. 모바일에서는 장비 검색 모달과 같이 화면을 꽉 채웁니다. */
+function rcView(id) {
+  const r = rcRows.find(x => x.id === id);
+  if (!r || typeof bdPreviewHtml !== 'function') return;
+  const b = bdParse(r.build, r.title);
+  if (!b) return toast('빌드를 읽지 못했습니다');
+  $('#rc-view-title').textContent = r.title || rcWeaponName(r.weapon) + ' 빌드';
+  $('#rc-view-sub').textContent =
+    `${rcWeaponName(r.weapon)} · ${r.nickname} · 추천도 ${r.score}`;
+  $('#rc-view-body').innerHTML = bdPreviewHtml(b);
+  $('#rc-view-use').dataset.rcUse = id;
+  $('#rc-view').showModal();
+}
+
+/* 필터 칩. 무기는 전체 + 14종, 나머지는 전체 + 항목입니다. */
+function rcChips() {
+  const chip = (kind, val, label, on) =>
+    `<button class="rc-c${on ? ' on' : ''}" data-f="${kind}:${esc(val)}">${esc(label)}</button>`;
+  $('#rc-f-weapon').innerHTML = chip('weapon', '', '전체', !rcFilter.weapon)
+    + rcWeapons().map(w => chip('weapon', w.k, w.n, rcFilter.weapon === w.k)).join('');
+  $('#rc-f-rest').innerHTML =
+    Object.entries(RC_TIER).map(([k, v]) => chip('tier', k, v, rcFilter.tier === k)).join('')
+    + '<i class="rc-sep"></i>'
+    + Object.entries(RC_SCENE).map(([k, v]) => chip('scene', k, v, rcFilter.scene === k)).join('')
+    + '<i class="rc-sep"></i>'
+    + Object.entries(RC_PARTY).map(([k, v]) => chip('party', k, v, rcFilter.party === k)).join('')
+    + '<i class="rc-sep"></i>'
+    + chip('easy', '1', '파밍 쉬움', rcFilter.easy);
+}
+
+/* ── 좋아요 / 싫어요 ─────────────────────────────────────────────── */
+async function rcVote(id, v) {
+  try {
+    const r = await rest('rpc/vote_recommended_build', {
+      method: 'POST',
+      body: JSON.stringify({ p_id: id, p_vote: v, p_device: rcDevice() }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const out = await r.json();
+    const row = rcRows.find(x => x.id === id);
+    if (row) { row.up = out.up; row.down = out.down; }
+    if (out.mine == null) delete rcMine[id]; else rcMine[id] = out.mine;
+    rcRender();
+  } catch (e) {
+    toast('표를 반영하지 못했습니다');
+  }
+}
+
+/* ── 가져오기 ─────────────────────────────────────────────────────── */
+/* 빌드 탭에 새 카드로 얹고 그 탭으로 넘깁니다. 남의 빌드가 내 것을 덮으면 안 되므로
+   덮어쓰지 않고 항상 새 카드로 만듭니다. */
+function rcUse(id) {
+  const row = rcRows.find(x => x.id === id);
+  if (!row) return;
+  if (typeof bdAdopt !== 'function') { location.href = `?build=${row.build}#build`; return; }
+  const ok = bdAdopt(row.build, row.title || `${rcWeaponName(row.weapon)} 빌드`);
+  if (!ok) return toast('빌드를 읽지 못했습니다');
+  location.hash = '#build';
+  toast('내 빌드에 담았습니다');
+}
+
+/* ── 삭제 ─────────────────────────────────────────────────────────── */
+let rcDelId = null;
+function rcAskDelete(id) {
+  const row = rcRows.find(x => x.id === id);
+  if (!row) return;
+  rcDelId = id;
+  $('#rc-del-what').innerHTML = `<b>${esc(row.title || rcWeaponName(row.weapon) + ' 빌드')}</b> · ${esc(row.nickname)}`;
+  $('#rc-del-pw').value = '';
+  $('#rc-del-err').hidden = true;
+  $('#rc-del').showModal();
+}
+
+/* ── 붙이기 ───────────────────────────────────────────────────────── */
+function drawRecommend() {
+  if (!rcLoaded) { rcLoaded = true; rcLoad(); }
+  else rcRender();
+}
+
+$('#rc-f-weapon').addEventListener('click', e => {
+  const c = e.target.closest('[data-f]');
+  if (!c) return;
+  const [kind, val] = c.dataset.f.split(/:(.*)/);
+  rcFilter[kind] = val;
+  rcRender();
+});
+$('#rc-f-rest').addEventListener('click', e => {
+  const c = e.target.closest('[data-f]');
+  if (!c) return;
+  const [kind, val] = c.dataset.f.split(/:(.*)/);
+  /* 같은 칩을 다시 누르면 해제됩니다. 칩마다 «전체» 를 두면 줄이 두 배가 됩니다. */
+  if (kind === 'easy') rcFilter.easy = !rcFilter.easy;
+  else rcFilter[kind] = rcFilter[kind] === val ? '' : val;
+  rcRender();
+});
+$('#rc-list').addEventListener('click', e => {
+  const v = e.target.closest('[data-vote]');
+  if (v) { const [id, val] = v.dataset.vote.split(':'); return rcVote(+id, +val); }
+  const u = e.target.closest('[data-rc-use]');
+  if (u) return rcUse(+u.dataset.rcUse);
+  const v2 = e.target.closest('[data-rc-view]');
+  if (v2) return rcView(+v2.dataset.rcView);
+  /* 장비 줄을 눌러도 열립니다 — 버튼을 못 찾는 사람이 없도록. */
+  const o = e.target.closest('[data-rc-open]');
+  if (o) return rcView(+o.dataset.rcOpen);
+});
+
+$('#rc-view-close').addEventListener('click', () => $('#rc-view').close());
+$('#rc-view-use').addEventListener('click', e => {
+  $('#rc-view').close();
+  rcUse(+e.currentTarget.dataset.rcUse);
+});
+/* 삭제는 친구 코드와 같은 규칙 — 카드를 길게 누르거나 우클릭합니다. */
+$('#rc-list').addEventListener('contextmenu', e => {
+  const c = e.target.closest('[data-rc]');
+  if (!c) return;
+  e.preventDefault();
+  rcAskDelete(+c.dataset.rc);
+});
+let rcHold;
+$('#rc-list').addEventListener('pointerdown', e => {
+  const c = e.target.closest('[data-rc]');
+  if (!c || e.target.closest('button')) return;
+  rcHold = setTimeout(() => rcAskDelete(+c.dataset.rc), 600);
+});
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave', 'scroll']) {
+  $('#rc-list').addEventListener(ev, () => clearTimeout(rcHold), true);
+}
+
+$('#rc-del-cancel').addEventListener('click', () => $('#rc-del').close());
+$('#rc-del-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pw = $('#rc-del-pw').value;
+  const err = $('#rc-del-err');
+  err.hidden = true;
+  try {
+    const r = await rest('rpc/delete_recommended_build', {
+      method: 'POST', body: JSON.stringify({ p_id: rcDelId, p_password: pw }),
+    });
+    const ok = r.ok && (await r.json()) === true;
+    if (!ok) { err.textContent = '비밀번호가 다릅니다.'; err.hidden = false; return; }
+    rcRows = rcRows.filter(x => x.id !== rcDelId);
+    $('#rc-del').close();
+    rcRender();
+    toast('삭제했습니다');
+  } catch (e2) {
+    err.textContent = '삭제하지 못했습니다.'; err.hidden = false;
+  }
+});
+
+/* app.js 가 showTab() 을 이미 부른 뒤에 이 파일이 읽히므로, 첫 화면이
+   추천빌드 탭이면 여기서 한 번 그려 줍니다. */
+if (!$('#panel-recommend').hidden) drawRecommend();
+
+/* ── 리더보드에서 쓰기 ────────────────────────────────────────────
+   기록 등록 폼의 «빌드 링크» 칸을 추천 빌드로 채웁니다. 링크를 직접 복사해 오는
+   대신 올라온 것 중에서 고르면 됩니다. record.js 는 건드리지 않고 그 칸의 값만
+   넣어 주므로, 저쪽 검증(rkBuildParam)이 그대로 통합니다. */
+let rcPickWt = '';       // 기록 등록 폼에서 고른 무기. 같은 무기를 위로 올립니다.
+
+/* 목록이 길어지면 훑기 어려워 검색을 답니다. 화면에 보이는 것(제목·무기·닉네임·상황)을
+   그대로 훑습니다 — 보이지 않는 값으로 걸리면 왜 나왔는지 알 수 없습니다. */
+function rcPickFill(q) {
+  const norm = s => String(s).toLowerCase().replace(/\s+/g, '');
+  const needle = norm(q || '');
+  const rows = [...rcRows]
+    /* 기록의 무기와 빌드의 무기가 다르면 보는 사람이 헷갈리므로 같은 것을 먼저 보여 줍니다. */
+    .sort((a, b) => (b.weapon === rcPickWt) - (a.weapon === rcPickWt) || b.score - a.score)
+    .filter(r => !needle || norm([
+      r.title || '', rcWeaponName(r.weapon), r.nickname,
+      ...(r.scenes || []).map(s => RC_SCENE[s] || s),
+    ].join('')).includes(needle));
+
+  $('#rc-pick-count').textContent = rcRows.length
+    ? (rows.length === rcRows.length ? `${rcRows.length}개` : `${rows.length}개 / 전체 ${rcRows.length}개`)
+    : '';
+  $('#rc-pick-list').innerHTML = rows.length ? rows.map(r => `
+    <button type="button" class="bd-lr gear" data-rc-pick="${r.id}">
+      <span class="bd-lt">
+        <b>${esc(r.title || rcWeaponName(r.weapon) + ' 빌드')}${r.weapon === rcPickWt ? ' <i class="rc-same">무기 일치</i>' : ''}</b>
+        <i>${esc(rcWeaponName(r.weapon))} · ${esc(r.nickname)} · 추천도 ${r.score}</i>
+        <span class="bd-ls">${(r.scenes || []).map(s => `<em>${esc(RC_SCENE[s] || s)}</em>`).join('')}</span>
+      </span>
+    </button>`).join('')
+    : `<p class="bd-empty">${rcRows.length ? '검색 결과가 없습니다.' : '아직 등록된 추천 빌드가 없습니다.'}</p>`;
+}
+
+$('#rk-from-rc').addEventListener('click', async () => {
+  $('#rc-pick-list').innerHTML = '<p class="bd-empty">불러오는 중…</p>';
+  $('#rc-pick-count').textContent = '';
+  $('#rc-pick-q').value = '';
+  $('#rc-pickdlg').showModal();
+  if (!rcRows.length) await rcLoad();
+  /* 무기는 record.js 의 rkForm 에서 읽습니다. 그 칸은 선택칸이 아니라 모달 버튼이라
+     value 가 비어 있습니다. */
+  rcPickWt = (typeof rkForm !== 'undefined' && rkForm.weapon) || '';
+  rcPickFill('');
+});
+
+$('#rc-pick-q').addEventListener('input', e => rcPickFill(e.target.value));
+
+$('#rc-pick-cancel').addEventListener('click', () => $('#rc-pickdlg').close());
+$('#rc-pick-list').addEventListener('click', e => {
+  const b = e.target.closest('[data-rc-pick]');
+  if (!b) return;
+  const row = rcRows.find(x => x.id === +b.dataset.rcPick);
+  if (!row) return;
+  /* record.js 가 ?build= 를 찾아 파라미터만 떼어 가므로 전체 주소 형태로 넣습니다. */
+  $('#rk-build').value = `${location.origin}${location.pathname}?build=${row.build}#build`;
+  $('#rc-pickdlg').close();
+  toast('빌드를 넣었습니다');
+});

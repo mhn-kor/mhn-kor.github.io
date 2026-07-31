@@ -54,19 +54,16 @@ const rkEmbed = v => (v.kind === 'yt'
   ? `https://www.youtube-nocookie.com/embed/${v.id}?autoplay=1&rel=0&playsinline=1`
   : `https://platform.twitter.com/embed/Tweet.html?id=${v.id}&theme=dark`);
 
-/* ── 시간 (1/100초) ───────────────────────────────────────────────── */
-const rkTime = cs => {
-  const s = Math.floor(cs / 100), m = Math.floor(s / 60);
-  return (m ? `${m}:${String(s % 60).padStart(2, '0')}` : String(s % 60))
-    + '.' + String(cs % 100).padStart(2, '0');
-};
+/* ── 시간 ─────────────────────────────────────────────────────────
+   초 단위 정수만 씁니다. 게임이 초로 보여주고 사람도 그렇게 적습니다.
+   소수점을 받으면 어떤 사람은 45, 어떤 사람은 45.32 로 올려 목록이 들쭉날쭉해집니다. */
+const rkTime = sec => sec + '초';
 
-/* '1:23.45' · '83.45' · '83' 을 모두 받습니다. 범위 밖이면 null → 등록에서 막힙니다. */
+/* '45' 만 받습니다(1~3600). 범위 밖이거나 소수점이 붙으면 null → 등록에서 막힙니다. */
 const rkParse = txt => {
-  const m = String(txt == null ? '' : txt).trim().match(/^(?:(\d{1,2}):)?(\d{1,3})(?:[.,](\d{1,2}))?$/);
-  if (!m) return null;
-  const cs = (Number(m[1] || 0) * 60 + Number(m[2])) * 100 + Number(String(m[3] || '0').padEnd(2, '0'));
-  return cs >= 100 && cs <= 360000 ? cs : null;
+  const m = String(txt == null ? '' : txt).trim().match(/^(\d{1,4})$/);
+  const sec = m ? Number(m[1]) : 0;
+  return sec >= 1 && sec <= 3600 ? sec : null;
 };
 
 /* 빌드 탭에서 복사한 링크(?build=… #build)에서 파라미터만 떼어냅니다.
@@ -89,6 +86,23 @@ const rkWeapons = () => (typeof BUILD === 'undefined' ? [] : BUILD.weaponTypes);
 const rkWeaponName = k => (rkWeapons().find(w => w.k === k) || {}).n || k;
 const rkStyles = wt => (typeof BD_STYLES !== 'undefined' && BD_STYLES[wt]) || [];
 
+/* 등록창에서 고른 몬스터·무기. 선택칸이 아니라 모달이라 값은 여기에 둡니다.
+   기본값을 두지 않는 이유: 첫 몬스터가 미리 골라져 있으면 그대로 올라옵니다. */
+const rkForm = { monster: null, weapon: null };
+
+/* 모달 격자에 올릴 항목. 몬스터는 재료 탭 아이콘, 무기는 빌드 탭 아이콘을 그대로 씁니다. */
+const rkPickItems = kind => (kind === 'monster'
+  ? rkMons().map(m => ({ v: m.id, n: m.name, img: `assets/monster/${m.icon}.png` }))
+  : rkWeapons().map(w => ({ v: w.k, n: w.n, img: `assets/part/${w.k}.png` })));
+const rkPickItem = (kind, v) => (v ? rkPickItems(kind).find(x => x.v === v) : null) || null;
+
+/* 고르기 버튼 속. 아무것도 안 골랐으면 아이콘 없이 안내 문구만 둡니다. */
+const rkPickHtml = (kind, v, empty) => {
+  const it = rkPickItem(kind, v);
+  return (it ? `<img src="${esc(it.img)}" width="26" height="26" alt="" loading="lazy">` : '')
+    + `<b${it ? '' : ' class="empty"'}>${esc(it ? it.n : empty)}</b>`;
+};
+
 const rkPass = r => (!rkF.star || r.star === rkF.star)
   && (!rkF.variant || r.variant === rkF.variant)
   && (!rkF.monster || r.monster === rkF.monster)
@@ -96,11 +110,11 @@ const rkPass = r => (!rkF.star || r.star === rkF.star)
   && (!rkF.style || r.style === rkF.style);
 
 /* ── 목록 ──────────────────────────────────────────────────────────── */
-const RK_COLS = 'id,nickname,monster,star,variant,weapon,style,time_cs,video_url,build,created_at';
+const RK_COLS = 'id,nickname,monster,star,variant,weapon,style,time_sec,video_url,build,created_at';
 
 async function rkLoad() {
   try {
-    const r = await rest(`records?select=${RK_COLS}&order=time_cs.asc&limit=${RK_LIMIT}`);
+    const r = await rest(`records?select=${RK_COLS}&order=time_sec.asc&limit=${RK_LIMIT}`);
     if (!r.ok) throw new Error(await r.text());
     rkRows = await r.json();
     rkRender();
@@ -111,57 +125,55 @@ async function rkLoad() {
   }
 }
 
+/* 지금 화면에 깔린 목록. 크게 보기 모달의 이전/다음이 이 순서로 넘어갑니다. */
+let rkShown = [];
+
 function rkRender() {
-  const list = rkRows.filter(rkPass);          // 서버가 이미 time_cs 오름차순으로 줍니다
+  rkShown = rkRows.filter(rkPass);             // 서버가 이미 time_sec 오름차순으로 줍니다
   /* 순위는 '지금 보고 있는 판'의 순위입니다. 몬스터를 안 고르면 여러 몬스터가
-     섞여 있어 숫자가 뜻을 잃으므로, 그때는 번호 대신 몬스터 아이콘만 보여줍니다. */
+     섞여 있어 숫자가 뜻을 잃으므로, 그때는 번호를 아예 안 붙입니다. */
   const ranked = !!rkF.monster;
 
-  $('#rk-list').innerHTML = list.map((r, i) => rkItem(r, ranked ? i + 1 : 0)).join('');
-  $('#rk-count').textContent = list.length === rkRows.length
+  $('#rk-list').innerHTML = rkShown.map((r, i) => rkItem(r, i, ranked ? i + 1 : 0)).join('');
+  $('#rk-count').textContent = rkShown.length === rkRows.length
     ? `${rkRows.length}건`
-    : `${list.length}건 / 전체 ${rkRows.length}건`;
+    : `${rkShown.length}건 / 전체 ${rkRows.length}건`;
+  $('#rk-reset').hidden = !rkF.star && !rkF.variant && !rkF.monster && !rkF.weapon && !rkF.style;
 
   const state = $('#rk-state');
-  state.hidden = list.length > 0;
+  state.hidden = rkShown.length > 0;
   state.textContent = rkRows.length
     ? '조건에 맞는 기록이 없습니다. 필터를 바꿔보세요.'
     : '아직 등록된 기록이 없습니다. 첫 기록을 올려보세요!';
 }
 
-function rkItem(r, rank) {
+/* 숏츠가 기준이라 카드는 세로(9:16)입니다. 유튜브 썸네일(4:3)에 세로 영상이
+   좌우 검은 띠와 함께 들어 있는데, 9:16 칸에 cover 로 넣으면 그 띠가 정확히 잘려
+   원본 화면만 남습니다. */
+function rkItem(r, i, rank) {
   const v = rkVid(r.video_url);
   const mon = rkMon(r.monster);
-  const icon = mon ? `assets/monster/${esc(mon.icon)}.png` : '';
+  const badges = `
+    ${rank ? `<span class="rk-no${rank <= 3 ? ' top' : ''}">${rank}</span>` : ''}
+    <span class="rk-src">${v ? (v.kind === 'yt' ? 'YouTube' : 'X') : '영상'}</span>
+    <span class="rk-t">${rkTime(r.time_sec)}</span>`;
   return `
   <li class="rk-item" data-id="${r.id}">
-    <div class="rk-vid">
-      ${v ? `<button class="rk-play" type="button" data-embed="${esc(rkEmbed(v))}" aria-label="영상 재생">
-        ${v.kind === 'yt'
-          ? `<img src="${esc(rkThumb(v))}" alt="" loading="lazy" onerror="this.hidden=true">`
-          : ''}
-        <span class="rk-pi" aria-hidden="true">▶</span>
-        <span class="rk-src">${v.kind === 'yt' ? 'YouTube' : 'X'}</span>
-      </button>` : '<p class="rk-noembed">영상을 표시할 수 없습니다</p>'}
-    </div>
+    ${v ? `<button class="rk-play" type="button" data-i="${i}" aria-label="${esc(r.nickname)} 영상 크게 보기">
+      ${v.kind === 'yt' ? `<img src="${esc(rkThumb(v))}" alt="" loading="lazy" onerror="this.hidden=true">` : ''}
+      <span class="rk-pi" aria-hidden="true">▶</span>${badges}
+    </button>` : `<div class="rk-play none">${badges}<p class="rk-noembed">영상을 표시할 수 없습니다</p></div>`}
     <div class="rk-info">
-      <div class="rk-top">
-        ${rank ? `<span class="rk-no${rank <= 3 ? ' top' : ''}">${rank}</span>` : ''}
-        ${icon ? `<img class="rk-mi" src="${icon}" width="30" height="30" alt="" loading="lazy">` : ''}
-        <b class="rk-t">${rkTime(r.time_cs)}</b>
+      <p class="rk-nick">${esc(r.nickname)}
         <button class="icon danger rk-del" data-act="del" aria-label="기록 삭제" title="삭제 (비밀번호 필요)">${TRASH_ICON}</button>
-      </div>
-      <p class="rk-nick">${esc(r.nickname)}</p>
+      </p>
       <div class="rk-tags">
-        <span class="chip">${esc(mon ? mon.name : r.monster)}</span>
+        <span class="chip">${mon ? `<img class="rk-mi" src="assets/monster/${esc(mon.icon)}.png" width="16" height="16" alt="" loading="lazy">` : ''}${esc(mon ? mon.name : r.monster)}</span>
         <span class="chip star">★${r.star}</span>
         ${r.variant === 'dim' ? '<span class="chip dim">차원변이</span>' : ''}
         <span class="chip">${esc(rkWeaponName(r.weapon))}${r.style ? ` <b>${esc(r.style)}</b>` : ''}</span>
       </div>
-      <div class="rk-links">
-        ${r.build ? `<a class="btn ghost" href="?build=${esc(r.build)}#build">빌드 보기</a>` : ''}
-        <a class="btn ghost" href="${esc(r.video_url)}" target="_blank" rel="noopener noreferrer">원본 열기</a>
-      </div>
+      ${r.build ? `<a class="btn ghost rk-bd" href="?build=${esc(r.build)}#build">빌드 보기</a>` : ''}
     </div>
   </li>`;
 }
@@ -180,24 +192,22 @@ function rkFilterUI() {
     ${chips('variant', Object.entries(RK_VARIANT))}
     <p class="stone-label">몬스터 · 무기</p>
     <div class="rk-selects">
-      <label class="field"><span>몬스터</span>
-        <select id="rk-fmon">
-          <option value="">전체</option>
-          ${rkMons().map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}
-        </select>
-      </label>
-      <label class="field"><span>무기</span>
-        <select id="rk-fwp">
-          <option value="">전체</option>
-          ${rkWeapons().map(w => `<option value="${esc(w.k)}">${esc(w.n)}</option>`).join('')}
-        </select>
-      </label>
+      <div class="field"><span>몬스터</span>
+        <button type="button" class="rk-pick" id="rk-fmon" data-pick="monster"></button>
+      </div>
+      <div class="field"><span>무기</span>
+        <button type="button" class="rk-pick" id="rk-fwp" data-pick="weapon"></button>
+      </div>
       <label class="field" id="rk-fstyle-f" hidden><span>스타일</span>
         <select id="rk-fstyle"><option value="">전체</option></select>
       </label>
     </div>`;
+  rkFilterLabels();
 
   $('#rk-filter').addEventListener('click', e => {
+    const pick = e.target.closest('.rk-pick');
+    if (pick) return rkPickOpen(pick.dataset.pick, 'f');
+
     const chip = e.target.closest('.mt-chip');
     if (!chip) return;
     rkF[chip.dataset.f] = chip.dataset.f === 'star' ? Number(chip.dataset.v || 0) : chip.dataset.v;
@@ -207,35 +217,134 @@ function rkFilterUI() {
     rkRender();
   });
 
-  $('#rk-fmon').addEventListener('change', e => { rkF.monster = e.target.value; rkRender(); });
-  /* 스타일은 무기에 딸린 목록이라 무기를 고른 뒤에만 뜹니다. */
-  $('#rk-fwp').addEventListener('change', e => {
-    rkF.weapon = e.target.value;
-    rkF.style = '';
-    const styles = rkStyles(rkF.weapon);
-    $('#rk-fstyle-f').hidden = !styles.length;
-    $('#rk-fstyle').innerHTML = '<option value="">전체</option>'
-      + styles.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  $('#rk-fstyle').addEventListener('change', e => { rkF.style = e.target.value; rkRender(); });
+  $('#rk-reset').addEventListener('click', () => {
+    rkF.star = 0;
+    rkF.variant = rkF.monster = rkF.weapon = rkF.style = '';
+    // '전체' 칩(data-v="")만 켜진 상태로 되돌립니다.
+    for (const b of $('#rk-filter').querySelectorAll('.mt-chip')) b.classList.toggle('on', !b.dataset.v);
+    rkFilterLabels();
     rkRender();
   });
-  $('#rk-fstyle').addEventListener('change', e => { rkF.style = e.target.value; rkRender(); });
 }
 
-/* ── 재생 · 삭제 ───────────────────────────────────────────────────── */
+function rkFilterLabels() {
+  $('#rk-fmon').innerHTML = rkPickHtml('monster', rkF.monster, '전체');
+  $('#rk-fwp').innerHTML = rkPickHtml('weapon', rkF.weapon, '전체');
+  /* 스타일은 무기에 딸린 목록이라 무기를 고른 뒤에만 뜹니다. */
+  const styles = rkStyles(rkF.weapon);
+  $('#rk-fstyle-f').hidden = !styles.length;
+  $('#rk-fstyle').innerHTML = '<option value="">전체</option>'
+    + styles.map(s => `<option value="${esc(s)}"${s === rkF.style ? ' selected' : ''}>${esc(s)}</option>`).join('');
+}
+
+/* ── 몬스터 · 무기 고르기 (빌드 탭 모달을 같이 씁니다) ──────────────
+   #bd-modal 과 .bd-grid 는 build.js 것을 그대로 빌려 씁니다. 같은 격자를 한 벌 더
+   만들 이유가 없습니다. 누가 연 모달인지는 dataset.owner 로 갈립니다. */
+let rkPick = null;      // { kind: 'monster'|'weapon', where: 'f'(필터) | 'form'(등록창) }
+
+function rkPickOpen(kind, where) {
+  rkPick = { kind, where };
+  const mon = kind === 'monster';
+  bdOpen(mon ? '몬스터 선택' : '무기 선택', '', mon, { placeholder: '몬스터 이름' });
+  $('#bd-modal').dataset.owner = 'record';
+  rkPickFill('');
+}
+
+function rkPickFill(q) {
+  const { kind, where } = rkPick;
+  const norm = s => String(s).toLowerCase().replace(/\s+/g, '');
+  const needle = norm(q);
+  const cur = where === 'f' ? rkF[kind] : rkForm[kind];
+  const items = rkPickItems(kind).filter(it => !needle || norm(it.n).includes(needle));
+
+  $('#bd-modal-count').textContent = `${items.length}종`;
+  $('#bd-modal-body').innerHTML = items.length ? `<div class="bd-grid">
+    ${where === 'f' ? `<button class="bd-gi rk-any${cur ? '' : ' on'}" data-v="">전체 보기</button>` : ''}
+    ${items.map(it => `
+      <button class="bd-gi${it.v === cur ? ' on' : ''}" data-v="${esc(it.v)}">
+        <img src="${esc(it.img)}" width="40" height="40" alt="" loading="lazy">
+        <span>${esc(it.n)}</span>
+      </button>`).join('')}
+  </div>` : `<p class="bd-empty">일치하는 ${kind === 'monster' ? '몬스터' : '무기'}가 없습니다.</p>`;
+}
+
+/* 모달의 클릭·검색은 build.js 도 듣고 있습니다. 서로 owner 를 보고 남의 차례에는 빠집니다. */
+function rkModalUI() {
+  $('#bd-modal-body').addEventListener('click', e => {
+    if ($('#bd-modal').dataset.owner !== 'record') return;
+    const gi = e.target.closest('.bd-gi');
+    if (!gi) return;
+    const { kind, where } = rkPick;
+    if (where === 'f') {
+      rkF[kind] = gi.dataset.v;
+      if (kind === 'weapon') rkF.style = '';     // 무기가 바뀌면 스타일은 뜻을 잃습니다
+      rkFilterLabels();
+      rkRender();
+    } else {
+      rkForm[kind] = gi.dataset.v;
+      rkFormLabels();
+    }
+    $('#bd-modal').close();
+  });
+
+  $('#bd-q').addEventListener('input', e => {
+    if ($('#bd-modal').dataset.owner === 'record') rkPickFill(e.target.value);
+  });
+}
+
+/* ── 크게 보기 · 삭제 ──────────────────────────────────────────────── */
 function rkListUI() {
   $('#rk-list').addEventListener('click', e => {
-    const play = e.target.closest('.rk-play');
-    if (play) {
-      /* 썸네일 자리를 iframe 으로 바꿉니다. X 임베드는 제 높이를 알려주지 않아
-         style.css 에서 고정해 두었습니다 — 글이 길면 트윗 안에서 스크롤됩니다. */
-      const box = play.parentElement;
-      box.classList.add(play.dataset.embed.includes('platform.twitter.com') ? 'x' : 'yt');
-      box.innerHTML = `<iframe src="${esc(play.dataset.embed)}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; clipboard-write" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="토벌 영상"></iframe>`;
-      return;
-    }
     const del = e.target.closest('[data-act="del"]');
-    if (del) rkAskDelete(del.closest('.rk-item').dataset.id);
+    if (del) return rkAskDelete(del.closest('.rk-item').dataset.id);
+    const play = e.target.closest('.rk-play');
+    if (play) rkOpenView(Number(play.dataset.i));
   });
+
+  $('#rk-v-prev').addEventListener('click', () => rkOpenView(rkAt - 1));
+  $('#rk-v-next').addEventListener('click', () => rkOpenView(rkAt + 1));
+  $('#rk-v-close').addEventListener('click', () => $('#rk-view').close());
+  $('#rk-view').addEventListener('click', e => { if (e.target === $('#rk-view')) $('#rk-view').close(); });
+  /* 화살표로도 넘깁니다. dialog 가 열려 있는 동안 키보드 초점이 안에 있습니다. */
+  $('#rk-view').addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') rkOpenView(rkAt - 1);
+    else if (e.key === 'ArrowRight') rkOpenView(rkAt + 1);
+  });
+  // 닫을 때 iframe 을 걷어냅니다. 남겨두면 뒤에서 소리가 계속 납니다.
+  $('#rk-view').addEventListener('close', () => { $('#rk-v-body').innerHTML = ''; rkAt = -1; });
+}
+
+let rkAt = -1;      // rkShown 안에서 지금 보고 있는 자리
+
+function rkOpenView(i) {
+  const r = rkShown[i];
+  if (!r) return;                       // 처음/끝에서 더 넘기려 한 경우
+  rkAt = i;
+  const v = rkVid(r.video_url);
+  const mon = rkMon(r.monster);
+
+  $('#rk-v-title').innerHTML = `<b>${rkTime(r.time_sec)}</b><span>${esc(r.nickname)}</span>`;
+  $('#rk-v-tags').innerHTML = `
+    <span class="chip">${mon ? `<img class="rk-mi" src="assets/monster/${esc(mon.icon)}.png" width="16" height="16" alt="">` : ''}${esc(mon ? mon.name : r.monster)}</span>
+    <span class="chip star">★${r.star}</span>
+    ${r.variant === 'dim' ? '<span class="chip dim">차원변이</span>' : ''}
+    <span class="chip">${esc(rkWeaponName(r.weapon))}${r.style ? ` <b>${esc(r.style)}</b>` : ''}</span>`;
+
+  /* X 임베드는 제 높이를 알려주지 않아 CSS 로 고정합니다. 유튜브만 세로 비율입니다. */
+  const body = $('#rk-v-body');
+  body.className = 'rk-v-body' + (v ? ' ' + v.kind : '');
+  body.innerHTML = v
+    ? `<iframe src="${esc(rkEmbed(v))}" allow="autoplay; encrypted-media; picture-in-picture; clipboard-write" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="토벌 영상"></iframe>`
+    : '<p class="rk-noembed">영상을 표시할 수 없습니다</p>';
+
+  $('#rk-v-src').href = r.video_url;
+  $('#rk-v-build').hidden = !r.build;
+  if (r.build) $('#rk-v-build').href = `?build=${r.build}#build`;
+  $('#rk-v-prev').disabled = i === 0;
+  $('#rk-v-next').disabled = i === rkShown.length - 1;
+  $('#rk-v-pos').textContent = `${i + 1} / ${rkShown.length}`;
+  if (!$('#rk-view').open) $('#rk-view').showModal();
 }
 
 let rkPending = null;
@@ -249,23 +358,37 @@ function rkAskDelete(id) {
 }
 
 /* ── 등록 ──────────────────────────────────────────────────────────── */
+const rkOpt = (list, val, label) => list.map(x => `<option value="${esc(String(val(x)))}">${esc(String(label(x)))}</option>`).join('');
+
+
+/* 고른 몬스터·무기를 버튼에 반영합니다. 스타일 목록도 무기에 맞춰 다시 채웁니다. */
+function rkFormLabels() {
+  $('#rk-mon').innerHTML = rkPickHtml('monster', rkForm.monster, '몬스터 선택');
+  $('#rk-wp').innerHTML = rkPickHtml('weapon', rkForm.weapon, '무기 선택');
+  const styles = rkStyles(rkForm.weapon);
+  $('#rk-style-f').hidden = !styles.length;
+  $('#rk-style').innerHTML = '<option value="">선택 안 함</option>' + rkOpt(styles, s => s, s => s);
+}
+
 function rkFormUI() {
-  const opt = (list, val, label) => list.map(x => `<option value="${esc(String(val(x)))}">${esc(String(label(x)))}</option>`).join('');
-  $('#rk-mon').innerHTML = opt(rkMons(), m => m.id, m => m.name);
-  $('#rk-wp').innerHTML = opt(rkWeapons(), w => w.k, w => w.n);
+  const opt = rkOpt;
   $('#rk-star').innerHTML = opt(RK_STARS, s => s, s => '★' + s);
   $('#rk-var').innerHTML = opt(Object.entries(RK_VARIANT), v => v[0], v => v[1]);
 
   // 대부분의 기록이 10성이라 기본값으로 둡니다. 잘못 올려도 지우려면 비밀번호가 필요합니다.
   $('#rk-star').value = '10';
+  rkFormLabels();
 
-  /* 스타일은 무기에 딸린 목록입니다. 무기가 바뀌면(등록 후 form.reset() 포함) 다시 채웁니다. */
-  $('#rk-wp').addEventListener('change', () => {
-    const styles = rkStyles($('#rk-wp').value);
-    $('#rk-style-f').hidden = !styles.length;
-    $('#rk-style').innerHTML = '<option value="">선택 안 함</option>' + opt(styles, s => s, s => s);
+  $('#rk-reg-form').addEventListener('click', e => {
+    const pick = e.target.closest('.rk-pick');
+    if (pick) rkPickOpen(pick.dataset.pick, 'form');
   });
-  $('#rk-wp').dispatchEvent(new Event('change'));
+
+  /* 초 단위 정수만 받습니다. inputmode 는 모바일 자판만 바꿀 뿐이고 form 이 novalidate 라
+     pattern 도 안 걸립니다 — 친구 코드 칸처럼 입력하는 족족 숫자만 남깁니다. */
+  $('#rk-time').addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+  });
 
   /* URL 을 붙여넣는 즉시 무엇으로 인식했는지 보여줍니다. 등록 후에야 틀린 걸
      알게 되면 다시 채워야 하니, 여기서 미리 알려줍니다. */
@@ -279,7 +402,16 @@ function rkFormUI() {
       : '<p>유튜브(숏츠 포함) 또는 X 영상 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.</p>';
   });
 
-  $('#rk-open').addEventListener('click', () => { $('#rk-err').hidden = true; $('#rk-reg').showModal(); $('#rk-nick').focus(); });
+  /* 닉네임 자동완성. 추천빌드 등록창과 같은 것을 씁니다 — app.js 의 nickAuto(). */
+  nickAuto('#rk-nick', '#rk-nick-list', '#rk-nick-hint');
+
+  $('#rk-open').addEventListener('click', () => {
+    $('#rk-err').hidden = true;
+    $('#rk-nick-hint').hidden = true;
+    if (!$('#rk-nick').value) $('#rk-nick').value = lastNick();
+    $('#rk-reg').showModal();
+    $('#rk-nick').focus();
+  });
   $('#rk-cancel').addEventListener('click', () => $('#rk-reg').close());
   $('#rk-reg').addEventListener('click', e => { if (e.target === $('#rk-reg')) $('#rk-reg').close(); });
   $('#rk-reg-form').addEventListener('submit', rkSubmit);
@@ -293,7 +425,7 @@ async function rkSubmit(e) {
   e.preventDefault();
   const err = $('#rk-err');
   const nickname = $('#rk-nick').value.trim().replace(/\s+/g, ' ');
-  const time_cs = rkParse($('#rk-time').value);
+  const time_sec = rkParse($('#rk-time').value);
   const vid = rkVid($('#rk-url').value);
   const buildRaw = $('#rk-build').value.trim();
   const build = rkBuildParam(buildRaw);
@@ -301,7 +433,9 @@ async function rkSubmit(e) {
 
   const bad = !nickname ? '닉네임을 입력해 주세요.'
     : nickname.length > 20 ? '닉네임은 20자 이내로 입력해 주세요.'
-    : time_cs == null ? '시간은 1:23.45 또는 83.45 형식으로 입력해 주세요.'
+    : !rkForm.monster ? '몬스터를 골라주세요.'
+    : !rkForm.weapon ? '무기를 골라주세요.'
+    : time_sec == null ? '토벌 시간은 초 단위 정수로 적어주세요. 예) 45'
     : !vid ? '유튜브 또는 X 영상 주소만 등록할 수 있습니다.'
     : buildRaw && !build ? '빌드 링크는 빌드 탭의 공유 링크(?build=…)를 붙여넣어 주세요.'
     : password.length < 4 ? '삭제용 비밀번호는 4자 이상 입력해 주세요.'
@@ -313,12 +447,12 @@ async function rkSubmit(e) {
   err.hidden = true;
   const row = {
     nickname,
-    monster: $('#rk-mon').value,
+    monster: rkForm.monster,
     star: Number($('#rk-star').value),
     variant: $('#rk-var').value,
-    weapon: $('#rk-wp').value,
+    weapon: rkForm.weapon,
     style: $('#rk-style').value || null,
-    time_cs,
+    time_sec,
     video_url: rkCanon(vid),
     build,
   };
@@ -328,7 +462,7 @@ async function rkSubmit(e) {
       body: JSON.stringify({
         p_nickname: row.nickname, p_monster: row.monster, p_star: row.star,
         p_variant: row.variant, p_weapon: row.weapon, p_style: row.style,
-        p_time_cs: row.time_cs, p_video_url: row.video_url, p_build: row.build,
+        p_time_sec: row.time_sec, p_video_url: row.video_url, p_build: row.build,
         p_password: password,
       }),
     });
@@ -339,17 +473,22 @@ async function rkSubmit(e) {
     }
     row.id = await r.json();
     row.created_at = new Date().toISOString();
+    saveNick(nickname);          // 다음 등록창에 미리 채워 둡니다
     // 시간순 자리에 그대로 끼웁니다. 다시 받아올 이유가 없습니다.
-    const at = rkRows.findIndex(x => x.time_cs > row.time_cs);
+    const at = rkRows.findIndex(x => x.time_sec > row.time_sec);
     rkRows.splice(at < 0 ? rkRows.length : at, 0, row);
     rkRender();
     $('#rk-reg').close();
     $('#rk-reg-form').reset();
-    // reset() 은 선택칸을 첫 항목으로 되돌립니다. 기본값과 스타일 목록을 다시 맞춰줍니다.
+    /* reset() 은 선택칸만 되돌립니다. 기본값과 모달로 고른 몬스터·무기는 직접 비웁니다.
+       (연달아 올릴 때 앞 기록의 몬스터가 남아 있으면 그대로 또 올라갑니다) */
     $('#rk-star').value = '10';
-    $('#rk-wp').dispatchEvent(new Event('change'));
+    rkForm.monster = rkForm.weapon = null;
+    rkFormLabels();
+    $('#rk-nick').value = lastNick();               // reset() 이 지운 닉네임은 되살립니다
+    $('#rk-nick-hint').hidden = true;
     $('#rk-preview').className = 'preview';
-    $('#rk-preview').innerHTML = '<p>유튜브(숏츠 포함) 또는 X 영상 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.</p>';
+    $('#rk-preview').innerHTML = '<p>유튜브 숏츠 또는 X 영상 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.</p>';
     toast('기록이 등록되었습니다!');
   } catch (e3) {
     err.textContent = e3.message === 'DUP'
@@ -402,6 +541,7 @@ function drawRecord() {
   rkDrawn = true;
   rkFilterUI();
   rkListUI();
+  rkModalUI();
   rkFormUI();
   rkLoad();
 }

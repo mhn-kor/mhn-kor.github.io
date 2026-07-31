@@ -24,7 +24,7 @@
 <!-- GitHub Pages 는 파일마다 max-age=600 으로 따로 캐시합니다. 새 index.html 과 옛 style.css 가
      10분간 섞일 수 있으므로 버전을 붙여 강제로 새로 받게 합니다.
      style.css / app.js 를 고칠 때마다 아래 두 곳의 v= 값을 같이 올려주세요. -->
-<link rel="stylesheet" href="style.css?v=20260801i">
+<link rel="stylesheet" href="style.css?v=20260801u">
 </head>
 <body>
 
@@ -66,6 +66,7 @@
     <a href="#codes" data-tab="codes">친구 코드</a>
     <a href="#smelt" data-tab="smelt">표류연성</a>
     <a href="#build" data-tab="build">빌드</a>
+    <a href="#recommend" data-tab="recommend">추천빌드</a>
     <a href="#material" data-tab="material">재료</a>
     <a href="#record" data-tab="record">리더보드</a>
   </nav>
@@ -282,7 +283,7 @@
   <div class="hero tight">
     <span class="kicker">리더보드</span>
     <h1>몬스터별 <em>최속 토벌</em> 기록</h1>
-    <p>유튜브(숏츠 포함) 또는 X 영상 주소만 넣으면 그 자리에서 영상이 붙습니다.<br>
+    <p>유튜브 숏츠 또는 X 영상 주소만 넣으면 그 자리에서 영상이 붙습니다. 카드를 누르면 크게 볼 수 있습니다.<br>
        난이도 · 종류(일반 · 차원변이) · 몬스터 · 무기(스타일)로 걸러 보세요. 몬스터를 고르면 순위가 매겨집니다.</p>
   </div>
 
@@ -291,12 +292,30 @@
 
   <div class="bd-tools">
     <button class="btn primary" id="rk-open">기록 등록</button>
+    <!-- 필터가 하나라도 걸려 있을 때만 보입니다. -->
+    <button class="btn ghost" id="rk-reset" hidden>필터 초기화</button>
     <span class="count" id="rk-count"></span>
   </div>
 
   <p class="state" id="rk-state">불러오는 중…</p>
   <ol class="rk-list" id="rk-list"></ol>
 
+</section>
+
+<!-- 추천 빌드 -->
+<section class="wrap panel" id="panel-recommend" hidden>
+  <div class="lead">
+    <h1>남들이 쓰는 <em>추천 빌드</em></h1>
+    <p>빌드 탭에서 만든 구성을 올리고, 남이 올린 구성을 그대로 가져다 쓸 수 있습니다.
+      위에 있을수록 추천도가 높습니다 — 오래될수록 낮아지고, 좋아요·싫어요가 반영되며,
+      초보자가 지금 파밍하기 쉬운 소재로 만든 빌드는 크게 올라갑니다.</p>
+  </div>
+  <div class="rc-bar">
+    <div class="rc-chips" id="rc-f-weapon"></div>
+    <div class="rc-chips" id="rc-f-rest"></div>
+    <span class="rc-cnt" id="rc-count"></span>
+  </div>
+  <div id="rc-list"></div>
 </section>
 
 </main>
@@ -398,23 +417,36 @@
     <h2>토벌 기록 등록</h2>
     <label class="f">
       <span>닉네임</span>
-      <input id="rk-nick" type="text" maxlength="20" placeholder="예) 보노보노 / 태도" autocomplete="off" required>
+      <!-- 추천빌드 등록창과 같은 자동완성입니다 (app.js 의 nickAuto). -->
+      <div class="rc-ac">
+        <input id="rk-nick" type="text" maxlength="20" placeholder="예) 보노보노 / 태도 / 서울"
+               autocomplete="off" required
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rk-nick-list">
+        <ul class="rc-ac-list" id="rk-nick-list" role="listbox" hidden></ul>
+      </div>
+      <small id="rk-nick-hint" hidden>친구 코드에 등록된 닉네임입니다.</small>
     </label>
     <div class="rk-frow">
-      <label class="f"><span>몬스터</span><select id="rk-mon"></select></label>
+      <!-- 몬스터·무기는 아이콘 격자 모달로 고릅니다(빌드 탭 모달을 같이 씁니다). -->
+      <div class="f"><span>몬스터</span>
+        <button type="button" class="rk-pick" id="rk-mon" data-pick="monster"></button>
+      </div>
       <label class="f"><span>난이도</span><select id="rk-star"></select></label>
       <label class="f"><span>종류</span><select id="rk-var"></select></label>
     </div>
     <div class="rk-frow">
-      <label class="f"><span>무기</span><select id="rk-wp"></select></label>
-      <label class="f" id="rk-style-f"><span>스타일</span><select id="rk-style"></select></label>
+      <div class="f"><span>무기</span>
+        <button type="button" class="rk-pick" id="rk-wp" data-pick="weapon"></button>
+      </div>
+      <label class="f" id="rk-style-f" hidden><span>스타일</span><select id="rk-style"></select></label>
       <label class="f">
-        <span>토벌 시간 <i>1:23.45 · 83.45</i></span>
-        <input id="rk-time" type="text" inputmode="decimal" placeholder="83.45" autocomplete="off" required>
+        <span>토벌 시간 <i>초</i></span>
+        <input id="rk-time" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4"
+               placeholder="예) 45" autocomplete="off" required>
       </label>
     </div>
     <label class="f">
-      <span>영상 주소 <i>유튜브 숏츠 · X</i></span>
+      <span>영상 주소 <i>유튜브 숏츠 또는 X</i></span>
       <input id="rk-url" type="url" placeholder="https://youtube.com/shorts/… 또는 https://x.com/…/status/…" autocomplete="off" required>
     </label>
     <div class="preview" id="rk-preview">
@@ -423,7 +455,8 @@
     <label class="f">
       <span>빌드 링크 <i>선택</i></span>
       <input id="rk-build" type="text" placeholder="빌드 탭에서 복사한 링크 (?build=…)" autocomplete="off">
-      <small>빌드 탭에서 <b>링크 복사</b>로 만든 주소를 붙여넣으면 기록에 빌드가 함께 걸립니다.</small>
+      <button type="button" class="btn ghost" id="rk-from-rc">추천빌드에서 고르기</button>
+      <small>빌드 탭에서 <b>링크 복사</b>로 만든 주소를 붙여넣거나, 추천빌드 탭에 올라온 것을 골라도 됩니다.</small>
     </label>
     <label class="f">
       <span>삭제용 비밀번호 <i>4자 이상</i></span>
@@ -435,6 +468,29 @@
       <button type="submit" class="btn primary" id="rk-submit">등록하기</button>
     </menu>
   </form>
+</dialog>
+
+<!-- 리더보드 영상 크게 보기. 이전/다음은 지금 걸려 있는 필터 안에서만 움직입니다. -->
+<dialog id="rk-view">
+  <div class="rk-vh">
+    <h2 id="rk-v-title"></h2>
+    <button type="button" id="rk-v-close" aria-label="닫기" title="닫기">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="rk-tags" id="rk-v-tags"></div>
+  <div class="rk-v-body" id="rk-v-body"></div>
+  <!-- 창 아래에 고정되는 줄. 좁은 화면에서 줄바꿈으로 흩어지지 않도록
+       이동(1줄) · 링크(1줄) 로 자리를 못 박아 둡니다. -->
+  <div class="rk-vf">
+    <button type="button" class="btn ghost" id="rk-v-prev" aria-label="이전 영상">← 이전</button>
+    <span class="count" id="rk-v-pos"></span>
+    <button type="button" class="btn ghost" id="rk-v-next" aria-label="다음 영상">다음 →</button>
+    <div class="rk-vlinks">
+      <a class="btn ghost" id="rk-v-build" href="#build">빌드 보기</a>
+      <a class="btn ghost" id="rk-v-src" href="#" target="_blank" rel="noopener noreferrer">원본 열기</a>
+    </div>
+  </div>
 </dialog>
 
 <!-- 리더보드 기록 삭제 -->
@@ -463,6 +519,98 @@
   </menu>
 </dialog>
 
+<!-- 추천 빌드 미리보기 -->
+<dialog id="rc-view">
+  <div class="bd-mh">
+    <h2 id="rc-view-title"></h2>
+    <button type="button" id="rc-view-close" aria-label="닫기" title="닫기">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <p class="rc-view-sub" id="rc-view-sub"></p>
+  <div id="rc-view-body"></div>
+  <footer class="rc-view-foot">
+    <button type="button" class="btn primary" id="rc-view-use" data-rc-use="">내 빌드로 가져오기</button>
+  </footer>
+</dialog>
+
+<!-- 리더보드 기록에 붙일 추천 빌드 고르기 -->
+<dialog id="rc-pickdlg">
+  <h2>추천 빌드에서 고르기</h2>
+  <!-- 검색칸은 장비 검색 모달과 같은 모양(.bd-search)입니다. 개수도 그쪽처럼 칸 안에 둡니다. -->
+  <label class="bd-search" id="rc-pick-search">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+    </svg>
+    <input id="rc-pick-q" type="search" placeholder="제목 · 닉네임 · 무기 · 상황 검색" autocomplete="off" aria-label="추천 빌드 검색">
+    <span id="rc-pick-count"></span>
+  </label>
+  <div id="rc-pick-list"></div>
+  <menu>
+    <button type="button" class="btn ghost" id="rc-pick-cancel">닫기</button>
+  </menu>
+</dialog>
+
+<!-- 추천 빌드 삭제 -->
+<dialog id="rc-del">
+  <form id="rc-del-form" method="dialog">
+    <h2>추천 빌드 삭제</h2>
+    <p class="del-what" id="rc-del-what"></p>
+    <label class="f">
+      <span>비밀번호</span>
+      <input id="rc-del-pw" type="password" maxlength="40" autocomplete="current-password" required>
+    </label>
+    <p class="err" id="rc-del-err" hidden></p>
+    <menu>
+      <button type="button" class="btn ghost" id="rc-del-cancel">취소</button>
+      <button type="submit" class="btn danger">삭제</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- 추천 빌드 등록 -->
+<dialog id="rc-add">
+  <form id="rc-add-form" method="dialog">
+    <h2>추천 빌드로 등록</h2>
+    <p class="del-what" id="rc-add-what"></p>
+    <label class="f">
+      <span>닉네임</span>
+      <div class="rc-ac">
+        <input id="rc-nick" type="text" maxlength="20" autocomplete="off" required
+               role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rc-nick-list">
+        <ul class="rc-ac-list" id="rc-nick-list" role="listbox" hidden></ul>
+      </div>
+      <small id="rc-nick-hint" hidden>친구 코드에 등록된 닉네임입니다.</small>
+    </label>
+    <div class="f">
+      <span>누구를 위한 빌드인가요?</span>
+      <div class="rc-pick" id="rc-tier"></div>
+    </div>
+    <div class="f">
+      <span>어디에서 쓰나요? <i>여러 개 고를 수 있습니다</i></span>
+      <div class="rc-pick" id="rc-scene"></div>
+    </div>
+    <div class="f">
+      <span>혼자인가요, 파티인가요? <i>둘 다 고를 수 있습니다</i></span>
+      <div class="rc-pick" id="rc-party"></div>
+    </div>
+    <label class="f row">
+      <input id="rc-easy" type="checkbox">
+      <span>이번 시즌에 파밍하기 쉬운 소재입니다
+        <i>초보자 빌드일 때 추천도가 크게 올라갑니다</i></span>
+    </label>
+    <label class="f">
+      <span>삭제용 비밀번호 <i>4자 이상</i></span>
+      <input id="rc-pw" type="password" maxlength="40" autocomplete="new-password" required>
+    </label>
+    <p class="err" id="rc-add-err" hidden></p>
+    <menu>
+      <button type="button" class="btn ghost" id="rc-add-cancel">취소</button>
+      <button type="submit" class="btn primary" id="rc-add-submit">등록하기</button>
+    </menu>
+  </form>
+</dialog>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <!-- 카카오톡 공유용 JavaScript 키. 브라우저에 노출되는 게 정상인 키입니다.
@@ -476,21 +624,24 @@
      됩니다(SDK 기본 템플릿은 3줄 제한). 비우면 3줄 예비 카드로 내려갑니다. */
   window.KAKAO_TEMPLATE_ID = 135805;
 </script>
-<script src="smelt-data.js?v=20260801i"></script>
-<script src="build-data.js?v=20260801i"></script>
-<script src="build-styles.js?v=20260801i"></script>
-<script src="skill-desc.js?v=20260801i"></script>
+<script src="smelt-data.js?v=20260801u"></script>
+<script src="build-data.js?v=20260801u"></script>
+<script src="build-styles.js?v=20260801u"></script>
+<script src="skill-desc.js?v=20260801u"></script>
 <!-- material.js 는 app.js 보다 먼저 읽혀야 합니다. 첫 화면이 #material 이면
      app.js 가 곧바로 drawMaterial() 을 부릅니다. -->
-<script src="material-data.js?v=20260801i"></script>
-<script src="material.js?v=20260801i"></script>
+<script src="material-data.js?v=20260801u"></script>
+<script src="material.js?v=20260801u"></script>
 <!-- record.js 도 app.js 의 showTab() 이 곧바로 부를 수 있으므로 먼저 읽힙니다.
      app.js 의 $ / esc / rest 는 함수 안에서만 쓰므로 순서가 앞서도 됩니다. -->
-<script src="record.js?v=20260801i"></script>
+<script src="record.js?v=20260801u"></script>
 <script src="vendor/qrcode.min.js"></script>
-<script src="app.js?v=20260801i"></script>
+<script src="app.js?v=20260801u"></script>
 <!-- build.js 는 app.js 의 $ / esc / toast 를 씁니다. 반드시 뒤에 둡니다.
      showTab() 은 DOMContentLoaded 이후 호출되므로 순서가 늦어도 됩니다. -->
-<script src="build.js?v=20260801i"></script>
+<script src="build.js?v=20260801u"></script>
+<!-- recommend.js 는 app.js 의 $ / rest / toast 와 build.js 의 bdAdopt 를 씁니다.
+     둘 다 로드된 뒤여야 하므로 맨 뒤에 둡니다. -->
+<script src="recommend.js?v=20260801u"></script>
 </body>
 </html>

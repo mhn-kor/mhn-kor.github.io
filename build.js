@@ -187,11 +187,13 @@ function bdTotals(b) {
    하나의 기본값이 없어 켜고 끄게 둡니다. 기본은 전부 꺼짐입니다. */
 const BD_KIND = { atk: '공격력', crit: '회심률', ele: '속성', dmg: '대미지', critx: '회심 배율', hp: '체력' };
 function bdCondList(b) {
+  const bi = bdState.builds.indexOf(b);
+  /* 미리보기처럼 내 빌드 목록에 없는 것은 켜고 끌 수 없습니다(저장할 곳이 없습니다). */
+  if (bi < 0) return '';
   const { conds } = bdStats(b);
   if (!conds.length) return '';
   const on = b.cond || {};
   const n = conds.filter(c => on[c.sk]).length;
-  const bi = bdState.builds.indexOf(b);
   return `<div class="bd-cond">
     <p class="bd-cdh">조건부 스킬 <b>${n}/${conds.length}</b> <i>켠 것만 점수에 들어갑니다</i></p>
     ${conds.map(c => {
@@ -477,6 +479,7 @@ const BD_I = {
   copy: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
   link: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
   del: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  star: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 3 2.6 5.6 6 .8-4.4 4.2 1.1 6L12 16.8 6.7 19.6l1.1-6L3.4 9.4l6-.8z"/></svg>',
   kakao: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 3C6.9 3 2.8 6.2 2.8 10.2c0 2.5 1.6 4.8 4.2 6.1l-.9 3.3c-.1.3.2.5.5.4l3.9-2.4q.7.1 1.5.1c5.1 0 9.2-3.2 9.2-7.5S17.1 3 12 3z"/></svg>',
 };
 /* 이 이벤트 장비 5종은 몬스터 소재가 아니라서 참조 사이트에도 아이콘이 없습니다(404).
@@ -569,6 +572,7 @@ function bdCard(b, bi) {
       <header class="bd-ch">
         <input class="bd-title" data-name="${bi}" value="${esc(b.n)}" placeholder="빌드 ${bi + 1}" maxlength="24" aria-label="빌드 이름">
         <span class="bd-cnt">${picked}/6</span>
+        <button class="bd-ic" data-rec="${bi}" title="추천 빌드로 등록" aria-label="추천 빌드로 등록">${BD_I.star}</button>
         <button class="bd-ic" data-copy="${bi}" title="복제" aria-label="복제">${BD_I.copy}</button>
         <button class="bd-ic" data-link="${bi}" title="링크 복사" aria-label="링크 복사">${BD_I.link}</button>
         <button class="bd-ic kakao" data-kakao="${bi}" title="카카오톡 공유" aria-label="카카오톡 공유">${BD_I.kakao}</button>
@@ -680,7 +684,11 @@ let bdPick = null;             // { bi, target } 또는 { bi, part, slot } 등
 
 const bdDlg = () => $('#bd-modal');
 
+/* 이 모달은 리더보드 탭(record.js)도 같이 씁니다. 연 쪽을 dataset.owner 에 적어 두고
+   각자의 클릭·검색 처리기가 남의 차례에는 손을 떼게 합니다. record.js 는 bdOpen() 을
+   부른 뒤 owner 를 'record' 로 덮어씁니다. */
 function bdOpen(title, bodyHtml, withSearch, opt = {}) {
+  bdDlg().dataset.owner = 'build';
   $('#bd-modal-title').innerHTML = title;
   $('#bd-modal-body').innerHTML = bodyHtml;
   $('#bd-srow').hidden = !withSearch;
@@ -853,6 +861,8 @@ $('#bd-cards').addEventListener('click', e => {
     bdState.builds.splice(+cp.dataset.copy + 1, 0, JSON.parse(JSON.stringify({ ...src, n: '' })));
     bdSave(); bdRender(); return toast('복제했습니다');
   }
+  const rec = t.closest('[data-rec]');
+  if (rec) return bdOpenRecommend(+rec.dataset.rec);
   const bulk = t.closest('[data-bulk]');
   if (bulk) return bdOpenBulk(+bulk.dataset.bulk);
   const lk = t.closest('[data-link]');
@@ -880,6 +890,7 @@ $('#bd-cards').addEventListener('input', e => {
 
 /* 모달 내부 선택 */
 $('#bd-modal-body').addEventListener('click', e => {
+  if (bdDlg().dataset.owner !== 'build') return;      // 리더보드가 연 모달이면 record.js 담당
   const b = bdState.builds[bdPick.bi];
 
   const gi = e.target.closest('.bd-gi');
@@ -914,6 +925,7 @@ $('#bd-modal-body').addEventListener('click', e => {
 });
 
 $('#bd-q').addEventListener('input', e => {
+  if (bdDlg().dataset.owner !== 'build') return;
   const v = e.target.value.trim();
   if (bdPick?.kind === 'gear') bdFillGear(v);
   else if (bdPick?.kind === 'ds') bdFillStone(v);
@@ -960,6 +972,202 @@ $('#bd-detail').addEventListener('click', () => {
   bdState.detail = !bdState.detail;
   bdSave(); bdRender();
 });
+
+/* ── 추천 빌드 ─────────────────────────────────────────────────── */
+/* 등록은 recommend.js 가 아니라 여기 있습니다. 올릴 대상이 «지금 보고 있는 빌드»라
+   빌드 상태를 아는 쪽에서 여는 편이 단순합니다. */
+const RC_TIER_OPT = [['beginner', '초보자'], ['expert', '숙련자']];
+const RC_SCENE_OPT = [['field', '필드사냥'], ['intercept', '요격전'], ['swarm', '대량출현'], ['chain', '대연속'], ['elder', '고룡토벌']];
+const RC_PARTY_OPT = [['solo', '개인전'], ['party', '파티사냥']];
+let bdRecBi = null;
+
+function bdOpenRecommend(bi) {
+  const b = bdState.builds[bi];
+  if (!bdWeaponOf(b)) return toast('무기를 고른 뒤에 등록할 수 있습니다');
+  bdRecBi = bi;
+  const wt = BUILD.weaponTypes.find(t => t.k === b.wt);
+  const worn = BD_PARTS().filter(p => bdSet(b[p.k]) && bdSet(b[p.k]).pieces[p.k]).length;
+  $('#rc-add-what').innerHTML =
+    `<b>${esc((b.n || '').trim() || (wt ? wt.n : '') + ' 빌드')}</b> · ${esc(bdWeaponOf(b).name)}`
+    + ` · 방어구 ${worn}부위 · 점수 ${bdStats(b).score}`;
+  const pick = (id, opts, multi) => {
+    $(id).innerHTML = opts.map(([k, n]) =>
+      `<button type="button" class="rc-p" data-pick-val="${k}"${!multi && k === opts[0][0] ? ' data-one="1"' : ''}>${esc(n)}</button>`).join('');
+    $(id).dataset.multi = multi ? '1' : '';
+  };
+  pick('#rc-tier', RC_TIER_OPT, false);
+  pick('#rc-scene', RC_SCENE_OPT, true);
+  pick('#rc-party', RC_PARTY_OPT, true);
+  $('#rc-tier').querySelector('.rc-p').classList.add('on');   // 초보자를 기본으로
+  $('#rc-easy').checked = false;
+  $('#rc-nick').value = lastNick();
+  $('#rc-pw').value = '';
+  $('#rc-add-err').hidden = true;
+  $('#rc-add').showModal();
+}
+
+/* 고른 항목 모으기. 하나만 고르는 칸은 눌린 걸 하나만 남깁니다. */
+for (const id of ['#rc-tier', '#rc-scene', '#rc-party']) {
+  $(id).addEventListener('click', e => {
+    const p = e.target.closest('.rc-p');
+    if (!p) return;
+    if ($(id).dataset.multi) p.classList.toggle('on');
+    else { for (const x of $(id).children) x.classList.toggle('on', x === p); }
+  });
+}
+const bdRecPicked = (id) => [...$(id).querySelectorAll('.rc-p.on')].map(x => x.dataset.pickVal);
+
+/* 닉네임 자동완성. 리더보드 등록창과 같은 것을 씁니다 — app.js 의 nickAuto(). */
+nickAuto('#rc-nick', '#rc-nick-list', '#rc-nick-hint');
+
+$('#rc-add-cancel').addEventListener('click', () => $('#rc-add').close());
+$('#rc-add-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = $('#rc-add-err');
+  err.hidden = true;
+  const b = bdState.builds[bdRecBi];
+  const tier = bdRecPicked('#rc-tier')[0];
+  const scenes = bdRecPicked('#rc-scene');
+  const party = bdRecPicked('#rc-party');
+  const nick = $('#rc-nick').value.trim();
+  const pw = $('#rc-pw').value;
+  const fail = !tier ? '초보자인지 숙련자인지 골라 주세요.'
+    : !scenes.length ? '어디에서 쓰는 빌드인지 하나 이상 골라 주세요.'
+    : !party.length ? '개인전인지 파티사냥인지 골라 주세요.'
+    : pw.length < 4 ? '비밀번호는 4자 이상이어야 합니다.' : null;
+  if (fail) { err.textContent = fail; err.hidden = false; return; }
+
+  const wt = BUILD.weaponTypes.find(t => t.k === b.wt);
+  try {
+    const r = await rest('rpc/add_recommended_build', {
+      method: 'POST',
+      body: JSON.stringify({
+        p_nickname: nick, p_title: (b.n || '').trim() || null,
+        p_build: bdShareParam(bdRecBi), p_weapon: b.wt,
+        p_tier: tier, p_scenes: scenes, p_party: party,
+        p_easy_farm: $('#rc-easy').checked, p_password: pw,
+      }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    saveNick(nick);
+    $('#rc-add').close();
+    toast('추천 빌드로 등록했습니다');
+    /* 다음에 추천빌드 탭을 열 때 새로 받도록 표시만 해 둡니다. */
+    if (typeof rcLoaded !== 'undefined') rcLoaded = false;
+  } catch (e2) {
+    err.textContent = '등록하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+    err.hidden = false;
+  }
+});
+
+/* 추천빌드 탭에서 «가져오기» 를 누르면 부릅니다. 남의 빌드가 내 것을 덮으면 안 되므로
+   덮어쓰지 않고 새 카드로 얹습니다. */
+/* 공유 문자열을 빌드 객체로 풉니다. 상태를 건드리지 않아 추천빌드 카드의
+   미리보기처럼 «읽기만» 하는 곳에서도 쓸 수 있습니다. 못 읽으면 null. */
+function bdParse(param, title) {
+  const kv = {};
+  for (const part of decodeURIComponent(param || '').split(',')) {
+    const i = part.indexOf('=');
+    if (i > 0) kv[part.slice(0, i)] = part.slice(i + 1);
+  }
+  if (!kv.wt || !BUILD.weaponTypes.some(t => t.k === kv.wt)) return null;
+
+  const b = bdNewBuild();
+  b.n = String(title || '').slice(0, 24);
+  b.wt = kv.wt;
+  if (bdSet(kv.w)) b.w = kv.w;
+  b.st = Math.max(0, Math.min(bdStylesOf(b.wt).length, parseInt(kv.st, 10) || 0));
+  for (const { k } of BUILD.parts) if (bdSet(kv[k]) && bdSet(kv[k]).pieces[k]) b[k] = kv[k];
+  /* 방어구를 먼저 채운 뒤에 표류석을 끼웁니다. 칸 수가 방어구에 달려 있습니다. */
+  for (const e of String(kv.ds || '').split(';')) {
+    const [part, i, color, skill] = e.split('|');
+    if (!Array.isArray(b.ds[part]) || !(+i >= 0)) continue;
+    const g = bdStones().find(x => x.group === color);
+    if (g && g.skills.some(x => x.name === skill)) b.ds[part][+i] = { c: color, s: skill };
+  }
+  for (const nm of String(kv.c || '').split(';')) if (nm) b.cond[nm] = true;
+  return b;
+}
+
+/* 추천빌드 탭에서 «가져오기» 를 누르면 부릅니다. 남의 빌드가 내 것을 덮으면 안 되므로
+   덮어쓰지 않고 새 카드로 얹습니다. */
+function bdAdopt(param, title) {
+  const b = bdParse(param, title);
+  if (!b) return false;
+  if (bdState.builds.length >= BD_MAX) return toast(`빌드는 ${BD_MAX}개까지입니다`), false;
+  bdState.builds.push(b);
+  bdSave(); bdRender();
+  return true;
+}
+
+/* ── 미리보기 ───────────────────────────────────────────────────── */
+/* 추천빌드 카드에 얹는 «장비 여섯 칸». 무기 + 방어구 5부위를 아이콘으로만 보여 줍니다.
+   빈 칸도 자리를 남겨야 몇 부위를 갖췄는지 한눈에 보입니다. */
+function bdIconRow(b) {
+  const cells = [];
+  const ws = bdSet(b.w);
+  cells.push(ws
+    ? `<span class="bd-ic6" title="${esc(bdWeaponOf(b) ? bdWeaponOf(b).name : ws.name)}">${bdMon(ws.key)}</span>`
+    : '<span class="bd-ic6 empty"></span>');
+  for (const { k, n } of BD_PARTS()) {
+    const s = bdSet(b[k]);
+    const piece = s && s.pieces[k];
+    cells.push(piece
+      ? `<span class="bd-ic6" title="${esc(n + ' · ' + piece.name)}">${bdMon(s.key)}</span>`
+      : `<span class="bd-ic6 empty" title="${esc(n)} 없음"></span>`);
+  }
+  return `<div class="bd-row6">${cells.join('')}</div>`;
+}
+
+/* 합산 스킬 칩. 카드에서는 몇 개만 보여 주고 나머지는 «+N» 으로 접습니다. */
+function bdChipRow(b, max = 8) {
+  const all = bdTotals(b);
+  if (!all.length) return '';
+  const head = all.slice(0, max);
+  const rest = all.length - head.length;
+  return `<div class="bd-chips6">`
+    + head.map(([n, lv]) => `<span class="chip">${esc(n)}<b>${lv}</b></span>`).join('')
+    + (rest > 0 ? `<span class="chip rest" title="스킬 ${rest}종 더">+${rest}</span>` : '')
+    + '</div>';
+}
+
+/* 미리보기 모달 본문. 편집할 수 없는 읽기 전용이라 카드 렌더러를 재사용하지 않고
+   따로 그립니다 — 카드 쪽은 인덱스와 이벤트가 얽혀 있습니다. */
+function bdPreviewHtml(b) {
+  const w = bdWeaponOf(b);
+  const wt = BUILD.weaponTypes.find(t => t.k === b.wt);
+  const style = bdStylesOf(b.wt)[b.st - 1];
+  const line = (icon, name, sub, skills, dots) => `<li class="bd-pv">
+      ${icon}
+      <span class="bd-lt">
+        <b>${esc(name)}</b>
+        <i>${esc(sub)}</i>
+        <span class="bd-ls">${(skills || []).map(x => `<em>${esc(x.s)}<b>${x.lv}</b></em>`).join('')}</span>
+      </span>
+      ${dots || ''}
+    </li>`;
+
+  const ws = bdSet(b.w);
+  const rows = [ws
+    ? line(bdMon(ws.key), w ? w.name : ws.name,
+        [wt && wt.n, style ? `스타일 ${style}` : ''].filter(Boolean).join(' · '), ws.weaponSkills)
+    : `<li class="bd-pv empty">무기 없음</li>`];
+
+  for (const { k, n } of BD_PARTS()) {
+    const s = bdSet(b[k]);
+    const piece = s && s.pieces[k];
+    if (!piece) { rows.push(`<li class="bd-pv empty">${esc(n)} 없음</li>`); continue; }
+    const stones = (b.ds[k] || []).slice(0, bdSlotCount(b, k)).filter(d => d && d.s);
+    rows.push(line(bdMon(s.key), s.name, `${n} · ${piece.name}`, piece.skills,
+      stones.length ? `<span class="bd-pvs">${stones.map(d =>
+        `<i title="${esc('표류석【' + d.c + '】')}">${esc(d.s)}</i>`).join('')}</span>` : ''));
+  }
+  return `<ul class="bd-pvl">${rows.join('')}</ul>
+    <div class="bd-sum bd-pvsum">
+      ${bdTotals(b).map(([n, lv]) => bdTotalRow(n, lv)).join('')}
+      ${bdStatBar(b)}
+    </div>`;
+}
 
 /* ── 시작 ──────────────────────────────────────────────────────── */
 let bdDrawn = false;

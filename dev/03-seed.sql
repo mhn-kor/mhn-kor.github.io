@@ -24,15 +24,15 @@ values ('예전행 / 무비번 / 인천', '555566667777');
 -- 영상 ID 는 실재하지 않는 값입니다. 썸네일은 404 라 자동으로 숨겨지고,
 -- 재생을 누르면 유튜브가 '동영상 없음'을 보여줍니다. 배치 확인용입니다.
 select public.add_record('보노보노 / 라보', 'rathalos',  10, 'normal', 'long-sword',  '위합',
-       4532, 'https://www.youtube.com/watch?v=aaaaaaaaaaa', null, 'test1234');
+         45, 'https://www.youtube.com/watch?v=aaaaaaaaaaa', null, 'test1234');
 select public.add_record('KAMINUS / 태도', 'rathalos',   10, 'normal', 'long-sword',  '기인 무쌍베기',
-       5108, 'https://www.youtube.com/watch?v=bbbbbbbbbbb', null, 'test1234');
+         51, 'https://www.youtube.com/watch?v=bbbbbbbbbbb', null, 'test1234');
 select public.add_record('BIN / 대검',      'rathalos',   10, 'dim',    'great-sword', '격앙참',
-       6640, 'https://x.com/i/status/1780000000000000000', null, 'test1234');
+         66, 'https://x.com/i/status/1780000000000000000', null, 'test1234');
 select public.add_record('KOKOA / 랜스',    'diablos',     9, 'normal', 'lance',       '저스트 가드',
-       9915, 'https://www.youtube.com/watch?v=ccccccccccc', null, 'test1234');
+         99, 'https://www.youtube.com/watch?v=ccccccccccc', null, 'test1234');
 select public.add_record('메타몽 / 활',     'nargacuga',   8, 'normal', 'bow',         '강연사',
-       3877, 'https://www.youtube.com/watch?v=ddddddddddd',
+         38, 'https://www.youtube.com/watch?v=ddddddddddd',
        'w%3Dnarg%2Cwt%3Dbow%2Cst%3D2%2Chelm%3Dnarg%2Cmail%3Dnarg%2Cgloves%3Dnarg%2Cbelt%3Dnarg%2Cgreaves%3Dnarg',
        'test1234');
 

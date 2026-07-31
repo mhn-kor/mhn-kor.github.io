@@ -709,17 +709,107 @@ $('#panel-smelt').addEventListener('click', e => {
 $('#mon-close').addEventListener('click', () => monDlg.close());
 monDlg.addEventListener('click', e => { if (e.target === monDlg) monDlg.close(); });
 
+/* ── 닉네임 자동완성 (추천빌드 · 리더보드 등록창 공용) ──────────────
+   친구 코드에 등록해 둔 닉네임을 그대로 씁니다. 같은 사람이 탭마다 다른 이름을 쓰면
+   누가 올린 기록·빌드인지 알아보기 어렵습니다.
+   <datalist> 는 위치도 너비도 브라우저가 정해 버려 입력칸과 어긋나 보이고, 포커스만 해도
+   목록 전체를 쏟아냅니다. 그래서 직접 그립니다 — 대신 키보드 조작(↑↓ Enter Esc)도 직접 합니다.
+
+   필요한 마크업:
+     <div class="rc-ac">
+       <input id="…" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="…-list">
+       <ul class="rc-ac-list" id="…-list" role="listbox" hidden></ul>
+     </div>
+     <small id="…-hint" hidden>친구 코드에 등록된 닉네임입니다.</small>            */
+function nickAuto(inputSel, listSel, hintSel) {
+  const inp = $(inputSel), box = $(listSel), hint = $(hintSel);
+  let timer, items = [], at = -1;
+
+  const close = () => { box.hidden = true; inp.setAttribute('aria-expanded', 'false'); at = -1; };
+  const show = list => {
+    items = list;
+    if (!list.length) return close();
+    box.innerHTML = list.map((n, i) =>
+      `<li role="option" data-i="${i}" aria-selected="${i === at}">${esc(n)}</li>`).join('');
+    box.hidden = false;
+    inp.setAttribute('aria-expanded', 'true');
+  };
+  const pick = i => { if (!items[i]) return; inp.value = items[i]; hint.hidden = false; close(); };
+  const move = d => {
+    if (box.hidden || !items.length) return;
+    at = (at + d + items.length) % items.length;
+    for (const li of box.children) {
+      const on = +li.dataset.i === at;
+      li.setAttribute('aria-selected', on);
+      li.classList.toggle('on', on);
+      if (on) li.scrollIntoView({ block: 'nearest' });
+    }
+  };
+
+  inp.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = inp.value.trim();
+    hint.hidden = true;
+    at = -1;
+    if (!q) return close();
+    /* 글자마다 부르면 요청이 쏟아집니다. 손을 멈춘 뒤에 한 번만 묻습니다. */
+    timer = setTimeout(async () => {
+      try {
+        const r = await rest(`${TABLE}?select=nickname&nickname=ilike.${encodeURIComponent('*' + q + '*')}&limit=40`);
+        if (!r.ok) return;
+        /* 한 사람이 코드를 여러 개 올렸을 수 있어 같은 이름은 하나로 접습니다. */
+        const seen = [];
+        for (const row of await r.json()) {
+          const n = String(row.nickname || '').trim();
+          if (n && !seen.includes(n)) seen.push(n);
+          if (seen.length >= 8) break;
+        }
+        if (inp.value.trim() !== q) return;        // 그새 더 쳤으면 버립니다
+        show(seen);
+        hint.hidden = !seen.includes(q);
+      } catch (e) { /* 자동완성은 없어도 등록에 지장이 없습니다 */ }
+    }, 250);
+  });
+
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Escape') {
+      /* 목록이 열려 있으면 Esc 는 목록만 닫습니다. preventDefault 가 없으면
+         브라우저가 dialog 까지 닫아 버려 입력하던 내용이 사라집니다. */
+      if (!box.hidden) { e.preventDefault(); e.stopPropagation(); close(); }
+    } else if (e.key === 'Enter' && at >= 0 && !box.hidden) {
+      e.preventDefault();                          // 고르는 중에는 제출하지 않습니다
+      pick(at);
+    }
+  });
+  /* click 은 blur 뒤에 와서 목록이 이미 닫힙니다. pointerdown 에서 포커스를 지킵니다. */
+  box.addEventListener('pointerdown', e => {
+    const li = e.target.closest('[data-i]');
+    if (!li) return;
+    e.preventDefault();
+    pick(+li.dataset.i);
+  });
+  inp.addEventListener('blur', () => setTimeout(close, 120));
+}
+
+/* 마지막에 쓴 닉네임. 등록창을 열 때 미리 채워 두면 매번 다시 치지 않아도 됩니다. */
+const NICK_KEY = 'mhnkr.nick';
+const lastNick = () => localStorage.getItem(NICK_KEY) || '';
+const saveNick = n => localStorage.setItem(NICK_KEY, n);
+
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {
   const h = location.hash.slice(1);
-  const tab = ['codes', 'smelt', 'build', 'material', 'record'].includes(h) ? h : 'notice';
-  for (const t of ['notice', 'codes', 'smelt', 'build', 'material', 'record']) $('#panel-' + t).hidden = tab !== t;
+  const tab = ['codes', 'smelt', 'build', 'material', 'record', 'recommend'].includes(h) ? h : 'notice';
+  for (const t of ['notice', 'codes', 'smelt', 'build', 'material', 'record', 'recommend']) $('#panel-' + t).hidden = tab !== t;
   if (tab === 'smelt') drawSmelt();
   // build.js 는 app.js 의 $ / esc / toast 를 쓰므로 뒤에 로드됩니다.
   // 첫 호출 시점에는 아직 없을 수 있어 확인 후 부릅니다(로드 직후 스스로 한 번 그립니다).
   if (tab === 'build' && typeof drawBuild === 'function') drawBuild();
   if (tab === 'material') drawMaterial();
   if (tab === 'record') drawRecord();
+  if (tab === 'recommend' && typeof drawRecommend === 'function') drawRecommend();
   for (const a of document.querySelectorAll('.tabs a')) {
     a.toggleAttribute('aria-current', a.dataset.tab === tab);
   }
