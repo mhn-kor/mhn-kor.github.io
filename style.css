@@ -1264,7 +1264,11 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 }
 .rc-title { flex: 1; min-width: 0; font-size: .96rem; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc-wp { flex: none; font-size: .76rem; color: var(--muted); }
-.rc-by { margin: 0 0 7px 30px; font-size: .74rem; color: var(--muted); }
+.rc-by {
+  display: flex; align-items: center; gap: 4px;
+  margin: 0 0 7px 30px; font-size: .74rem; color: var(--muted);
+}
+.rc-del { flex: none; margin-left: auto; }
 .rc-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 9px 30px; }
 .rc-t {
   font-size: .7rem; padding: 2px 7px; border-radius: 999px;
@@ -1283,7 +1287,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rc-v b { font-variant-numeric: tabular-nums; }
 .rc-v.up:hover, .rc-v.up.on { color: var(--jade); border-color: rgba(75,196,154,.5); background: rgba(75,196,154,.12); }
 .rc-v.down:hover, .rc-v.down.on { color: var(--red); border-color: rgba(224,90,80,.5); background: rgba(224,90,80,.12); }
-.rc-score { margin-left: auto; font-size: .76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* 태그와 같은 알약 모양을 씁니다. 숫자만 덩그러니 두면 그게 무슨 값인지 안 보입니다. */
+.rc-t.score { font-weight: 700; color: var(--amber); background: rgba(233,161,59,.14); }
+.rc-t.score b { font-variant-numeric: tabular-nums; }
+.rc-score { margin-left: auto; }   /* 투표 버튼과 «가져오기» 사이를 벌립니다 */
 .rc-act .btn { flex: none; padding: 5px 11px; font-size: .78rem; }
 
 .rc-same { font-style: normal; font-size: .68rem; color: var(--jade); margin-left: 5px; }

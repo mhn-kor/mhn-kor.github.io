@@ -95,13 +95,15 @@ function rcCard(r, rank) {
       <b class="rc-title">${esc(r.title || rcWeaponName(r.weapon) + ' 빌드')}</b>
       <span class="rc-wp">${esc(rcWeaponName(r.weapon))}</span>
     </header>
-    <p class="rc-by">${esc(r.nickname)} · ${when(r.created_at)}</p>
+    <p class="rc-by">${esc(r.nickname)} · ${when(r.created_at)}
+      <button class="icon danger rc-del" data-act="del" aria-label="추천 빌드 삭제" title="삭제 (비밀번호 필요)">${TRASH_ICON}</button>
+    </p>
     ${rcBrief(r)}
     <div class="rc-tags">${tags}</div>
     <div class="rc-act">
       <button class="rc-v up${mine === 1 ? ' on' : ''}" data-vote="${r.id}:1" title="좋아요">▲ <b>${r.up}</b></button>
       <button class="rc-v down${mine === -1 ? ' on' : ''}" data-vote="${r.id}:-1" title="싫어요">▼ <b>${r.down}</b></button>
-      <span class="rc-score" title="추천도 — 오래될수록 낮아지고 좋아요·싫어요가 반영됩니다">${r.score}</span>
+      <span class="rc-t score rc-score" title="추천도 — 오래될수록 낮아지고 좋아요·싫어요가 반영됩니다">추천도 <b>${r.score}</b></span>
       <button class="btn ghost" data-rc-view="${r.id}">미리보기</button>
       <button class="btn ghost" data-rc-use="${r.id}">가져오기</button>
     </div>
@@ -215,6 +217,8 @@ $('#rc-f-rest').addEventListener('click', e => {
   rcRender();
 });
 $('#rc-list').addEventListener('click', e => {
+  const d = e.target.closest('[data-act="del"]');
+  if (d) return rcAskDelete(+d.closest('[data-rc]').dataset.rc);
   const v = e.target.closest('[data-vote]');
   if (v) { const [id, val] = v.dataset.vote.split(':'); return rcVote(+id, +val); }
   const u = e.target.closest('[data-rc-use]');
@@ -231,22 +235,6 @@ $('#rc-view-use').addEventListener('click', e => {
   $('#rc-view').close();
   rcUse(+e.currentTarget.dataset.rcUse);
 });
-/* 삭제는 친구 코드와 같은 규칙 — 카드를 길게 누르거나 우클릭합니다. */
-$('#rc-list').addEventListener('contextmenu', e => {
-  const c = e.target.closest('[data-rc]');
-  if (!c) return;
-  e.preventDefault();
-  rcAskDelete(+c.dataset.rc);
-});
-let rcHold;
-$('#rc-list').addEventListener('pointerdown', e => {
-  const c = e.target.closest('[data-rc]');
-  if (!c || e.target.closest('button')) return;
-  rcHold = setTimeout(() => rcAskDelete(+c.dataset.rc), 600);
-});
-for (const ev of ['pointerup', 'pointercancel', 'pointerleave', 'scroll']) {
-  $('#rc-list').addEventListener(ev, () => clearTimeout(rcHold), true);
-}
 
 $('#rc-del-cancel').addEventListener('click', () => $('#rc-del').close());
 $('#rc-del-form').addEventListener('submit', async e => {

@@ -1051,14 +1051,16 @@ $('#rc-add-form').addEventListener('submit', async e => {
         p_easy_farm: $('#rc-easy').checked, p_password: pw,
       }),
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    /* 서버가 왜 거절했는지를 그대로 들고 옵니다. «잠시 뒤 다시» 로 뭉뚱그리면
+       길이 제한처럼 다시 시도해도 소용없는 실패를 알아볼 길이 없습니다. */
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || `HTTP ${r.status}`);
     saveNick(nick);
     $('#rc-add').close();
     toast('추천 빌드로 등록했습니다');
     /* 다음에 추천빌드 탭을 열 때 새로 받도록 표시만 해 둡니다. */
     if (typeof rcLoaded !== 'undefined') rcLoaded = false;
   } catch (e2) {
-    err.textContent = '등록하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+    err.textContent = '등록하지 못했습니다 — ' + e2.message;
     err.hidden = false;
   }
 });

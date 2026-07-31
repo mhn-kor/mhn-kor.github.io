@@ -153,12 +153,19 @@ create table if not exists public.records (
   time_sec   integer     not null check (time_sec between 1 and 3600),
   video_url  text        not null unique
              check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25})$'),
-  -- 나중에 만들 '추천 빌드'가 이 기록에 붙습니다. 빌드 탭 공유 링크의 ?build= 뒤쪽을
-  -- 그대로 담아 두면 링크 하나로 그 빌드를 되살릴 수 있습니다 (build.js 의 bdShareParam).
-  build      text        check (char_length(build) <= 600),
+  -- 추천 빌드와 이어지는 자리. 빌드 탭 공유 링크의 ?build= 뒤쪽을 그대로 담아 두면
+  -- 링크 하나로 그 빌드를 되살릴 수 있습니다 (build.js 의 bdShareParam).
+  -- 길이는 recommended_builds.build 와 같은 이유로 큽니다.
+  build      text        check (char_length(build) <= 8000),
   created_at timestamptz not null default now(),
   pw_hash    text        not null
 );
+
+-- create table if not exists 는 이미 만들어진 표를 손대지 않습니다. 600 자로 처음 만든
+-- DB 를 위해 제약을 다시 겁니다(먼저 지우므로 여러 번 실행해도 안전합니다).
+alter table public.records drop constraint if exists records_build_check;
+alter table public.records
+  add constraint records_build_check check (char_length(build) <= 8000);
 
 -- 처음 판은 1/100초(time_cs)로 담았습니다. 실제로는 초 단위로만 올리므로 컬럼을 옮깁니다.
 -- 이미 옮겼거나 새로 만든 DB 에서는 아무 일도 하지 않습니다(이 파일은 여러 번 실행해도 안전합니다).
@@ -259,7 +266,11 @@ create table if not exists public.recommended_builds (
   id         bigint generated always as identity primary key,
   nickname   text        not null check (char_length(btrim(nickname)) between 1 and 20),
   title      text        check (char_length(title) <= 30),
-  build      text        not null check (char_length(build) between 1 and 600),
+  -- 길이가 큰 이유: 공유 파라미터는 encodeURIComponent 를 거친 뒤라 한글 한 글자가
+  -- 9자를 먹습니다(«약점 특효» = 45자). 표류석을 부위마다 두 개씩 끼운 빌드가
+  -- 2000자에 가깝습니다. 600 으로 뒀더니 표류석을 낀 빌드는 전부 등록에 실패했습니다.
+  -- 실측 최악(표류석 10칸 2035자 + 조건부 스킬 24개 2161자)이 4316자라 넉넉히 8000 으로 둡니다.
+  build      text        not null check (char_length(build) between 1 and 8000),
   weapon     text        not null check (weapon ~ '^[a-z-]{1,20}$'),   -- BUILD.weaponTypes[].k
   tier       text        not null check (tier in ('beginner', 'expert')),
   -- 필드사냥 field / 요격전 intercept / 대량출현 swarm / 대연속 chain / 고룡토벌 elder
@@ -273,6 +284,12 @@ create table if not exists public.recommended_builds (
   created_at timestamptz not null default now(),
   pw_hash    text        not null
 );
+
+-- create table if not exists 는 이미 만들어진 표를 손대지 않습니다. 600 자로 처음 만든
+-- DB 를 위해 제약을 다시 겁니다(먼저 지우므로 여러 번 실행해도 안전합니다).
+alter table public.recommended_builds drop constraint if exists recommended_builds_build_check;
+alter table public.recommended_builds
+  add constraint recommended_builds_build_check check (char_length(build) between 1 and 8000);
 
 create index if not exists recommended_builds_weapon_idx on public.recommended_builds (weapon);
 

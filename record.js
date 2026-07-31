@@ -70,7 +70,7 @@ const rkParse = txt => {
    나중에 만들 '추천 빌드'가 이 값으로 기록과 빌드를 잇습니다. */
 const rkBuildParam = raw => {
   const m = String(raw || '').trim().match(/[?&]build=([^&#\s]+)/);
-  return m && m[1].length <= 600 ? m[1] : null;
+  return m && m[1].length <= 8000 ? m[1] : null;
 };
 
 if (typeof module !== 'undefined') module.exports = { rkVid, rkCanon, rkEmbed, rkTime, rkParse, rkBuildParam };
