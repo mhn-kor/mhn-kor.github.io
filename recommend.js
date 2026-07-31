@@ -117,7 +117,7 @@ function rcBrief(r) {
   const b = bdParse(r.build, r.title);
   if (!b) return '';
   return `<div class="rc-brief" data-rc-open="${r.id}" title="눌러서 자세히 보기">
-    ${bdIconRow(b)}${bdChipRow(b)}
+    ${bdIconRow(b)}${bdChipRow(b)}${bdStoneChips(b)}
   </div>`;
 }
 

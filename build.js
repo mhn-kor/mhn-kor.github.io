@@ -377,7 +377,7 @@ function bdKakaoArgs(bi) {
   BD_PARTS().forEach(({ k, n }, i) => {
     const set = bdSet(b[k]);
     const piece = set && set.pieces[k];
-    const stones = (b.ds[k] || []).slice(0, bdSlotCount(b, k)).filter(d => d && d.s);
+    const stones = bdStoneList(b, k);
     const j = i + 1;
     args['P' + j] = bdTight(`${n}·${piece ? set.name : '없음'}`);
     /* 방어구 스킬과 표류석 스킬은 | 로 가릅니다('표류석'이라 적을 자리가 없습니다). */
@@ -424,10 +424,7 @@ function bdKakaoList(bi) {
     });
   }
 
-  const stones = [];
-  for (const { k } of BD_PARTS()) {
-    (b.ds[k] || []).slice(0, bdSlotCount(b, k)).forEach(d => { if (d && d.s) stones.push(d); });
-  }
+  const stones = bdStoneList(b);
   if (stones.length) {
     const g = bdStones().find(x => x.group === stones[0].c);
     rows.push({
@@ -549,6 +546,9 @@ function bdCard(b, bi) {
   for (const { k, n } of BD_PARTS()) {
     const s = bdSet(b[k]);
     const piece = s && s.pieces[k];
+    /* 방어구 스킬 뒤에 그 부위에 낀 표류석을 같이 답니다. 육각형만으로는 무엇이
+       끼워졌는지 눌러 보기 전에는 알 수 없습니다(모바일에는 title 도 안 뜹니다). */
+    const chips = (piece ? bdChips(piece.skills) : '') + bdStoneList(b, k).map(bdStoneChip).join('');
     rows += `
       <div class="bd-row">
         <span class="bd-ti static"><img src="assets/part/${esc(k)}.png" width="24" height="24" alt="${esc(n)}"></span>
@@ -561,7 +561,7 @@ function bdCard(b, bi) {
             </button>
             ${bdStoneDots(b, k, bi)}
           </span>
-          ${piece && piece.skills.length ? `<span class="bd-inline">${bdChips(piece.skills)}</span>` : ''}
+          ${chips ? `<span class="bd-inline">${chips}</span>` : ''}
         </span>
       </div>`;
   }
@@ -1136,6 +1136,34 @@ function bdChipRow(b, max = 8) {
     + '</div>';
 }
 
+/* 빌드에 낀 표류석을 부위 순서대로 모읍니다. part 를 주면 그 부위만 봅니다.
+   여러 곳에서 같은 규칙으로 훑어야 해서(카톡 카드·카드 줄·뱃지·미리보기) 한 곳에
+   둡니다. 슬롯 수를 넘겨 남아 있는 옛 값은 버립니다. */
+function bdStoneList(b, part) {
+  const out = [];
+  for (const { k, n } of BD_PARTS()) {
+    if (part && k !== part) continue;
+    (b.ds[k] || []).slice(0, bdSlotCount(b, k)).forEach(d => { if (d && d.s) out.push({ ...d, part: n }); });
+  }
+  return out;
+}
+
+/* 표류석 알약 하나. 육각형은 카드의 슬롯(.bd-dot)과 같은 모양이라 스킬 칩과
+   섞여 있어도 «이건 표류석» 이 바로 읽힙니다. 색은 표류연성 탭과 같은 색을 씁니다
+   — 같은 돌이 두 탭에서 다른 색이면 안 됩니다. */
+function bdStoneChip(d) {
+  const g = bdStones().find(x => x.group === d.c);
+  const t = esc(`${d.part ? d.part + ' · ' : ''}표류석【${d.c}】`);
+  return `<span class="chip stone"${g ? ` style="--c:${g.color}"` : ''} title="${t}">${esc(d.s)}</span>`;
+}
+
+/* 빌드 하나의 표류석을 모아 한 줄로. 합산 스킬 칩만 보면 그 레벨이 방어구에서
+   왔는지 표류석에서 왔는지 알 수 없습니다. */
+function bdStoneChips(b) {
+  const list = bdStoneList(b);
+  return list.length ? `<div class="bd-chips6 bd-stones">${list.map(bdStoneChip).join('')}</div>` : '';
+}
+
 /* 미리보기 모달 본문. 편집할 수 없는 읽기 전용이라 카드 렌더러를 재사용하지 않고
    따로 그립니다 — 카드 쪽은 인덱스와 이벤트가 얽혀 있습니다. */
 function bdPreviewHtml(b) {
@@ -1162,10 +1190,9 @@ function bdPreviewHtml(b) {
     const s = bdSet(b[k]);
     const piece = s && s.pieces[k];
     if (!piece) { rows.push(`<li class="bd-pv empty">${esc(n)} 없음</li>`); continue; }
-    const stones = (b.ds[k] || []).slice(0, bdSlotCount(b, k)).filter(d => d && d.s);
+    const stones = bdStoneList(b, k);
     rows.push(line(bdMon(s.key), s.name, `${n} · ${piece.name}`, piece.skills,
-      stones.length ? `<span class="bd-pvs">${stones.map(d =>
-        `<i title="${esc('표류석【' + d.c + '】')}">${esc(d.s)}</i>`).join('')}</span>` : ''));
+      stones.length ? `<span class="bd-pvs">${stones.map(bdStoneChip).join('')}</span>` : ''));
   }
   return `<ul class="bd-pvl">${rows.join('')}</ul>
     <div class="bd-sum bd-pvsum">

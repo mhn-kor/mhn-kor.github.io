@@ -1381,6 +1381,19 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   background: none; border-color: var(--line); color: var(--muted);
 }
 
+/* 표류석 뱃지. 색은 표류연성 탭의 알약과 같은 규칙입니다.
+   앞의 육각형은 카드의 슬롯(.bd-dot)과 같은 모양이라 «이건 표류석» 이 바로 읽힙니다. */
+.bd-stones { margin-top: 4px; }
+.chip.stone {
+  font-size: .7rem; color: var(--c, var(--amber));
+  background: color-mix(in srgb, var(--c, #E9A13B) 14%, transparent);
+  border-color: color-mix(in srgb, var(--c, #E9A13B) 40%, transparent);
+}
+.chip.stone::before {
+  content: ""; flex: none; width: 8px; height: 9px; background: var(--c, var(--amber));
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+}
+
 /* 미리보기 모달 */
 #rc-view { width: min(100% - 28px, 560px); max-height: min(88vh, 840px); }
 #rc-view[open] { display: flex; flex-direction: column; }
@@ -1399,8 +1412,8 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 8px; }
 .bd-pv.empty { color: var(--muted); font-size: .78rem; justify-content: center; border-style: dashed; }
 .bd-pvs { flex: none; display: flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; max-width: 40%; }
-.bd-pvs i { font-style: normal; font-size: .68rem; padding: 2px 6px; border-radius: 999px;
-  color: var(--amber); background: rgba(233,161,59,.12); white-space: nowrap; }
+/* 미리보기 창도 같은 알약(.chip.stone)을 쓰고 크기만 줄입니다. */
+.bd-pvs .chip.stone { font-size: .66rem; padding: 1px 6px; white-space: nowrap; }
 .bd-pvsum { border-top: 1px solid var(--line); background: none; padding-top: 8px; }
 
 @media (max-width: 640px) {
