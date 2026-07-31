@@ -1109,6 +1109,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 /* 필터 모달의 '전체 보기'는 아이콘이 없어 격자 높이가 안 맞습니다. 한 줄을 통째로 씁니다. */
 .bd-gi.rk-any { grid-column: 1 / -1; padding: 10px; }
 
+/* 필터 상자 바로 밑에 버튼이 붙어 있어 답답합니다. 아래(목록과의 거리 18px)와 같이 띄웁니다.
+   .bd-tools 는 빌드 탭도 쓰므로 리더보드 안에서만 겁니다. */
+#panel-record .bd-tools { margin-top: 18px; }
+
 /* 숏츠 갤러리. 카드가 세로(9:16)라 칸을 좁게 잡아야 한 화면에 여러 줄이 들어옵니다. */
 .rk-list {
   list-style: none; margin: 0; padding: 0;
