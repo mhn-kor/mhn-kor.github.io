@@ -43,6 +43,94 @@ function bdSlotCount(b, part) {
 }
 
 /* 한 빌드의 스킬 합계 — 장비 + 무기 + 표류석 */
+/* 스킬 설명에 «공격력이 50 상승한다» 처럼 수치가 그대로 적혀 있어 그 문장을 읽습니다.
+   조건이 붙은 스킬(«약점을 공격하면 …», «체력이 최대일 때 …»)은 상시 수치가 아니라
+   빼고, 조건어가 효과 앞에 오는지로 가릅니다. */
+const BD_COND = /때|하면|되면|중에는|동안|이하|뒤|그룹 사냥|사용 시|공격 시|명중|가드|부활|포효|모으기|상태 중/;
+
+function bdEffects(desc) {
+  /* «Lv5 이상의 '공격' 스킬이 발동 중일 때» 는 전투 조건이 아니라 빌드 조건이라,
+     그 스킬이 실제로 그 레벨이면 켭니다(공격·경지 등). */
+  const gate = /Lv(\d+) 이상의 '(.+?)' 스킬이 발동 중일 때/.exec(desc);
+  const need = gate ? { s: gate[2], lv: +gate[1] } : null;
+  const body = gate ? desc.slice(gate.index + gate[0].length) : desc;
+  const out = [];
+  const scan = (src, fn) => {
+    const r = new RegExp(src, 'g'); let m;
+    while ((m = r.exec(body))) fn(m, BD_COND.test(body.slice(0, m.index)));
+  };
+  /* «얼음속성 공격력이 15% 증가» 가 공격력으로도 세지지 않도록 앞의 «속성 » 을 뺍니다.
+     «수치가» 와 «공격력이» 는 조사가 달라 둘 다 받습니다. */
+  scan('(?<!속성 )공격력이 (\\d+)% (?:상승|증가)', (m, c) => out.push({ k: 'atk', pct: 1, v: +m[1], need, cond: c }));
+  scan('(?<!속성 )공격력이 (\\d+) (?:상승|증가)', (m, c) => out.push({ k: 'atk', v: +m[1], need, cond: c }));
+  scan('회심률이 (\\d+)% (?:상승|증가)', (m, c) => out.push({ k: 'crit', v: +m[1], need, cond: c }));
+  scan('회심률이 (\\d+)% 감소', (m, c) => out.push({ k: 'crit', v: -m[1], need, cond: c }));
+  scan('(\\S+?)속성 (?:수치|공격력)[이가] (\\d+)% 증가', (m, c) => out.push({ k: 'ele', pct: 1, v: +m[2], el: m[1], need, cond: c }));
+  scan('(\\S+?)속성 (?:수치|공격력)[이가] (\\d+) (?:증가|상승)', (m, c) => out.push({ k: 'ele', v: +m[2], el: m[1], need, cond: c }));
+  scan('무기의 속성 공격력이 (\\d+)% 증가', (m, c) => out.push({ k: 'ele', pct: 1, v: +m[1], need, cond: c }));
+  /* F = 대미지 % 증가(가산). G 쪽의 회심 배율은 «대미지 배율이 130%로 강화» 로 적힙니다. */
+  scan('(?:주는 )?대미지가 (\\d+)% 증가', (m, c) => out.push({ k: 'dmg', pct: 1, v: +m[1], need, cond: c }));
+  scan('대미지 배율이 (\\d+)%로 강화', (m, c) => out.push({ k: 'critx', v: +m[1], need, cond: c }));
+  return out;
+}
+
+/* 속성 % 중 이 셋만 승산(E)이고 나머지는 가산(C)입니다. 참조 글의 분류를 따릅니다. */
+const BD_ELE_MUL = new Set(['강룡의 얼음바람', '명룡의 파뢰', '환수의 벼락', '은작룡의 홍혈', '빙룡의 얼음 갑옷']);
+/* 회심은 1.25배, 마이너스 회심은 0.75배. 슈퍼회심이 있으면 1.25 자리가 올라갑니다. */
+const BD_CRIT_UP = 1.25, BD_CRIT_DOWN = 0.75;
+
+/* 스킬 설명은 레벨별로 값이 달라, 합산된 레벨의 문장을 씁니다.
+   상한을 넘겨 찍혔으면 표에 있는 마지막 레벨로 자릅니다. */
+function bdSkillDesc(name, lv) {
+  const rows = (typeof SKILLDESC !== 'undefined' && SKILLDESC[name]) || null;
+  if (!rows || !rows.length) return null;
+  const cap = Math.min(lv, rows[rows.length - 1][0]);
+  const hit = rows.find(r => r[0] === cap);
+  return hit ? hit[1] : null;
+}
+
+/* 참조 글(디시 몬헌나우 갤러리)의 대미지 공식을 모션치·육질 없이 계산합니다.
+     무속성  = 무기공격력×B + A
+     속성    = 위 + (무기속성치×C + D)×E
+     점수    = (공격력 + 속성공격력) × F × G
+   B·C·F 는 가산(1+합), E·G 는 승산(곱). 회심은 기대값으로 G 에 넣습니다.
+   모션치·육질은 공격 동작과 부위마다 달라 빌드만으로는 정할 수 없어 1 로 둡니다. */
+function bdStats(b) {
+  const w = bdWeaponOf(b);
+  const base = { atk: (w && w.atk) || 0, ele: (w && w.ele) || 0, crit: (w && w.crit) || 0 };
+  let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, critX = BD_CRIT_UP, crit = base.crit;
+  const lvOf = new Map(bdTotals(b));
+
+  for (const [name, lv] of lvOf) {
+    for (const e of bdEffects(bdSkillDesc(name, lv) || '')) {
+      if (e.cond) continue;
+      if (e.need && (lvOf.get(e.need.s) || 0) < e.need.lv) continue;
+      if (e.k === 'atk') { if (e.pct) B += e.v / 100; else A += e.v; continue; }
+      if (e.k === 'crit') { crit += e.v; continue; }
+      if (e.k === 'critx') { critX = Math.max(critX, e.v / 100); continue; }
+      if (e.k === 'dmg') { F += e.v / 100; continue; }
+      if (e.k === 'ele') {
+        /* 속성 강화는 무기 속성이 같을 때만 붙습니다. 속성 표기가 없으면 어떤 속성이든 붙습니다. */
+        if (!w || !w.e) continue;
+        if (e.el && w.e !== e.el) continue;
+        if (!e.pct) { D += e.v; continue; }
+        if (BD_ELE_MUL.has(name)) E *= 1 + e.v / 100; else C += e.v / 100;
+      }
+    }
+  }
+  const now = {
+    atk: Math.round(base.atk * B + A),
+    ele: base.ele ? Math.round((base.ele * C + D) * E) : 0,
+    crit: Math.round(crit),
+  };
+  /* 회심 기대 배율. 양수면 회심이, 음수면 역회심이 그 확률만큼 섞입니다. */
+  const p = Math.max(-100, Math.min(100, now.crit)) / 100;
+  const G = 1 + (p >= 0 ? p * (critX - 1) : -p * (BD_CRIT_DOWN - 1));
+  const score = Math.round((now.atk + now.ele) * F * G);
+  /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
+  return { base, now, score, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX } };
+}
+
 function bdTotals(b) {
   const total = new Map();
   const add = (name, lv) => total.set(name, (total.get(name) || 0) + lv);
@@ -55,6 +143,87 @@ function bdTotals(b) {
     (b.ds[k] || []).slice(0, bdSlotCount(b, k)).forEach(d => { if (d && d.s) add(d.s, 1); });
   }
   return [...total.entries()].sort((a, b2) => b2[1] - a[1] || a[0].localeCompare(b2[0], 'ko'));
+}
+
+/* ── 방어구 일괄선택 ───────────────────────────────────────────── */
+/* 부위마다 따로 모달을 여닫으면 다섯 번을 반복해야 합니다. 한 화면에서 부위를 찍고
+   합산 스킬을 보며 고른 뒤 한 번에 적용합니다. bdBulk 에 고르는 중인 값을 담습니다. */
+let bdBulk = null;
+let bdBulkFold = false;   // 합산 스킬 접힘 여부
+
+function bdOpenBulk(bi) {
+  const b = bdState.builds[bi];
+  bdPick = { kind: 'bulk', bi };
+  bdBulk = {};
+  for (const { k } of BD_PARTS()) bdBulk[k] = b[k] || null;
+  bdOpen('방어구 일괄선택', '', true, { placeholder: '몬스터 · 방어구 · 스킬 검색' });
+  bdFillBulk('');
+}
+
+/* 공식 방어구 페이지 순서(o)대로 세우고, 이벤트 장비는 뒤로 갑니다. */
+function bdBulkSets() {
+  return BUILD.sets.filter(s => Object.keys(s.pieces).length)
+    .sort((a, b) => a.o - b.o || a.g - b.g || a.u - b.u || a.id - b.id);
+}
+
+function bdFillBulk(q) {
+  const norm = t => String(t).toLowerCase().replace(/\s+/g, '');
+  const needle = norm(q);
+  const parts = BD_PARTS();
+
+  const rows = bdBulkSets().filter(s => {
+    if (!needle) return true;
+    const txt = s.name + parts.map(p => {
+      const pc = s.pieces[p.k];
+      return pc ? pc.name + pc.skills.map(x => x.s).join('') : '';
+    }).join('');
+    return norm(txt).includes(needle);
+  });
+
+  $('#bd-modal-body').innerHTML = rows.length ? `<ul class="bd-blist">${rows.map(s => `
+    <li class="bd-brow">
+      ${bdMon(s.key)}
+      <span class="bd-bn">${esc(s.name)}</span>
+      <span class="bd-bp">${parts.map(p => {
+        const pc = s.pieces[p.k];
+        if (!pc) return '<i class="bd-bx"></i>';
+        const on = bdBulk[p.k] === s.key;
+        return `<button class="bd-bb${on ? ' on' : ''}" data-bulk-pick="${esc(s.key)}:${p.k}"
+          title="${esc(pc.name)} · ${pc.skills.map(x => x.s + ' ' + x.lv).join(', ')}${pc.slot ? ' · 표류석 ' + pc.slot + '칸' : ''}">
+          <img src="assets/part/${p.k}.png" width="18" height="18" alt="${esc(p.n)}">
+        </button>`;
+      }).join('')}</span>
+    </li>`).join('')}</ul>` : '<p class="bd-empty">일치하는 방어구가 없습니다.</p>';
+  $('#bd-modal-count').textContent = `${rows.length}세트`;
+  bdBulkFoot();
+}
+
+/* 고른 부위의 스킬 합계와 적용 버튼. 고르는 도중에도 결과가 보여야 합니다. */
+function bdBulkFoot() {
+  const total = new Map();
+  let n = 0;
+  for (const { k, n: kn } of BD_PARTS()) {
+    const s = bdSet(bdBulk[k]);
+    const pc = s && s.pieces[k];
+    if (!pc) continue;
+    n++;
+    pc.skills.forEach(x => total.set(x.s, (total.get(x.s) || 0) + x.lv));
+  }
+  const list = [...total.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'));
+  /* 스킬이 많으면 목록을 다 가려서, 접을 수 있게 합니다. 버튼 줄은 항상 보입니다. */
+  $('#bd-bulk-foot').innerHTML = `
+    <button class="bd-bt${bdBulkFold ? ' fold' : ''}" data-bulk-toggle="1" aria-expanded="${bdBulkFold ? 'false' : 'true'}">
+      <span>합산 스킬 <b>${list.length}</b></span>
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="bd-bsum"${bdBulkFold ? ' hidden' : ''}>${list.length
+      ? list.map(([nm, lv]) => `<span class="chip">${esc(nm)}<b>${lv}</b></span>`).join('')
+      : '<span class="bd-empty">부위를 고르면 스킬이 합산됩니다.</span>'}</div>
+    <div class="bd-bact">
+      <button class="btn ghost" data-bulk-clear="1">전부 비우기</button>
+      <button class="btn primary" data-bulk-apply="1">${n}부위 적용</button>
+    </div>`;
+  $('#bd-bulk-foot').hidden = false;
 }
 
 /* ── 공유 ──────────────────────────────────────────────────────── */
@@ -174,6 +343,7 @@ function bdKakaoList(bi) {
     rows.push({
       title: bdTight(w.name),
       description: bdTight([wt && wt.n, w.atk ? `공격${w.atk}` : '', w.e ? `${w.e}${w.ele}` : '무속성',
+        w.crit != null ? `회심${w.crit > 0 ? '+' : ''}${w.crit}%` : '',
         style ? `스타일${style}` : ''].filter(Boolean).join('·')),
       imageUrl: bdMonURL(bdSet(b.w).key), link,
     });
@@ -298,8 +468,11 @@ function bdCard(b, bi) {
     </div>
     ${D && w ? `<div class="bd-stat">
         <b class="wn">${esc(w.name)}</b>
-        ${w.atk ? `<span>공격 <b>${w.atk}</b></span>` : ''}
-        ${w.e ? `<span class="el">${esc(w.e)} <b>${w.ele}</b></span>` : '<span class="el">무속성</span>'}
+        ${w.atk ? `<span>${BD_SI.atk}<b>${w.atk}</b></span>` : ''}
+        ${w.e && BD_EI[w.e]
+          ? `<span class="el" title="${esc(w.e)}속성">${bdIco(`assets/element/${BD_EI[w.e]}.png`)}<b>${w.ele}</b></span>`
+          : '<span class="el">무속성</span>'}
+        ${w.crit != null ? `<span class="cr${w.crit < 0 ? ' minus' : ''}">${BD_SI.crit}<b>${w.crit > 0 ? '+' : ''}${w.crit}%</b></span>` : ''}
         ${sp ? `<span class="sp">SP ${esc(styleName || sp)}</span>` : ''}
         ${wx ? wx.map(t => `<span class="wx">${esc(t)}</span>`).join('') : ''}
       </div>` : ''}`;
@@ -340,11 +513,72 @@ function bdCard(b, bi) {
         <button class="bd-ic danger" data-del="${bi}" title="빌드 삭제" aria-label="빌드 삭제">${BD_I.del}</button>
       </header>
       <div class="bd-rows">${rows}</div>
+      <button class="bd-bulk" data-bulk="${bi}">방어구 일괄선택</button>
       <div class="bd-sum">
         ${rowsT.length ? rowsT.map(([n, lv]) => bdTotalRow(n, lv)).join('')
           : '<p class="bd-empty">장비를 고르면 스킬이 합산됩니다.</p>'}
+        ${bdStatBar(b)}
       </div>
     </article>`;
+}
+
+/* 무기 기본값 ▸ 스킬 합산값. 한 줄에 붙입니다.
+   속성 아이콘은 속성마다 다르고, 무속성 무기는 속성 칸 자체를 만들지 않습니다. */
+/* 공격력·회심률 아이콘도 공식 것을 씁니다(assets/icons/stat_*.png).
+   속성은 종류마다 그림이 달라 아래 BD_EI 로 고릅니다. */
+const bdIco = (src, cls = '') => `<img class="bd-ii${cls ? ' ' + cls : ''}" src="${src}" width="13" height="13" alt="" loading="lazy">`;
+const BD_SI = {
+  atk: bdIco('assets/stat/attack.png'),
+  crit: bdIco('assets/stat/affinity.png'),
+};
+
+/* 속성 아이콘은 공식 사이트의 것을 씁니다(monsterhunternow.com/assets/icons/element_*.png).
+   색까지 들어 있는 그림이라 따로 칠하지 않습니다. */
+const BD_EI = {
+  '불': 'fire', '물': 'water', '번개': 'thunder', '얼음': 'ice', '용': 'dragon',
+  '독': 'poison', '마비': 'paralysis', '수면': 'sleep', '폭파': 'blast',
+};
+
+function bdStatBar(b) {
+  const w = bdWeaponOf(b);
+  if (!w) return '';
+  const { base, now, score } = bdStats(b);
+  const cell = (icon, a, c, sx = '', style = '') =>
+    `<span class="bd-sc${c > a ? ' up' : c < a ? ' down' : ''}"${style}>${icon}${a}${sx}<em>▸</em><b>${c}${sx}</b></span>`;
+
+  const ei = BD_EI[w.e];
+  const out = [cell(BD_SI.atk, base.atk, now.atk)];
+  /* 무속성 무기는 속성 칸을 만들지 않습니다(0 ▸ 0 은 읽을 값이 없습니다). */
+  if (ei) out.push(cell(bdIco(`assets/element/${ei}.png`), base.ele, now.ele, '', ` title="${esc(w.e)}속성"`));
+  out.push(cell(BD_SI.crit, base.crit, now.crit, '%'));
+
+  return `<div class="bd-stats">${out.join('')}</div>
+    <p class="bd-score"><span>점수</span><b>${score}</b></p>
+    ${bdState.detail ? bdCalc(b) : ''}`;
+}
+
+/* 점수가 어떻게 나왔는지 한 줄씩 보여 줍니다(상세 수치 ON).
+   B·C·F 는 가산(1+합), E·G 는 승산(곱)이라 곱해지는 자리가 다릅니다. */
+function bdCalc(b) {
+  const w = bdWeaponOf(b);
+  if (!w) return '';
+  const { base, now, score, co } = bdStats(b);
+  const f = n => (Math.round(n * 1000) / 1000).toString();
+  const rows = [];
+
+  rows.push(`<span>공격력</span><i>${base.atk} × ${f(co.B)}${co.A ? ` + ${co.A}` : ''} = <b>${now.atk}</b></i>`);
+  if (base.ele) {
+    rows.push(`<span>속성</span><i>(${base.ele} × ${f(co.C)}${co.D ? ` + ${co.D}` : ''})${co.E !== 1 ? ` × ${f(co.E)}` : ''} = <b>${now.ele}</b></i>`);
+  }
+  /* 회심은 확률이라 기대 배율로 넣습니다. 양수는 ×${critX}, 음수는 ×0.75 가 그 확률만큼 섞입니다. */
+  rows.push(`<span>회심</span><i>${now.crit}% → 기대배율 <b>${f(co.G)}</b>${now.crit >= 0 ? ` (회심 ×${f(co.critX)})` : ' (역회심 ×0.75)'}</i>`);
+  if (co.F !== 1) rows.push(`<span>대미지</span><i>× <b>${f(co.F)}</b></i>`);
+  rows.push(`<span>점수</span><i>(${now.atk}${base.ele ? ` + ${now.ele}` : ''})${co.F !== 1 ? ` × ${f(co.F)}` : ''} × ${f(co.G)} = <b>${score}</b></i>`);
+
+  return `<div class="bd-calc">
+    ${rows.map(r => `<p>${r}</p>`).join('')}
+    <p class="bd-note">모션치·육질은 공격 동작과 부위마다 달라 1로 둡니다. 빌드끼리 비교하는 상대값입니다.</p>
+  </div>`;
 }
 
 /* 스킬마다 상한이 달라(대개 3 또는 5) 막대를 그 수만큼 칸으로 나눕니다.
@@ -356,10 +590,13 @@ function bdTotalRow(name, lv) {
   const cells = max > 0 ? max : lv;
   const seg = Array.from({ length: cells }, (_, i) =>
     `<i class="${i < Math.min(lv, cells) ? 'on' : ''}"></i>`).join('');
+  /* 상세 수치를 켜면 그 레벨에서 실제로 무슨 일이 일어나는지 한 줄 붙입니다. */
+  const desc = bdState.detail ? bdSkillDesc(name, lv) : null;
   return `<div class="bd-tr${over ? ' over' : ''}">
     <span>${esc(name)}</span>
     <b>${lv}${over ? `<em>/${max}</em>` : ''}</b>
     <span class="bd-bar" style="--n:${cells}">${seg}</span>
+    ${desc ? `<p class="bd-td">${esc(desc)}</p>` : ''}
   </div>`;
 }
 
@@ -380,6 +617,8 @@ function bdOpen(title, bodyHtml, withSearch, opt = {}) {
   $('#bd-modal-body').innerHTML = bodyHtml;
   $('#bd-srow').hidden = !withSearch;
   $('#bd-clear').hidden = !opt.clear;
+  $('#bd-bulk-foot').hidden = true;
+  $('#bd-bulk-foot').innerHTML = '';
   if (withSearch) {
     $('#bd-q').value = '';
     $('#bd-q').placeholder = opt.placeholder || '몬스터 · 장비 · 스킬 검색';
@@ -462,16 +701,27 @@ function bdGearRow(s, b, target, isW, chosen) {
   return ((() => {
         const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
         const sk = isW ? s.weaponSkills : item.skills;
+        /* 목록 요약줄도 카드와 같은 공식 아이콘을 씁니다. «공격 1463 · 불 1420» 처럼
+           글자로 적으면 줄이 길어져 무기 이름이 잘립니다. */
         const meta = isW
-          ? `${item.atk ? `공격 ${item.atk}` : ''}${item.e ? ` · ${esc(item.e)} ${item.ele}` : ''}`
-          : (item.slot ? `◇ ${item.slot}` : '');
+          ? [item.atk ? BD_SI.atk + item.atk : '',
+             item.e && BD_EI[item.e] ? bdIco(`assets/element/${BD_EI[item.e]}.png`) + item.ele : '',
+             item.crit != null ? BD_SI.crit + (item.crit > 0 ? '+' : '') + item.crit + '%' : '',
+            ].filter(Boolean).join(' ')
+          : '';
+        /* 방어구는 표류석 슬롯을 줄 오른쪽 끝에 육각형으로 보여 줍니다.
+           «◇ 2» 를 설명줄에 섞어 두면 슬롯 수가 몇 갠지 훑어보기 어렵습니다. */
+        const slots = !isW && item.slot
+          ? `<span class="bd-rs" title="표류석 슬롯 ${item.slot}칸">${'<i></i>'.repeat(item.slot)}</span>`
+          : '';
         return `<li><button class="bd-lr gear${s.key === chosen ? ' on' : ''}" data-v="${esc(s.key)}">
           ${bdMon(s.key)}
           <span class="bd-lt">
             <b>${esc(s.name)}</b>
-            <i>${esc(item.name)}${meta ? ' · ' + meta : ''}</i>
+            <i>${esc(item.name)}${meta ? ' <span class="bd-lm">' + meta + '</span>' : ''}</i>
             <span class="bd-ls">${sk.map(x => `<em>${esc(x.s)}<b>${x.lv}</b></em>`).join('')}</span>
           </span>
+          ${slots}
         </button></li>`;
   })());
 }
@@ -535,6 +785,8 @@ $('#bd-cards').addEventListener('click', e => {
     bdState.builds.splice(+cp.dataset.copy + 1, 0, JSON.parse(JSON.stringify({ ...src, n: '' })));
     bdSave(); bdRender(); return toast('복제했습니다');
   }
+  const bulk = t.closest('[data-bulk]');
+  if (bulk) return bdOpenBulk(+bulk.dataset.bulk);
   const lk = t.closest('[data-link]');
   if (lk) return bdCopyLink(bdShareURL(+lk.dataset.link));
   const kk = t.closest('[data-kakao]');
@@ -558,6 +810,13 @@ $('#bd-modal-body').addEventListener('click', e => {
     if (!(bdSet(b.w) || {}).weapons?.some(w => w.t === b.wt)) b.w = null;
     bdSave(); bdRender(); return bdDlg().close();
   }
+  /* 일괄선택: 부위 칸을 누르면 그 세트로 바뀝니다(같은 걸 다시 누르면 해제). */
+  const bp = e.target.closest('[data-bulk-pick]');
+  if (bp) {
+    const [key, part] = bp.dataset.bulkPick.split(':');
+    bdBulk[part] = bdBulk[part] === key ? null : key;
+    return bdFillBulk($('#bd-q').value.trim());
+  }
   const skBtn = e.target.closest('.bd-sk');
   if (skBtn) {
     b.ds[bdPick.part] = b.ds[bdPick.part] || [];
@@ -580,7 +839,32 @@ $('#bd-q').addEventListener('input', e => {
   const v = e.target.value.trim();
   if (bdPick?.kind === 'gear') bdFillGear(v);
   else if (bdPick?.kind === 'ds') bdFillStone(v);
+  else if (bdPick?.kind === 'bulk') bdFillBulk(v);
 });
+/* 합산·적용 줄은 #bd-modal-body 바깥의 footer 라 따로 받습니다. */
+$('#bd-bulk-foot').addEventListener('click', e => {
+  if (!bdBulk) return;
+  if (e.target.closest('[data-bulk-toggle]')) {
+    bdBulkFold = !bdBulkFold;
+    return bdBulkFoot();
+  }
+  if (e.target.closest('[data-bulk-clear]')) {
+    for (const { k } of BD_PARTS()) bdBulk[k] = null;
+    return bdFillBulk($('#bd-q').value.trim());
+  }
+  if (e.target.closest('[data-bulk-apply]')) {
+    const bb = bdState.builds[bdPick.bi];
+    for (const { k } of BD_PARTS()) {
+      if (bb[k] === bdBulk[k]) continue;
+      bb[k] = bdBulk[k];
+      /* 방어구가 바뀌면 표류석 칸 수도 바뀌므로 그 부위 표류석은 비웁니다. */
+      bb.ds[k] = [];
+    }
+    bdSave(); bdRender(); bdDlg().close();
+    toast('방어구를 적용했습니다');
+  }
+});
+
 $('#bd-clear').addEventListener('click', () => {
   const b = bdState.builds[bdPick.bi];
   (b.ds[bdPick.part] = b.ds[bdPick.part] || [])[bdPick.slot] = null;

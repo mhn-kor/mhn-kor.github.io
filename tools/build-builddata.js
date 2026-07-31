@@ -32,6 +32,14 @@ const WEAPONS = [
   ['heavy-gun', 'heavybowgun', '헤비보우건'],
   ['bow', 'bow', '활'],
 ];
+const WEAPON_KEYS = new Set(WEAPONS.map(w => w[0]));
+
+/* 이벤트 무기 중에는 공식 목록에도 번들 비용표에도 없는 것이 있다
+   (matUnknown = 재료 미상이라 제작비용 표 자체가 없음).
+   게임에서 확인한 것만 여기 적는다. 비워 두면 종류를 못 좁혀 전 종류로 나온다. */
+const EVENT_WEAPONS = {
+  'spring-26': { types: ['light-gun'], names: { 'light-gun': '로즈어썰트' } },
+};
 
 const ELEM_KO = {
   fire: '불', water: '물', thunder: '번개', thunder2: '번개', ice: '얼음', dragon: '용',
@@ -150,11 +158,18 @@ function weaponExtra(wkey, mon, X) {
     if (v == null) continue;
     if (field === 'ammo' || field === 'heavy-ammo') {
       const t = X.ammo || {};
-      out.push(...v.map(a => t[a[0]] || a[0]));
+      /* [종류, 발수, 재장전, 반동]. 속성탄은 [종류, 발수] 두 칸뿐이다.
+         이름표가 «LV1 관통탄» 처럼 1레벨 기준이라 접두사를 떼고 발수를 붙인다.
+         접두사만 보고 갈랐더니 속성탄(화염탄·수냉탄)에서 발수가 통째로 빠졌다. */
+      out.push(...v.map(a => {
+        const nm = String(t[a[0]] || a[0]).replace(/^LV\d+\s*/, '');
+        return a[1] != null ? `${nm} ${a[1]}` : nm;
+      }));
     } else if (field === 'arrow') {
       const t = X.arrow || {};
-      // 같은 종류가 레벨별로 반복되므로 종류만 모은다
-      out.push(...[...new Set(v.map(a => t[a[0]] || a[0]))]);
+      /* 활은 Lv1~4 네 단계이고 단계마다 종류가 다르다(연사·관통·확산).
+         종류만 모으면 몇 단계에서 무엇이 나오는지가 사라진다. */
+      out.push(...v.map(a => `Lv${a[1]} ${t[a[0]] || a[0]}`));
     } else if (field === 'bottle') {
       const t = X.bottle || {};
       if (t[v] && v !== 'none') out.push(t[v]);
@@ -181,6 +196,8 @@ function main() {
   const official = process.argv[4] ? Object.keys(JSON.parse(fs.readFileSync(process.argv[4], 'utf8'))) : [];
   // 5번째 인자(선택): 병·탄·포격 등의 한국어 이름표
   const X = process.argv[5] ? JSON.parse(fs.readFileSync(process.argv[5], 'utf8')) : {};
+  /* 공식 방어구 페이지의 세트 나열 순서. 일괄 선택 모달이 이 순서로 보여 줍니다. */
+  const armorOrder = process.argv[8] ? JSON.parse(fs.readFileSync(process.argv[8], 'utf8')) : [];
   /* 6·7번째 인자(선택): 스킬별 최대 레벨. 합계 막대를 칸으로 나누는 데 쓴다.
      공식 스킬 상세의 레벨 표 행 수가 곧 상한이다. */
   const skillMax = {};   // 이름은 maxLv() 함수와 겹치지 않게 둔다
@@ -238,23 +255,39 @@ function main() {
       .map(c => off.weapon[`${c}_${suffix}`]).find(Boolean);
     const hasOfficial = WEAPONS.some(([, suffix]) => officialName(suffix));
 
+    /* 이벤트 장비는 공식 목록에 없어서 종류를 알 방법이 제작비용 표뿐이다.
+       forge/craft 에 weapon 이 없으면 무기가 아예 없고(봄 축제26 등),
+       무기 종류 키가 있으면 그 종류만 따로 제작된다는 뜻이다(이스터25 = 대검·차지액스).
+       종류 키가 하나도 없으면 비용표 하나로 전 종류를 만드는 형태라 그대로 둔다.
+       몬스터 소재는 공식 목록이 있으므로 이 규칙을 쓰지 않는다. */
+    const isEvent = groupOf(key, mon) === 1;
+    const ovr = isEvent ? EVENT_WEAPONS[key] : null;
+    const forgeKeys = new Set([...Object.keys(mon.forge || {}), ...Object.keys(mon.craft || {})]);
+    const evtTypes = new Set([...forgeKeys, ...Object.keys(raw)].filter(k => WEAPON_KEYS.has(k)));
+    /* 비용표가 없어도 확인된 무기가 있으면 만든다(봄 축제26 로즈어썰트). */
+    const evtNoWeapon = isEvent && !ovr && !forgeKeys.has('weapon');
+    const evtOnly = ovr ? new Set(ovr.types) : (isEvent && evtTypes.size ? evtTypes : null);
+
     /* noWeapon 소재(가죽·합금)는 방어구만 있다. 이걸 안 보면 공식 'ore' 슬러그를
        공유하는 가죽에 광석 무기 이름이 붙는다. */
     const weapons = [];
-    for (const [wkey, suffix, wko] of (raw.noWeapon ? [] : WEAPONS)) {
+    for (const [wkey, suffix, wko] of ((raw.noWeapon || evtNoWeapon) ? [] : WEAPONS)) {
+      if (evtOnly && !evtOnly.has(wkey)) continue;
       const official = officialName(suffix);
       const elem = (mon.eff && (mon.eff[wkey] || mon.eff.all)) || null;
       /* 이벤트 장비는 공식 목록에 아예 없다. 그때만 "소재명 + 종류" 로 대체한다.
          (mhn.quest 도 이벤트 장비를 소재명으로 표시한다) */
-      const name = official || (hasOfficial ? null : (elem ? `${monKo[key] || key} ${wko}` : null));
+      const name = (ovr && ovr.names[wkey]) || official || (hasOfficial ? null : (elem ? `${monKo[key] || key} ${wko}` : null));
       if (!name) continue;
       const curve = elem && mon[elem];
       const atk = curve && K7[curve.base] ? K7[curve.base].at(-1) : null;
       const ele = curve && curve.ele && K7[curve.ele] ? K7[curve.ele].at(-1) : null;
+      /* 회심(%). 음수인 무기가 많아 0 과 없음을 구분해야 한다. */
+      const crit = curve && curve.crit && K7[curve.crit] ? K7[curve.crit].at(-1) : null;
       weapons.push({
         t: wkey, tn: wko, name,
         e: elem && elem !== 'white' ? ELEM_KO[elem] || elem : null,
-        atk, ele,
+        atk, ele, crit,
         x: weaponExtra(wkey, mon, X),
       });
     }
@@ -268,6 +301,8 @@ function main() {
       u: mon.unlock ?? 99,
       id: mon.id ?? 9999,
       g: groupOf(key, mon),
+      /* 공식 방어구 페이지 순서. 목록에 없으면(이벤트 장비) 뒤로 보냅니다. */
+      o: (i => (i < 0 ? 999 : i))(armorOrder.indexOf(slug)),
       pieces,
       weaponSkills: (raw.weapon || []).map(e => ({ s: skillName(e.skill), lv: maxLv(e) })),
       weapons,

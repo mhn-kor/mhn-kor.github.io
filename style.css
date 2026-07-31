@@ -533,7 +533,12 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
   background: rgba(255,255,255,.05); border: 1px solid var(--line); color: var(--muted);
 }
 .bd-stat b { color: var(--amber-hi); font-variant-numeric: tabular-nums; }
+/* 아이콘과 숫자를 한 덩어리로 붙입니다. */
+.bd-stat > span { display: inline-flex; align-items: center; gap: 3px; }
 .bd-stat .el b { color: var(--jade); }
+/* 회심은 음수인 무기가 많아 부호를 색으로 구분합니다. */
+.bd-stat .cr b { color: var(--bone); }
+.bd-stat .cr.minus b { color: var(--red); }
 .bd-stat .sp { color: var(--amber); }
 
 /* 표류석 칸 — 육각형. 비면 점선입니다. */
@@ -574,16 +579,80 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 .bd-bar i { height: 4px; border-radius: 1px; background: rgba(255,255,255,.08); }
 .bd-bar i.on { background: var(--amber); }
 .bd-tr.over .bd-bar i.on { background: var(--red); }
+
+/* 합산 스킬 아래 한 줄 설명(상세 수치 ON). */
+.bd-td {
+  grid-column: 1/-1; margin: 3px 0 0; font-size: .73rem; line-height: 1.45;
+  color: var(--muted); word-break: keep-all;
+}
+
+/* 무기 기본값 ▸ 스킬 합산값.
+   .bd-sum 은 스킬을 여러 열로 흘리는 그리드라, 전체 폭을 차지하도록 못 박지 않으면
+   좁은 칸 하나에 갇혀 옆으로 삐져나옵니다. */
+.bd-stats {
+  grid-column: 1 / -1;
+  /* 무속성이면 칸이 둘이라 개수에 맞춰 나눕니다. */
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px;
+  margin: 8px 11px 0; padding-top: 9px; border-top: 1px solid var(--line);
+}
+.bd-sc {
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  min-width: 0; overflow: hidden;
+  padding: 4px 2px; border-radius: 6px; white-space: nowrap;
+  font-size: .72rem; color: var(--muted); background: rgba(255,255,255,.04);
+  font-variant-numeric: tabular-nums; letter-spacing: -.03em;
+}
+/* 공식 아이콘은 이미 색이 들어 있어 흐리게 하지 않습니다. */
+.bd-ii { flex: none; vertical-align: -2px; }
+.bd-sc .bd-ii { margin-right: 1px; }
+/* 목록 요약줄의 수치 묶음. 아이콘과 숫자가 갈라지지 않게 붙여 둡니다. */
+.bd-lm { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; white-space: nowrap; }
+.bd-sc em { font-style: normal; opacity: .45; margin: 0 1px; }
+.bd-sc b { color: var(--bone); }
+.bd-sc.up b { color: var(--amber-hi); }
+.bd-sc.down b { color: var(--red); }
+/* 점수 = (공격력 + 속성공격력) × 대미지% × 회심 기대배율. 한 줄 전체를 쓰고 가운데. */
+.bd-score {
+  grid-column: 1 / -1;
+  display: flex; align-items: baseline; justify-content: center; gap: 7px;
+  margin: 8px 11px 0; font-size: .74rem; color: var(--muted);
+}
+.bd-score b { font-size: 1.25rem; color: var(--amber-hi); font-variant-numeric: tabular-nums; }
+/* 점수 계산 과정(상세 수치 ON). */
+.bd-calc {
+  grid-column: 1 / -1; margin: 6px 11px 2px; padding: 8px 10px;
+  background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 7px;
+}
+.bd-calc p {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; margin: 0 0 3px;
+  font-size: .71rem; line-height: 1.5; color: var(--muted);
+}
+.bd-calc p:last-child { margin-bottom: 0; }
+.bd-calc span { color: var(--amber); font-weight: 700; }
+.bd-calc i { font-style: normal; font-variant-numeric: tabular-nums; word-break: break-word; }
+.bd-calc i b { color: var(--bone); }
+.bd-calc .bd-note { display: block; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line);
+  font-size: .68rem; opacity: .8; word-break: keep-all; }
 .bd-tr.over > b { color: var(--red); }
 .bd-tr > b em { font-style: normal; font-size: .74rem; opacity: .8; }
 .bd-empty { margin: 0; font-size: .82rem; color: var(--muted); }
 
 /* ── 빌드 선택 모달 ───────────────────── */
+/* 세로로 쌓아 두면 가운데 목록만 늘어나고 머리글·검색·아래 버튼은 제자리에 남습니다. */
 #bd-modal { width: min(100% - 28px, 540px); max-height: min(88vh, 800px); }
+#bd-modal[open] { display: flex; flex-direction: column; }
+.bd-mh { display: flex; align-items: flex-start; gap: 8px; flex: none; }
 #bd-modal h2 {
-  display: flex; align-items: center; gap: 9px;
-  margin: 0; padding: 17px 20px 13px; font-size: 1.02rem; letter-spacing: -.02em;
+  display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0;
+  margin: 0; padding: 17px 4px 13px 20px; font-size: 1.02rem; letter-spacing: -.02em;
 }
+/* 닫기는 머리글 오른쪽 X 하나로 둡니다. */
+#bd-modal-close {
+  flex: none; margin: 13px 14px 0 0; padding: 0; width: 30px; height: 30px;
+  display: grid; place-items: center; cursor: pointer; color: var(--muted);
+  background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 8px;
+}
+#bd-modal-close:hover { color: var(--bone); background: rgba(255,255,255,.12); }
 #bd-modal h2 img { width: 24px; height: 24px; flex: none; }
 .bd-srow { display: flex; align-items: center; gap: 8px; margin: 0 20px 12px; }
 .bd-srow[hidden] { display: none; }
@@ -600,8 +669,7 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
   background: none; border: 0; outline: none; padding: 8px 0;
 }
 #bd-modal-count { flex: none; font-size: .76rem; color: var(--muted); }
-#bd-modal-body { padding: 0 20px; overflow-y: auto; max-height: calc(min(88vh, 800px) - 200px); }
-#bd-modal menu { padding: 13px 20px 18px; }
+#bd-modal-body { padding: 0 20px; overflow-y: auto; flex: 1; min-height: 60px; }
 
 /* 무기 종류 격자 */
 .bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; padding-bottom: 4px; }
@@ -640,6 +708,64 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
   background: rgba(233,161,59,.1); color: var(--muted);
 }
 .bd-ls em b { color: var(--amber-hi); margin-left: 3px; }
+/* 방어구 목록 오른쪽 끝의 표류석 슬롯. 카드의 육각형과 같은 모양이라
+   빈 칸이 몇 개인지 목록에서 바로 읽힙니다. */
+.bd-rs { display: flex; gap: 3px; flex: none; margin-left: auto; align-self: center; }
+.bd-rs i {
+  width: 15px; height: 15px; display: block; background: rgba(255,255,255,.22);
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+}
+.bd-lr.on .bd-rs i { background: var(--amber); }
+/* 방어구 일괄선택 버튼 — 방어구 줄과 스킬 합산 사이. */
+.bd-bulk {
+  display: block; width: calc(100% - 22px); margin: 0 11px 9px; padding: 8px;
+  font: inherit; font-size: .8rem; font-weight: 600; color: var(--amber);
+  background: rgba(233,161,59,.08); border: 1px dashed rgba(233,161,59,.4);
+  border-radius: 8px; cursor: pointer;
+}
+.bd-bulk:hover { background: rgba(233,161,59,.16); border-style: solid; }
+
+/* 일괄선택 목록: 아이콘 · 이름 · 부위 다섯 칸. */
+.bd-blist { list-style: none; margin: 0; padding: 0; }
+.bd-brow {
+  display: flex; align-items: center; gap: 9px; padding: 5px 9px;
+  border-bottom: 1px solid rgba(255,255,255,.045);
+}
+.bd-bn { flex: 1; min-width: 0; font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-bp { display: flex; gap: 3px; flex: none; }
+.bd-bb {
+  width: 28px; height: 28px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 6px;
+}
+.bd-bb img { opacity: .5; }
+.bd-bb:hover { border-color: rgba(233,161,59,.5); }
+.bd-bb:hover img { opacity: .85; }
+.bd-bb.on { background: rgba(233,161,59,.22); border-color: var(--amber); }
+.bd-bb.on img { opacity: 1; }
+/* 그 부위가 없는 세트는 빈 자리로 두어 칸이 어긋나지 않게 합니다. */
+.bd-bx { width: 28px; height: 28px; display: block; }
+
+/* 모달 아래 고정 영역: 합산 스킬 + 적용. */
+/* 목록이 아무리 길어도 아래 버튼 줄은 늘 보이도록 고정합니다. */
+#bd-bulk-foot {
+  flex: none; margin: 0 20px; padding: 8px 0 16px; border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+#bd-bulk-foot[hidden] { display: none; }
+/* 합산 스킬 접기. 스킬이 많으면 화면을 다 먹어서 접을 수 있어야 합니다. */
+.bd-bt {
+  display: flex; align-items: center; gap: 5px; width: 100%; padding: 4px 0 6px;
+  font: inherit; font-size: .74rem; color: var(--muted); cursor: pointer;
+  background: none; border: 0; text-align: left;
+}
+.bd-bt b { color: var(--amber); margin-left: 2px; }
+.bd-bt svg { margin-left: auto; transition: transform .15s; }
+.bd-bt.fold svg { transform: rotate(-90deg); }
+.bd-bsum { display: flex; flex-wrap: wrap; gap: 4px; max-height: 96px; overflow-y: auto; margin-bottom: 9px; }
+.bd-bsum[hidden] { display: none; }
+.bd-bact { display: flex; gap: 8px; }
+.bd-bact .btn { flex: 1; padding: 9px; font-size: .84rem; }
+
 .bd-lv { display: flex; gap: 3px; flex: none; }
 .bd-lv em {
   width: 22px; height: 22px; display: grid; place-items: center;
