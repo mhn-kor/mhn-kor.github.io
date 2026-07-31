@@ -631,6 +631,27 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 .bd-calc span { color: var(--amber); font-weight: 700; }
 .bd-calc i { font-style: normal; font-variant-numeric: tabular-nums; word-break: break-word; }
 .bd-calc i b { color: var(--bone); }
+/* 조건부 스킬 켜기. */
+.bd-cond { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--line); }
+/* .bd-ch 는 카드 헤더가 이미 쓰는 이름이라 따로 둡니다. */
+.bd-cdh { display: flex !important; align-items: baseline; gap: 6px; margin-bottom: 5px !important; font-size: .71rem; }
+.bd-cdh b { color: var(--amber); }
+.bd-cdh i { font-style: normal; opacity: .65; font-size: .67rem; }
+.bd-cl {
+  display: grid; grid-template-columns: 15px minmax(0, 1fr) auto; align-items: center; gap: 7px;
+  padding: 4px 5px; border-radius: 5px; cursor: pointer; font-size: .72rem; color: var(--muted);
+}
+.bd-cl:hover { background: rgba(255,255,255,.05); }
+.bd-cl.on { color: var(--bone); background: rgba(233,161,59,.09); }
+.bd-cl input { width: 14px; height: 14px; margin: 0; accent-color: var(--amber); cursor: pointer; }
+.bd-cl span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-cl span b { color: var(--amber-hi); margin-left: 2px; }
+.bd-cl i { font-style: normal; font-size: .68rem; opacity: .8; white-space: nowrap; }
+/* 점수 옆 배지 */
+.bd-cb {
+  font-style: normal; font-size: .66rem; padding: 2px 6px; border-radius: 999px;
+  color: var(--amber); background: rgba(233,161,59,.14);
+}
 .bd-calc .bd-note { display: block; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line);
   font-size: .68rem; opacity: .8; word-break: keep-all; }
 .bd-tr.over > b { color: var(--red); }
@@ -640,6 +661,13 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 /* ── 빌드 선택 모달 ───────────────────── */
 /* 세로로 쌓아 두면 가운데 목록만 늘어나고 머리글·검색·아래 버튼은 제자리에 남습니다. */
 #bd-modal { width: min(100% - 28px, 540px); max-height: min(88vh, 800px); }
+/* 모바일에서는 목록이 길어 화면을 꽉 채우는 편이 훨씬 넘기기 쉽습니다. */
+@media (max-width: 640px) {
+  #bd-modal {
+    width: calc(100% - 16px); max-width: none;
+    height: calc(100vh - 16px); height: calc(100dvh - 16px); max-height: none;
+  }
+}
 #bd-modal[open] { display: flex; flex-direction: column; }
 .bd-mh { display: flex; align-items: flex-start; gap: 8px; flex: none; }
 #bd-modal h2 {
@@ -902,8 +930,14 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
    그 결과 화면이 넘쳐 가로 스크롤이 생기고, 포커스를 풀어도 원래 배율로 돌아오지 않습니다.
    viewport 에 user-scalable=no 를 넣어도 막히지만 손가락 확대까지 막혀 접근성을 해칩니다.
    폭이 아니라 터치 기기 기준으로 걸어야 합니다 — 아이패드(768px)도 똑같이 확대됩니다. */
-@media (pointer: coarse) {
-  .f input, .search input, .field select { font-size: 16px; }
+/* 터치 기기이거나 화면이 좁으면 적용합니다. pointer:coarse 하나만 걸면
+   기기·브라우저에 따라 매칭이 안 되는 경우가 있어 폭 조건을 함께 둡니다. */
+@media (pointer: coarse), (max-width: 640px) {
+  /* iOS 는 16px 미만 입력칸에 포커스가 가면 화면을 확대합니다. 한 번 확대되면
+     가로 스크롤이 생기고 저절로 돌아오지 않아, 글자가 들어가는 칸은 전부 16px 로 둡니다.
+     클래스로 하나씩 적으면 새로 만든 칸(빌드 이름·모달 검색)이 계속 빠집니다.
+     .bd-search input 같은 클래스 규칙이 특정도로 이기므로 !important 가 필요합니다. */
+  input, select, textarea { font-size: 16px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -20,6 +20,8 @@ const bdNewBuild = () => ({
   n: '', w: null, wt: 'shield-sword', st: 0,
   helm: null, mail: null, gloves: null, belt: null, greaves: null,
   ds: { helm: [], mail: [], gloves: [], belt: [], greaves: [] },
+  /* 켜 둔 조건부 스킬 이름. 기본은 전부 꺼짐입니다. */
+  cond: {},
 });
 
 let bdState = { builds: [bdNewBuild()], detail: false };
@@ -56,8 +58,13 @@ function bdEffects(desc) {
   /* 체력 게이지는 만피(BD_BASE_HP) 기준으로 봅니다. 하이 차지가 «남은 체력 게이지» 를
      쓰는 것과 같은 전제라, «체력이 최대일 때» 조건은 늘 만족합니다(완전 충전).
      반대로 «29% 이하» 나 «부활하면» 같은 조건은 만피에서 성립하지 않아 그대로 둡니다. */
+  /* «회심 공격 시» 는 조건이 아니라 회심 그 자체입니다. 점수는 이미 회심 확률로
+     기대값을 내므로 전부 켜거나 끄는 게 아니라 확률만큼 섞여야 합니다.
+     문구를 떼어내고 onCrit 로 표시해 뒤에서 확률을 곱합니다. */
+  const onCrit = /회심 공격 시/.test(desc);
   const body = (gate ? desc.slice(gate.index + gate[0].length) : desc)
-    .replace(/체력이 최대일 때\s*/g, '');
+    .replace(/체력이 최대일 때\s*/g, '')
+    .replace(/회심 공격 시\s*/g, '');
   const out = [];
   const scan = (src, fn) => {
     const r = new RegExp(src, 'g'); let m;
@@ -65,22 +72,22 @@ function bdEffects(desc) {
   };
   /* «얼음속성 공격력이 15% 증가» 가 공격력으로도 세지지 않도록 앞의 «속성 » 을 뺍니다.
      «수치가» 와 «공격력이» 는 조사가 달라 둘 다 받습니다. */
-  scan('(?<!속성 )공격력이 (\\d+)% (?:상승|증가)', (m, c) => out.push({ k: 'atk', pct: 1, v: +m[1], need, cond: c }));
-  scan('(?<!속성 )공격력이 (\\d+) (?:상승|증가)', (m, c) => out.push({ k: 'atk', v: +m[1], need, cond: c }));
-  scan('회심률이 (\\d+)% (?:상승|증가)', (m, c) => out.push({ k: 'crit', v: +m[1], need, cond: c }));
-  scan('회심률이 (\\d+)% 감소', (m, c) => out.push({ k: 'crit', v: -m[1], need, cond: c }));
-  scan('(\\S+?)속성 (?:수치|공격력)[이가] (\\d+)% 증가', (m, c) => out.push({ k: 'ele', pct: 1, v: +m[2], el: m[1], need, cond: c }));
-  scan('(\\S+?)속성 (?:수치|공격력)[이가] (\\d+) (?:증가|상승)', (m, c) => out.push({ k: 'ele', v: +m[2], el: m[1], need, cond: c }));
-  scan('무기의 속성 공격력이 (\\d+)% 증가', (m, c) => out.push({ k: 'ele', pct: 1, v: +m[1], need, cond: c }));
+  scan('(?<!속성 )공격력이 (\\d+)% (?:상승|증가)', (m, c) => out.push({ onCrit, k: 'atk', pct: 1, v: +m[1], need, cond: c }));
+  scan('(?<!속성 )공격력이 (\\d+) (?:상승|증가)', (m, c) => out.push({ onCrit, k: 'atk', v: +m[1], need, cond: c }));
+  scan('회심률이 (\\d+)% (?:상승|증가)', (m, c) => out.push({ onCrit, k: 'crit', v: +m[1], need, cond: c }));
+  scan('회심률이 (\\d+)% 감소', (m, c) => out.push({ onCrit, k: 'crit', v: -m[1], need, cond: c }));
+  scan('(\\S+?)속성 (?:수치|공격력)[이가] (\\d+)% 증가', (m, c) => out.push({ onCrit, k: 'ele', pct: 1, v: +m[2], el: m[1], need, cond: c }));
+  scan('(\\S+?)속성 (?:수치|공격력)[이가] (\\d+) (?:증가|상승)', (m, c) => out.push({ onCrit, k: 'ele', v: +m[2], el: m[1], need, cond: c }));
+  scan('무기의 속성 공격력이 (\\d+)% 증가', (m, c) => out.push({ onCrit, k: 'ele', pct: 1, v: +m[1], need, cond: c }));
   /* F = 대미지 % 증가(가산). G 쪽의 회심 배율은 «대미지 배율이 130%로 강화» 로 적힙니다. */
-  scan('(?:주는 )?대미지가 (\\d+)% 증가', (m, c) => out.push({ k: 'dmg', pct: 1, v: +m[1], need, cond: c }));
-  scan('대미지 배율이 (\\d+)%로 강화', (m, c) => out.push({ k: 'critx', v: +m[1], need, cond: c }));
+  scan('(?:주는 )?대미지가 (\\d+)% 증가', (m, c) => out.push({ onCrit, k: 'dmg', pct: 1, v: +m[1], need, cond: c }));
+  scan('대미지 배율이 (\\d+)%로 강화', (m, c) => out.push({ onCrit, k: 'critx', v: +m[1], need, cond: c }));
   /* 체력 증강 등. 체력 자체는 대미지가 아니지만 하이 차지가 이 값을 씁니다. */
-  scan('체력이 (\\d+) 증가', (m, c) => out.push({ k: 'hp', v: +m[1], need, cond: c }));
+  scan('체력이 (\\d+) 증가', (m, c) => out.push({ onCrit, k: 'hp', v: +m[1], need, cond: c }));
   /* 하이 차지 — «남은 체력 게이지의 2배만큼 얼음속성 공격력이 증가한다».
      속성 정액(D)이지만 값이 체력에 달려 있어 배수만 담아 둡니다. */
   scan('남은 체력 게이지의 (\\d+)배만큼 (\\S+?)속성 공격력이 증가',
-    (m, c) => out.push({ k: 'ele', hpx: +m[1], el: m[2], need, cond: c }));
+    (m, c) => out.push({ onCrit, k: 'ele', hpx: +m[1], el: m[2], need, cond: c }));
   return out;
 }
 
@@ -112,31 +119,41 @@ function bdStats(b) {
   const base = { atk: (w && w.atk) || 0, ele: (w && w.ele) || 0, crit: (w && w.crit) || 0 };
   let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, critX = BD_CRIT_UP, crit = base.crit;
   const lvOf = new Map(bdTotals(b));
+  const on = b.cond || {};
 
-  /* 조건·게이트를 통과한 효과만 모읍니다. 하이 차지가 체력을 쓰기 때문에
-     체력을 먼저 다 더한 뒤에 나머지를 계산합니다. */
+  /* 효과를 먼저 다 모읍니다. 조건부는 켜 둔 것만 씁니다.
+     조건부 목록은 화면에서 켜고 끌 수 있도록 그대로 돌려줍니다. */
   const eff = [];
+  const conds = [];
   for (const [name, lv] of lvOf) {
-    for (const e of bdEffects(bdSkillDesc(name, lv) || '')) {
-      if (e.cond) continue;
+    const list = bdEffects(bdSkillDesc(name, lv) || '');
+    if (!list.length) continue;
+    if (list.some(e => e.cond)) conds.push({ sk: name, lv, list: list.filter(e => e.cond) });
+    for (const e of list) {
       if (e.need && (lvOf.get(e.need.s) || 0) < e.need.lv) continue;
-      eff.push({ ...e, sk: name });   // 승산 판별(BD_ELE_MUL)에 이름이 필요합니다
+      if (e.cond && !on[name]) continue;
+      eff.push({ ...e, sk: name });
     }
   }
+
+  /* 순서가 있습니다. 하이 차지가 체력을 쓰고, «회심 공격 시» 효과가 회심률을 씁니다. */
   const hp = BD_BASE_HP + eff.reduce((n, e) => n + (e.k === 'hp' ? e.v : 0), 0);
+  for (const e of eff) if (e.k === 'crit') crit += e.v;
+  const p = Math.max(0, Math.min(100, crit)) / 100;   // 마이너스 회심은 회심이 안 터집니다
 
   for (const e of eff) {
     if (e.k === 'atk') { if (e.pct) B += e.v / 100; else A += e.v; continue; }
-    if (e.k === 'crit') { crit += e.v; continue; }
     if (e.k === 'critx') { critX = Math.max(critX, e.v / 100); continue; }
     if (e.k === 'dmg') { F += e.v / 100; continue; }
     if (e.k === 'ele') {
       /* 속성 강화는 무기 속성이 같을 때만 붙습니다. 속성 표기가 없으면 어떤 속성이든 붙습니다. */
       if (!w || !w.e) continue;
       if (e.el && w.e !== e.el) continue;
-      if (e.hpx) { D += hp * e.hpx; continue; }   // 하이 차지
+      if (e.hpx) { D += hp * e.hpx; continue; }                       // 하이 차지
       if (!e.pct) { D += e.v; continue; }
-      if (BD_ELE_MUL.has(e.sk)) E *= 1 + e.v / 100; else C += e.v / 100;
+      /* 회심 시에만 붙는 속성 증가는 회심 확률만큼만 섞습니다(회심격【속성】). */
+      const v = e.onCrit ? (e.v / 100) * p : e.v / 100;
+      if (BD_ELE_MUL.has(e.sk) || e.onCrit) E *= 1 + v; else C += v;
     }
   }
   const now = {
@@ -145,11 +162,11 @@ function bdStats(b) {
     crit: Math.round(crit),
   };
   /* 회심 기대 배율. 양수면 회심이, 음수면 역회심이 그 확률만큼 섞입니다. */
-  const p = Math.max(-100, Math.min(100, now.crit)) / 100;
-  const G = 1 + (p >= 0 ? p * (critX - 1) : -p * (BD_CRIT_DOWN - 1));
+  const q = Math.max(-100, Math.min(100, now.crit)) / 100;
+  const G = 1 + (q >= 0 ? q * (critX - 1) : -q * (BD_CRIT_DOWN - 1));
   const score = Math.round((now.atk + now.ele) * F * G);
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
-  return { base, now, score, hp, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX } };
+  return { base, now, score, hp, conds, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX } };
 }
 
 function bdTotals(b) {
@@ -164,6 +181,28 @@ function bdTotals(b) {
     (b.ds[k] || []).slice(0, bdSlotCount(b, k)).forEach(d => { if (d && d.s) add(d.s, 1); });
   }
   return [...total.entries()].sort((a, b2) => b2[1] - a[1] || a[0].localeCompare(b2[0], 'ko'));
+}
+
+/* 조건부 스킬. 조건의 성격이 제각각이라(약점 공격은 사실상 상시, 부활은 사고)
+   하나의 기본값이 없어 켜고 끄게 둡니다. 기본은 전부 꺼짐입니다. */
+const BD_KIND = { atk: '공격력', crit: '회심률', ele: '속성', dmg: '대미지', critx: '회심 배율', hp: '체력' };
+function bdCondList(b) {
+  const { conds } = bdStats(b);
+  if (!conds.length) return '';
+  const on = b.cond || {};
+  const n = conds.filter(c => on[c.sk]).length;
+  const bi = bdState.builds.indexOf(b);
+  return `<div class="bd-cond">
+    <p class="bd-cdh">조건부 스킬 <b>${n}/${conds.length}</b> <i>켠 것만 점수에 들어갑니다</i></p>
+    ${conds.map(c => {
+      const what = c.list.map(e => `${BD_KIND[e.k] || e.k} ${e.v > 0 ? '+' : ''}${e.v}${e.pct || e.k === 'crit' || e.k === 'critx' ? '%' : ''}`).join(' · ');
+      return `<label class="bd-cl${on[c.sk] ? ' on' : ''}">
+        <input type="checkbox" data-cond="${bi}:${esc(c.sk)}"${on[c.sk] ? ' checked' : ''}>
+        <span>${esc(c.sk)} <b>${c.lv}</b></span>
+        <i>${esc(what)}</i>
+      </label>`;
+    }).join('')}
+  </div>`;
 }
 
 /* ── 방어구 일괄선택 ───────────────────────────────────────────── */
@@ -260,7 +299,9 @@ function bdShareParam(bi) {
       if (d && d.s) ds.push(`${k}|${i}|${d.c}|${d.s}`);
     });
   }
-  const p = [`w=${b.w || ''}`, `wt=${b.wt}`, b.st ? `st=${b.st}` : '', ds.length ? `ds=${ds.join(';')}` : '']
+  const cond = Object.keys(b.cond || {}).filter(k => b.cond[k]);
+  const p = [`w=${b.w || ''}`, `wt=${b.wt}`, b.st ? `st=${b.st}` : '', ds.length ? `ds=${ds.join(';')}` : '',
+    cond.length ? `c=${cond.join(';')}` : '']
     .concat(BD_PARTS().map(({ k }) => `${k}=${b[k] || ''}`)).filter(Boolean).join(',');
   return encodeURIComponent(p);
 }
@@ -574,7 +615,10 @@ function bdStatBar(b) {
   out.push(cell(BD_SI.crit, base.crit, now.crit, '%'));
 
   return `<div class="bd-stats">${out.join('')}</div>
-    <p class="bd-score"><span>점수</span><b>${score}</b></p>
+    <p class="bd-score"><span>점수</span><b>${score}</b>${(() => {
+      const n = Object.values(b.cond || {}).filter(Boolean).length;
+      return n ? `<em class="bd-cb" title="조건부 스킬 ${n}개 반영">조건 ${n}</em>` : '';
+    })()}</p>
     ${bdState.detail ? bdCalc(b) : ''}`;
 }
 
@@ -600,6 +644,7 @@ function bdCalc(b) {
 
   return `<div class="bd-calc">
     ${rows.map(r => `<p>${r}</p>`).join('')}
+    ${bdCondList(b)}
     <p class="bd-note">체력은 만피(${BD_BASE_HP} + 체력 스킬) 기준입니다. 모션치·육질은 공격 동작과 부위마다 달라 1로 둡니다 — 빌드끼리 비교하는 상대값입니다.</p>
   </div>`;
 }
@@ -816,6 +861,16 @@ $('#bd-cards').addEventListener('click', e => {
   if (kk) return bdKakao(+kk.dataset.kakao);
 });
 
+$('#bd-cards').addEventListener('change', e => {
+  const c = e.target.closest('[data-cond]');
+  if (!c) return;
+  const [bi, sk] = c.dataset.cond.split(/:(.+)/);
+  const b = bdState.builds[+bi];
+  b.cond = b.cond || {};
+  if (c.checked) b.cond[sk] = true; else delete b.cond[sk];
+  bdSave(); bdRender();
+});
+
 $('#bd-cards').addEventListener('input', e => {
   const el = e.target.closest('[data-name]');
   if (!el) return;
@@ -928,6 +983,7 @@ function drawBuild() {
       for (const { k } of BUILD.parts) {
         if (bdSet(kv[k]) && bdSet(kv[k]).pieces[k]) b[k] = kv[k];
       }
+      for (const nm of String(kv.c || '').split(';')) if (nm) b.cond[nm] = true;
       /* 방어구를 먼저 채운 뒤에 표류석을 끼웁니다. 칸 수가 방어구에 달려 있습니다. */
       for (const e of String(kv.ds || '').split(';')) {
         const [part, i, color, skill] = e.split('|');
@@ -940,7 +996,7 @@ function drawBuild() {
       try {
         const saved = JSON.parse(localStorage.getItem(BD_KEY) || 'null');
         if (saved && Array.isArray(saved.builds) && saved.builds.length) {
-          bdState = { detail: !!saved.detail, builds: saved.builds.map(x => ({ ...bdNewBuild(), ...x, ds: { ...bdNewBuild().ds, ...(x.ds || {}) } })) };
+          bdState = { detail: !!saved.detail, builds: saved.builds.map(x => ({ ...bdNewBuild(), ...x, ds: { ...bdNewBuild().ds, ...(x.ds || {}) }, cond: { ...(x.cond || {}) } })) };
         }
       } catch (e) { /* 저장값이 깨졌으면 기본값으로 */ }
     }
