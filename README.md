@@ -288,6 +288,11 @@ node tools/update.js          # 이거 하나면 됩니다
 `tools/data/wextra.json` 만 손으로 관리합니다 — 탄·병·포격 이름표라 게임 패치와
 거의 무관합니다.
 
+무기 스킬은 대개 소재 공통이라 세트의 `weaponSkills` 에 한 벌만 둡니다. 다만
+바젤기우스·이블조처럼 **종류마다 스킬이 다른 소재**가 있어, 그런 무기는 자기 스킬을
+`weapons[].sk` 로 따로 들고 옵니다(공통에 더하는 게 아니라 통째로 갈음합니다).
+화면에서는 `build.js` 의 `bdWSkills()` 가 둘을 가려 씁니다.
+
 ### 단계별로 돌리고 싶다면
 
 ```bash
@@ -296,6 +301,7 @@ node tools/build-skilldesc.js tools/data/skill-urls.json > skill-desc.js
 node tools/build-builddata.js > build-data.js                  # 인자 없음
 node tools/fetch-icons.js                                      # 빠진 아이콘만
 node tools/build-materialdata.js && node tools/material-test.js
+node tools/build-test.js                                       # 무기 스킬 회귀 (필수)
 ```
 
 순서에 이유가 있습니다. `build-builddata.js` 는 스킬 최대 레벨을 `skill-desc.js` 에서,

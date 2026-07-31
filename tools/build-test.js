@@ -1,0 +1,75 @@
+/* 빌드 탭 무기 스킬 회귀 테스트 — 의존성 없이 `node tools/build-test.js`.
+
+   무기 스킬은 소재 공통(weaponSkills)이 원칙이지만, 종류마다 다른 소재가 있습니다
+   (바젤기우스·이블조·라잔·티가렉스 아종·이스터25·동계 축제25). 그런 무기는 자기
+   스킬을 weapons[].sk 로 들고 옵니다. 예전에는 공통 자리에 «무기 종류에 따라 다름»
+   이라는 자리표시자가 들어가, 무기를 골라도 그 문구가 스킬 합계에 섞였습니다.
+   build-data.js 를 다시 만들었거나 build.js 의 bdWSkills 를 손댔다면 돌려보세요. */
+const fs = require('fs'), vm = require('vm'), path = require('path');
+const assert = require('assert');
+
+const root = path.join(__dirname, '..');
+const ctx = {
+  console,
+  /* 화면이 없으므로 요소를 흉내만 냅니다. hidden 을 참으로 두면 build.js 가
+     스스로 그리지 않아, 계산 함수만 꺼내 쓸 수 있습니다. */
+  $: () => ({ hidden: true, addEventListener() {} }),
+  document: { querySelector: () => null },
+  nickAuto() {},                    // record.js 것. 화면이 없으니 빈 껍데기면 됩니다.
+  localStorage: { getItem: () => null, setItem() {} },
+};
+vm.createContext(ctx);
+for (const f of ['build-data.js', 'build.js']) {
+  vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
+}
+/* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
+const [BUILD, bdWSkills, bdTotals, bdNewBuild] =
+  ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild'].map(n => vm.runInContext(n, ctx));
+
+let fail = 0;
+const check = (label, fn) => {
+  try { fn(); } catch (e) { fail++; console.log('✗ ' + label + '\n  ' + e.message); }
+};
+
+check('자리표시자가 데이터에 남아 있지 않다', () => {
+  assert.ok(!JSON.stringify(BUILD).includes('무기 종류에 따라'), '«무기 종류에 따라 다름» 이 남아 있습니다');
+});
+
+check('레벨 0 스킬이 없다', () => {
+  for (const s of BUILD.sets) {
+    for (const x of s.weaponSkills) assert.ok(x.lv > 0, `${s.key} 공통 ${x.s} lv0`);
+    for (const w of s.weapons) for (const x of (w.sk || [])) assert.ok(x.lv > 0, `${s.key}/${w.t} ${x.s} lv0`);
+  }
+});
+
+check('공통 스킬이 없는 소재는 무기마다 스킬이 있다', () => {
+  for (const s of BUILD.sets) {
+    if (s.weaponSkills.length || !s.weapons.length) continue;
+    for (const w of s.weapons) assert.ok(w.sk && w.sk.length, `${s.key}/${w.t} 스킬 없음`);
+  }
+});
+
+check('종류 전용 스킬이 공통을 갈음한다', () => {
+  /* vm 밖이라 객체를 그대로 견주면 프로토타입이 달라 어긋납니다. 글로 견줍니다. */
+  const J = assert.strictEqual.bind(assert);
+  const baze = BUILD.sets.find(s => s.key === 'baze');
+  const of = t => JSON.stringify(bdWSkills(baze, baze.weapons.find(w => w.t === t)));
+  J(of('long-sword'), '[{"s":"속전속결","lv":1}]');
+  J(of('gunlance'), '[{"s":"포술","lv":1}]');
+  /* 종류 전용이 없는 소재는 공통을 그대로 씁니다. */
+  const jagr = BUILD.sets.find(s => s.key === 'g-jagr');
+  const w = jagr.weapons[0];
+  assert.ok(!w.sk, '이 소재는 종류 전용 스킬이 없어야 합니다');
+  J(JSON.stringify(bdWSkills(jagr, w)), JSON.stringify(jagr.weaponSkills));
+});
+
+check('스킬 합계에 고른 무기의 스킬이 들어간다', () => {
+  const b = { ...bdNewBuild(), w: 'baze', wt: 'gunlance' };
+  const total = new Map(bdTotals(b));
+  assert.strictEqual(total.get('포술'), 1, '건랜스인데 포술이 없습니다');
+  assert.ok(!total.has('속전속결'), '태도 스킬이 섞였습니다');
+  assert.ok(!total.has('무기 종류에 따라 다름'), '자리표시자가 합계에 섞였습니다');
+});
+
+console.log(fail ? `실패 ${fail}건` : '모두 통과');
+process.exit(fail ? 1 : 0);

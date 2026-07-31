@@ -31,6 +31,9 @@ const bdWeaponOf = b => {
   const s = bdSet(b.w);
   return s ? s.weapons.find(w => w.t === b.wt) || null : null;
 };
+/* 무기 스킬은 소재 공통이지만 종류마다 다른 소재가 있습니다(바젤기우스·이블조 등).
+   그런 무기는 자기 스킬을 sk 로 들고 오므로 그것을 먼저 봅니다. */
+const bdWSkills = (s, w) => (w && w.sk) || (s ? s.weaponSkills : []);
 const bdStylesOf = wt => (typeof BD_STYLES !== 'undefined' && BD_STYLES[wt]) || [];
 const bdSpOf = wt => (typeof BD_SP !== 'undefined' && BD_SP[wt]) || null;
 
@@ -172,8 +175,7 @@ function bdStats(b) {
 function bdTotals(b) {
   const total = new Map();
   const add = (name, lv) => total.set(name, (total.get(name) || 0) + lv);
-  const ws = bdSet(b.w);
-  if (ws) ws.weaponSkills.forEach(x => add(x.s, x.lv));
+  bdWSkills(bdSet(b.w), bdWeaponOf(b)).forEach(x => add(x.s, x.lv));
   for (const { k } of BD_PARTS()) {
     const s = bdSet(b[k]);
     if (s && s.pieces[k]) s.pieces[k].skills.forEach(x => add(x.s, x.lv));
@@ -508,6 +510,7 @@ function bdCard(b, bi) {
   const ws = bdSet(b.w);
   const styles = bdStylesOf(b.wt);
   const sp = bdSpOf(b.wt);
+  const wsk = ws ? bdWSkills(ws, w) : [];
   const styleName = b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
   const type = BUILD.weaponTypes.find(t => t.k === b.wt);
   const D = bdState.detail;
@@ -528,7 +531,7 @@ function bdCard(b, bi) {
           </button>
           ${styles.length ? `<button class="bd-style${b.st ? ' on' : ''}" data-style="${bi}">${esc(styleName || '스타일 없음')}</button>` : ''}
         </span>
-        ${ws && ws.weaponSkills.length ? `<span class="bd-inline">${bdChips(ws.weaponSkills)}</span>` : ''}
+        ${wsk.length ? `<span class="bd-inline">${bdChips(wsk)}</span>` : ''}
       </span>
     </div>
     ${D && w ? `<div class="bd-stat">
@@ -752,7 +755,7 @@ function bdFillGear(q) {
   const rows = list.filter(s => {
     if (!needle) return true;
     const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
-    const sk = (isW ? s.weaponSkills : item.skills).map(x => x.s).join('');
+    const sk = (isW ? bdWSkills(s, item) : item.skills).map(x => x.s).join('');
     return norm(s.name + item.name + sk).includes(needle);
   });
 
@@ -776,7 +779,7 @@ function bdFillGear(q) {
 function bdGearRow(s, b, target, isW, chosen) {
   return ((() => {
         const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
-        const sk = isW ? s.weaponSkills : item.skills;
+        const sk = isW ? bdWSkills(s, item) : item.skills;
         /* 목록 요약줄도 카드와 같은 공식 아이콘을 씁니다. «공격 1463 · 불 1420» 처럼
            글자로 적으면 줄이 길어져 무기 이름이 잘립니다. */
         const meta = isW
@@ -1150,7 +1153,7 @@ function bdPreviewHtml(b) {
   const ws = bdSet(b.w);
   const rows = [ws
     ? line(bdMon(ws.key), w ? w.name : ws.name,
-        [wt && wt.n, style ? `스타일 ${style}` : ''].filter(Boolean).join(' · '), ws.weaponSkills)
+        [wt && wt.n, style ? `스타일 ${style}` : ''].filter(Boolean).join(' · '), bdWSkills(ws, w))
     : `<li class="bd-pv empty">무기 없음</li>`];
 
   for (const { k, n } of BD_PARTS()) {

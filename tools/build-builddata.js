@@ -256,6 +256,14 @@ async function main() {
   const monEn = pickTable(src, 'anja:"Anjanath"');
   const skillName = skillNamer(skillKo, official);
 
+  /* 무기 스킬. 소재 공통은 raw.weapon 이지만, 종류마다 스킬이 다른 소재는 종류 키에
+     따로 든다(raw['long-sword'] 등). 종류 키는 공통에 더하는 게 아니라 통째로 갈음한다
+     — 은룡 쌍검처럼 공통 스킬을 그대로 되풀이한 뒤 한 줄을 더 얹은 예가 있다.
+     공통이 'varies'(=«무기 종류에 따라 다름») 하나뿐인 소재(바젤기우스·이블조 등)는
+     종류 키가 전부 있으므로 그 자리표시자를 버리면 공통이 빈다. */
+  const wsk = list => (list || []).filter(e => e.skill !== 'varies')
+    .map(e => ({ s: skillName(e.skill), lv: maxLv(e) }));
+
   const armorSets = new Set(Object.keys(off.armor).map(k => k.replace(/_(head|chest|arms|waist|legs)$/, '')));
   const sets = [];
   const warn = [];
@@ -321,6 +329,8 @@ async function main() {
         e: elem && elem !== 'white' ? ELEM_KO[elem] || elem : null,
         atk, ele, crit,
         x: weaponExtra(wkey, mon, X),
+        /* 종류 전용 스킬이 있을 때만 담는다. 없으면 세트의 weaponSkills 를 쓴다. */
+        ...(raw[wkey] ? { sk: wsk(raw[wkey]) } : {}),
       });
     }
 
@@ -336,7 +346,7 @@ async function main() {
       /* 공식 방어구 페이지 순서. 목록에 없으면(이벤트 장비) 뒤로 보냅니다. */
       o: (i => (i < 0 ? 999 : i))(armorOrder.indexOf(slug)),
       pieces,
-      weaponSkills: (raw.weapon || []).map(e => ({ s: skillName(e.skill), lv: maxLv(e) })),
+      weaponSkills: wsk(raw.weapon),
       weapons,
     });
   }
@@ -348,7 +358,8 @@ async function main() {
     weaponTypes: WEAPONS.map(([k, , n]) => ({ k, n })),
     /* 빌드에 실제로 쓰이는 스킬만 남긴다 */
     maxLv: Object.fromEntries(Object.entries(skillMax).filter(([k]) =>
-      sets.some(s => [...Object.values(s.pieces).flatMap(p => p.skills), ...s.weaponSkills].some(x => x.s === k)))),
+      sets.some(s => [...Object.values(s.pieces).flatMap(p => p.skills), ...s.weaponSkills,
+        ...s.weapons.flatMap(w => w.sk || [])].some(x => x.s === k)))),
     sets,
   };
 
