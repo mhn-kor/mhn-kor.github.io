@@ -135,5 +135,97 @@ grant execute on function public.add_friend_code(text, text, text) to anon;
 grant execute on function public.delete_friend_code(text, text)    to anon;
 grant execute on function public.bump_friend_code(text, text)      to anon;
 
+-- ── 리더보드 (토벌 기록) ───────────────────────────────────────────
+-- 기록의 근거는 영상 하나뿐입니다. 그래서 URL 에 unique 를 걸어 같은 영상이
+-- 여러 번 올라오는 것을 막습니다. 클라이언트가 URL 을 아래 두 형태 중 하나로
+-- 정규화해서 보내므로(record.js 의 rkCanon), 검사식이 곧 화이트리스트입니다.
+--   https://www.youtube.com/watch?v=<11자>   |   https://x.com/i/status/<숫자>
+create table if not exists public.records (
+  id         bigint generated always as identity primary key,
+  nickname   text        not null check (char_length(btrim(nickname)) between 1 and 20),
+  monster    text        not null check (monster ~ '^[a-z0-9_-]{1,32}$'),  -- MATERIAL.monsters[].id
+  star       smallint    not null check (star between 8 and 10),
+  variant    text        not null check (variant in ('normal', 'dim')),    -- 일반 / 차원변이
+  weapon     text        not null check (weapon ~ '^[a-z-]{1,20}$'),       -- BUILD.weaponTypes[].k
+  -- 스타일은 이름 그대로 담습니다. build-styles.js 의 순서가 바뀌어도 옛 기록이 살아 있어야 합니다.
+  style      text        check (char_length(style) <= 24),
+  time_cs    integer     not null check (time_cs between 100 and 360000),  -- 1/100초. 1초 ~ 60분
+  video_url  text        not null unique
+             check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25})$'),
+  -- 나중에 만들 '추천 빌드'가 이 기록에 붙습니다. 빌드 탭 공유 링크의 ?build= 뒤쪽을
+  -- 그대로 담아 두면 링크 하나로 그 빌드를 되살릴 수 있습니다 (build.js 의 bdShareParam).
+  build      text        check (char_length(build) <= 600),
+  created_at timestamptz not null default now(),
+  pw_hash    text        not null
+);
+
+-- 리더보드는 항상 (몬스터·성급·종류) 안에서 시간순으로 봅니다.
+create index if not exists records_board_idx
+  on public.records (monster, star, variant, time_cs);
+
+alter table public.records enable row level security;
+
+revoke all on public.records from anon;
+grant select (id, nickname, monster, star, variant, weapon, style, time_cs, video_url, build, created_at)
+  on public.records to anon;
+
+drop policy if exists "public read" on public.records;
+create policy "public read" on public.records for select to anon using (true);
+
+-- 등록. 값 검사는 위 CHECK 가 전부 합니다(여기서 또 적으면 두 곳이 어긋납니다).
+-- 새 id 를 돌려주므로 화면은 다시 받아오지 않고 바로 한 줄 그릴 수 있습니다.
+create or replace function public.add_record(
+  p_nickname text, p_monster text, p_star int, p_variant text,
+  p_weapon text, p_style text, p_time_cs int, p_video_url text,
+  p_build text, p_password text
+) returns bigint
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare new_id bigint;
+begin
+  if p_password is null or char_length(p_password) < 4 then
+    raise exception 'PASSWORD_TOO_SHORT';
+  end if;
+  insert into public.records
+    (nickname, monster, star, variant, weapon, style, time_cs, video_url, build, pw_hash)
+  values
+    (btrim(p_nickname), p_monster, p_star, p_variant, p_weapon,
+     nullif(btrim(coalesce(p_style, '')), ''), p_time_cs, p_video_url,
+     nullif(btrim(coalesce(p_build, '')), ''),
+     crypt(p_password, gen_salt('bf', 8)))
+  returning id into new_id;
+  return new_id;
+end $$;
+
+-- 삭제. 본인 비밀번호이거나 마스터 비밀번호일 때만. 친구 코드와 같은 규칙입니다.
+create or replace function public.delete_record(
+  p_id bigint, p_password text
+) returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare n int;
+begin
+  delete from public.records
+   where id = p_id
+     and (
+       pw_hash = crypt(p_password, pw_hash)
+       or exists (
+            select 1 from public.app_config
+             where key = 'master_pw' and value = crypt(p_password, value)
+          )
+     );
+  get diagnostics n = row_count;
+  return n > 0;
+end $$;
+
+revoke all on function public.add_record(text, text, int, text, text, text, int, text, text, text) from public, anon;
+revoke all on function public.delete_record(bigint, text)                                          from public, anon;
+grant execute on function public.add_record(text, text, int, text, text, text, int, text, text, text) to anon;
+grant execute on function public.delete_record(bigint, text)                                          to anon;
+
 -- 확인용: pw_hash 가 권한에서 막혔는지 보려면 아래를 anon 으로 호출해 보세요.
 select count(*) from public.friend_codes;

@@ -136,6 +136,42 @@ docker compose down -v    # DB 까지 삭제
 저장소에 push → **Settings → Pages → Source: Deploy from a branch → main / (root)**.
 빌드 단계가 없으니 몇 초 뒤 바로 열립니다.
 
+## 리더보드 탭
+
+몬스터별 최속 토벌 기록입니다. 누구나 등록하고, 등록할 때 정한 비밀번호로 지웁니다
+(친구 코드와 완전히 같은 방식 — 비밀번호는 DB 안에서 bcrypt 로 해싱되고 `pw_hash` 는 권한으로 막혀 있습니다).
+
+```
+supabase/schema.sql   public.records + add_record / delete_record
+record.js             영상 URL 해석 · 필터 · 목록 · 등록/삭제
+tools/record-test.js  URL·시간 변환 테스트 (node tools/record-test.js)
+```
+
+분류는 **난이도(★8·★9·★10) · 종류(일반 · 차원변이) · 몬스터 · 무기(스타일)** 네 가지입니다.
+몬스터를 고르면 그때만 순위 번호가 붙습니다. 여러 몬스터가 섞인 목록에서 1위·2위는 뜻이 없기 때문입니다.
+
+### 영상은 주소만 넣으면 됩니다
+
+유튜브(숏츠 · 일반 · youtu.be)와 X(트위터) 주소를 받아 **아래 두 형태 중 하나로 정규화해서 저장**합니다.
+
+```
+https://www.youtube.com/watch?v=<11자>
+https://x.com/i/status/<숫자>
+```
+
+이래야 같은 영상을 숏츠 주소와 단축 주소로 각각 올리는 것을 `unique` 하나로 막을 수 있고,
+스키마의 `CHECK` 가 곧 화이트리스트가 됩니다. 목록에서는 썸네일만 깔아두고 **재생을 눌렀을 때** iframe 을 끼웁니다
+(한 화면에 플레이어를 여러 개 깔면 스크롤이 버벅입니다). X 는 높이를 알려주지 않아 CSS 로 고정해 두었습니다.
+
+`rkVid` / `rkCanon` / `rkParse` 를 고쳤다면 `node tools/record-test.js` 를 꼭 돌려보세요.
+여기서 통과하면 DB 의 `CHECK` 도 통과합니다(같은 정규식을 테스트가 그대로 갖고 있습니다).
+
+### 추천 빌드로 이어지는 자리
+
+`records.build` 에 **빌드 탭 공유 링크의 `?build=` 뒤쪽**을 그대로 담습니다(`build.js` 의 `bdShareParam`).
+값이 있으면 카드에 `빌드 보기` 버튼이 붙어 그 빌드가 열립니다.
+나중에 추천 빌드를 만들 때는 이 컬럼(또는 `records.id`)으로 영상과 빌드를 이으면 됩니다.
+
 ## 재료 탭
 
 몬스터 · 무기/방어구 · 현재 등급 → 목표 등급을 고르면 그 구간의 강화 재료와 제니를 합산합니다.

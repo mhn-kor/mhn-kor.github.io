@@ -712,13 +712,14 @@ monDlg.addEventListener('click', e => { if (e.target === monDlg) monDlg.close();
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {
   const h = location.hash.slice(1);
-  const tab = ['codes', 'smelt', 'build', 'material'].includes(h) ? h : 'notice';
-  for (const t of ['notice', 'codes', 'smelt', 'build', 'material']) $('#panel-' + t).hidden = tab !== t;
+  const tab = ['codes', 'smelt', 'build', 'material', 'record'].includes(h) ? h : 'notice';
+  for (const t of ['notice', 'codes', 'smelt', 'build', 'material', 'record']) $('#panel-' + t).hidden = tab !== t;
   if (tab === 'smelt') drawSmelt();
   // build.js 는 app.js 의 $ / esc / toast 를 쓰므로 뒤에 로드됩니다.
   // 첫 호출 시점에는 아직 없을 수 있어 확인 후 부릅니다(로드 직후 스스로 한 번 그립니다).
   if (tab === 'build' && typeof drawBuild === 'function') drawBuild();
   if (tab === 'material') drawMaterial();
+  if (tab === 'record') drawRecord();
   for (const a of document.querySelectorAll('.tabs a')) {
     a.toggleAttribute('aria-current', a.dataset.tab === tab);
   }

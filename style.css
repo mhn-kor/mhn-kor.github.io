@@ -855,11 +855,12 @@ dialog h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
 .f small { font-size: .76rem; color: var(--muted); line-height: 1.5; }
 .del-what { margin: 0; font-size: .86rem; color: var(--muted); line-height: 1.6; }
 .del-what b { color: var(--amber-hi); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-.f input {
+.f input, .f select {
   font: inherit; font-size: .95rem; color: var(--bone);
   background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 10px 13px;
 }
-.f input:focus { outline: 2px solid var(--amber); outline-offset: -1px; border-color: transparent; }
+.f select { cursor: pointer; }
+.f input:focus, .f select:focus { outline: 2px solid var(--amber); outline-offset: -1px; border-color: transparent; }
 #f-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; }
 
 .preview { display: flex; align-items: center; gap: 14px; padding: 13px; background: var(--bg); border: 1px dashed var(--line); }
@@ -887,6 +888,9 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 
 /* ── footer ───────────────────────────── */
 .foot { padding: 26px 0 40px; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
+/* 공식 스토어 링크. 좁은 화면에서는 두 개가 나란히 반씩 차지합니다. */
+.foot-links { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.foot-links .btn { flex: 1 1 auto; justify-content: center; min-width: 130px; }
 .foot p { margin: 0 0 4px; }
 .foot .fine { opacity: .65; font-size: .76rem; }
 
@@ -1066,4 +1070,86 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   .mt-filter .search { width: 100%; margin-left: 0; }
   /* 탭이 햄버거로 들어가 헤더가 한 줄이라 여유를 줄입니다. */
   #mt-ctl { scroll-margin-top: 74px; }
+}
+
+/* ── 리더보드 ────────────────────────────────── */
+.rk-selects { display: flex; flex-wrap: wrap; gap: 8px 14px; width: 100%; }
+.rk-selects .field { flex: 1 1 190px; }
+.rk-selects select { flex: 1; min-width: 0; }
+.rk-selects .field[hidden] { display: none; }
+
+.rk-list {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 14px; align-items: start;
+}
+.rk-item {
+  background: var(--surface); border: 1px solid var(--line);
+  clip-path: var(--bevel); overflow: hidden;
+}
+
+/* 영상칸. 재생 전에는 썸네일 버튼이고, 누르면 같은 자리를 iframe 이 채웁니다. */
+.rk-vid { position: relative; background: #000; }
+.rk-play {
+  display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0;
+  border: 0; background: #0A0908; cursor: pointer; position: relative;
+}
+.rk-play img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: .82; transition: opacity .15s; }
+.rk-play img[hidden] { display: none; }
+.rk-play:hover img { opacity: 1; }
+.rk-pi {
+  position: absolute; inset: 0; margin: auto; width: 54px; height: 54px;
+  display: grid; place-items: center; font-size: 1.1rem; color: #1A1309;
+  background: rgba(245,197,107,.92); border-radius: 50%;
+  padding-left: 3px; transition: transform .15s;
+}
+.rk-play:hover .rk-pi { transform: scale(1.1); }
+.rk-src {
+  position: absolute; left: 8px; top: 8px; padding: 2px 7px;
+  font-size: .68rem; font-weight: 700; letter-spacing: .04em;
+  color: var(--bone); background: rgba(0,0,0,.6); border-radius: 3px;
+}
+.rk-vid iframe { display: block; width: 100%; border: 0; }
+.rk-vid.yt iframe { aspect-ratio: 16 / 9; }
+/* X 는 높이를 알려주지 않아 고정입니다. 넘치면 트윗 안에서 스크롤됩니다. */
+.rk-vid.x iframe { height: 560px; }
+.rk-noembed { margin: 0; padding: 34px 12px; text-align: center; font-size: .82rem; color: var(--muted); }
+
+.rk-info { padding: 11px 13px 13px; display: grid; gap: 8px; }
+.rk-top { display: flex; align-items: center; gap: 8px; }
+.rk-no {
+  flex: none; min-width: 26px; height: 26px; padding: 0 5px;
+  display: grid; place-items: center; font-size: .82rem; font-weight: 800;
+  color: var(--muted); background: var(--surface-2);
+  border: 1px solid var(--line); font-variant-numeric: tabular-nums;
+}
+.rk-no.top { color: #241D16; background: var(--amber); border-color: var(--amber); }
+.rk-mi { flex: none; width: 30px; height: 30px; object-fit: contain; }
+.rk-t {
+  font-size: 1.24rem; font-weight: 800; color: var(--amber-hi);
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.rk-del { margin-left: auto; }
+.rk-nick { margin: 0; font-size: .9rem; font-weight: 700; letter-spacing: -.02em; }
+.rk-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.rk-tags .chip.star { color: var(--amber-hi); }
+.rk-tags .chip.dim { color: #CBA6F7; background: rgba(160,120,230,.16); border-color: rgba(160,120,230,.45); }
+.rk-links { display: flex; gap: 6px; }
+.rk-links .btn { flex: 1; justify-content: center; padding: 7px 10px; font-size: .8rem; }
+
+/* 등록창의 3칸짜리 줄. 좁아지면 한 줄에 하나씩 내려갑니다. */
+.rk-frow { display: flex; flex-wrap: wrap; gap: 12px; }
+.rk-frow .f { flex: 1 1 150px; }
+.rk-frow .f[hidden] { display: none; }
+.rk-frow select { min-width: 0; }
+#rk-reg { width: min(100% - 28px, 620px); }
+#rk-preview { min-height: 74px; }
+#rk-preview.ok { border-style: solid; border-color: rgba(75,196,154,.45); }
+#rk-preview img { width: 128px; height: 72px; flex: none; object-fit: cover; display: block; background: #000; }
+#rk-preview img[hidden] { display: none; }
+#rk-preview p b { color: var(--jade); }
+
+@media (max-width: 560px) {
+  .rk-list { grid-template-columns: 1fr; }
+  .rk-vid.x iframe { height: 480px; }
 }
