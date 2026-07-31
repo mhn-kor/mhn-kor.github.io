@@ -53,7 +53,11 @@ function bdEffects(desc) {
      그 스킬이 실제로 그 레벨이면 켭니다(공격·경지 등). */
   const gate = /Lv(\d+) 이상의 '(.+?)' 스킬이 발동 중일 때/.exec(desc);
   const need = gate ? { s: gate[2], lv: +gate[1] } : null;
-  const body = gate ? desc.slice(gate.index + gate[0].length) : desc;
+  /* 체력 게이지는 만피(BD_BASE_HP) 기준으로 봅니다. 하이 차지가 «남은 체력 게이지» 를
+     쓰는 것과 같은 전제라, «체력이 최대일 때» 조건은 늘 만족합니다(완전 충전).
+     반대로 «29% 이하» 나 «부활하면» 같은 조건은 만피에서 성립하지 않아 그대로 둡니다. */
+  const body = (gate ? desc.slice(gate.index + gate[0].length) : desc)
+    .replace(/체력이 최대일 때\s*/g, '');
   const out = [];
   const scan = (src, fn) => {
     const r = new RegExp(src, 'g'); let m;
@@ -71,6 +75,12 @@ function bdEffects(desc) {
   /* F = 대미지 % 증가(가산). G 쪽의 회심 배율은 «대미지 배율이 130%로 강화» 로 적힙니다. */
   scan('(?:주는 )?대미지가 (\\d+)% 증가', (m, c) => out.push({ k: 'dmg', pct: 1, v: +m[1], need, cond: c }));
   scan('대미지 배율이 (\\d+)%로 강화', (m, c) => out.push({ k: 'critx', v: +m[1], need, cond: c }));
+  /* 체력 증강 등. 체력 자체는 대미지가 아니지만 하이 차지가 이 값을 씁니다. */
+  scan('체력이 (\\d+) 증가', (m, c) => out.push({ k: 'hp', v: +m[1], need, cond: c }));
+  /* 하이 차지 — «남은 체력 게이지의 2배만큼 얼음속성 공격력이 증가한다».
+     속성 정액(D)이지만 값이 체력에 달려 있어 배수만 담아 둡니다. */
+  scan('남은 체력 게이지의 (\\d+)배만큼 (\\S+?)속성 공격력이 증가',
+    (m, c) => out.push({ k: 'ele', hpx: +m[1], el: m[2], need, cond: c }));
   return out;
 }
 
@@ -78,6 +88,8 @@ function bdEffects(desc) {
 const BD_ELE_MUL = new Set(['강룡의 얼음바람', '명룡의 파뢰', '환수의 벼락', '은작룡의 홍혈', '빙룡의 얼음 갑옷']);
 /* 회심은 1.25배, 마이너스 회심은 0.75배. 슈퍼회심이 있으면 1.25 자리가 올라갑니다. */
 const BD_CRIT_UP = 1.25, BD_CRIT_DOWN = 0.75;
+/* 기본 체력. 하이 차지가 «남은 체력 게이지» 를 쓰므로 만피 기준으로 잡습니다. */
+const BD_BASE_HP = 100;
 
 /* 스킬 설명은 레벨별로 값이 달라, 합산된 레벨의 문장을 씁니다.
    상한을 넘겨 찍혔으면 표에 있는 마지막 레벨로 자릅니다. */
@@ -101,21 +113,30 @@ function bdStats(b) {
   let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, critX = BD_CRIT_UP, crit = base.crit;
   const lvOf = new Map(bdTotals(b));
 
+  /* 조건·게이트를 통과한 효과만 모읍니다. 하이 차지가 체력을 쓰기 때문에
+     체력을 먼저 다 더한 뒤에 나머지를 계산합니다. */
+  const eff = [];
   for (const [name, lv] of lvOf) {
     for (const e of bdEffects(bdSkillDesc(name, lv) || '')) {
       if (e.cond) continue;
       if (e.need && (lvOf.get(e.need.s) || 0) < e.need.lv) continue;
-      if (e.k === 'atk') { if (e.pct) B += e.v / 100; else A += e.v; continue; }
-      if (e.k === 'crit') { crit += e.v; continue; }
-      if (e.k === 'critx') { critX = Math.max(critX, e.v / 100); continue; }
-      if (e.k === 'dmg') { F += e.v / 100; continue; }
-      if (e.k === 'ele') {
-        /* 속성 강화는 무기 속성이 같을 때만 붙습니다. 속성 표기가 없으면 어떤 속성이든 붙습니다. */
-        if (!w || !w.e) continue;
-        if (e.el && w.e !== e.el) continue;
-        if (!e.pct) { D += e.v; continue; }
-        if (BD_ELE_MUL.has(name)) E *= 1 + e.v / 100; else C += e.v / 100;
-      }
+      eff.push({ ...e, sk: name });   // 승산 판별(BD_ELE_MUL)에 이름이 필요합니다
+    }
+  }
+  const hp = BD_BASE_HP + eff.reduce((n, e) => n + (e.k === 'hp' ? e.v : 0), 0);
+
+  for (const e of eff) {
+    if (e.k === 'atk') { if (e.pct) B += e.v / 100; else A += e.v; continue; }
+    if (e.k === 'crit') { crit += e.v; continue; }
+    if (e.k === 'critx') { critX = Math.max(critX, e.v / 100); continue; }
+    if (e.k === 'dmg') { F += e.v / 100; continue; }
+    if (e.k === 'ele') {
+      /* 속성 강화는 무기 속성이 같을 때만 붙습니다. 속성 표기가 없으면 어떤 속성이든 붙습니다. */
+      if (!w || !w.e) continue;
+      if (e.el && w.e !== e.el) continue;
+      if (e.hpx) { D += hp * e.hpx; continue; }   // 하이 차지
+      if (!e.pct) { D += e.v; continue; }
+      if (BD_ELE_MUL.has(e.sk)) E *= 1 + e.v / 100; else C += e.v / 100;
     }
   }
   const now = {
@@ -128,7 +149,7 @@ function bdStats(b) {
   const G = 1 + (p >= 0 ? p * (critX - 1) : -p * (BD_CRIT_DOWN - 1));
   const score = Math.round((now.atk + now.ele) * F * G);
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
-  return { base, now, score, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX } };
+  return { base, now, score, hp, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX } };
 }
 
 function bdTotals(b) {
@@ -562,10 +583,12 @@ function bdStatBar(b) {
 function bdCalc(b) {
   const w = bdWeaponOf(b);
   if (!w) return '';
-  const { base, now, score, co } = bdStats(b);
+  const { base, now, score, hp, co } = bdStats(b);
   const f = n => (Math.round(n * 1000) / 1000).toString();
   const rows = [];
 
+  /* 하이 차지가 체력을 쓰므로, 체력이 기본값과 다르면 어디서 왔는지 보여 줍니다. */
+  if (hp !== BD_BASE_HP) rows.push(`<span>체력</span><i>${BD_BASE_HP} + ${hp - BD_BASE_HP} = <b>${hp}</b></i>`);
   rows.push(`<span>공격력</span><i>${base.atk} × ${f(co.B)}${co.A ? ` + ${co.A}` : ''} = <b>${now.atk}</b></i>`);
   if (base.ele) {
     rows.push(`<span>속성</span><i>(${base.ele} × ${f(co.C)}${co.D ? ` + ${co.D}` : ''})${co.E !== 1 ? ` × ${f(co.E)}` : ''} = <b>${now.ele}</b></i>`);
@@ -577,7 +600,7 @@ function bdCalc(b) {
 
   return `<div class="bd-calc">
     ${rows.map(r => `<p>${r}</p>`).join('')}
-    <p class="bd-note">모션치·육질은 공격 동작과 부위마다 달라 1로 둡니다. 빌드끼리 비교하는 상대값입니다.</p>
+    <p class="bd-note">체력은 만피(${BD_BASE_HP} + 체력 스킬) 기준입니다. 모션치·육질은 공격 동작과 부위마다 달라 1로 둡니다 — 빌드끼리 비교하는 상대값입니다.</p>
   </div>`;
 }
 
