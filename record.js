@@ -182,7 +182,12 @@ const rkVariantPass = r => (rkF.variant === RK_ELDER_F ? rkElder(r.monster)
   : rkF.variant === 'normal' ? r.variant === 'normal' && !rkElder(r.monster)
   : r.variant === rkF.variant);
 
-const rkPass = r => (!rkF.star || r.star === rkF.star)
+/* 고룡은 난이도 칩과 무관하게 늘 보입니다. 고룡의 최고 난이도는 ★8 이라 ★10 을 걸면
+   통째로 사라지는데, 별 개수가 다른 것은 몬스터 갈래 사정이지 «덜 어려운 기록» 이라는
+   뜻이 아닙니다. 고룡만 보고 싶으면 종류 칩의 «고룡» 이 있습니다. */
+const rkStarPass = r => !rkF.star || r.star === rkF.star || rkElder(r.monster);
+
+const rkPass = r => rkStarPass(r)
   && (!rkF.variant || rkVariantPass(r))
   && (!rkF.monster || r.monster === rkF.monster)
   && (!rkF.weapon || r.weapon === rkF.weapon)
@@ -347,9 +352,6 @@ function rkFilterUI() {
     const chip = e.target.closest('.mt-chip');
     if (!chip) return;
     rkF[chip.dataset.f] = chip.dataset.f === 'star' ? Number(chip.dataset.v || 0) : chip.dataset.v;
-    /* 고룡은 ★8 이 최고 난이도입니다. 기본값 ★10 이 걸린 채로 «고룡»을 누르면 늘 0건이라
-       고른 보람이 없으므로 난이도도 함께 옮깁니다. */
-    if (rkF.variant === RK_ELDER_F && rkF.star && rkF.star !== RK_ELDER_STAR) rkF.star = RK_ELDER_STAR;
     rkChipSync();
     rkRender();
   });
@@ -357,10 +359,7 @@ function rkFilterUI() {
   $('#rk-fstyle').addEventListener('change', e => { rkF.style = e.target.value; rkRender(); });
   $('#rk-reset').addEventListener('click', () => {
     Object.assign(rkF, RK_F0);
-    // 처음 상태의 칩(난이도는 ★10, 나머지는 '전체')만 켜진 채로 되돌립니다.
-    for (const b of $('#rk-filter').querySelectorAll('.mt-chip')) {
-      b.classList.toggle('on', b.dataset.v === String(RK_F0[b.dataset.f] || ''));
-    }
+    rkChipSync();
     rkFilterLabels();
     rkRender();
   });
@@ -371,6 +370,14 @@ function rkFilterUI() {
     e.currentTarget.setAttribute('aria-pressed', String(rkSort === 'new'));
     rkRender();
   });
+}
+
+/* 켜진 칩을 rkF 에 맞춥니다. 누른 칩만 켜면 안 됩니다 — 고룡을 고르면 난이도 칩도
+   같이 움직이므로, 화면 전체를 값에서 다시 그립니다. */
+function rkChipSync() {
+  for (const b of $('#rk-filter').querySelectorAll('.mt-chip')) {
+    b.classList.toggle('on', b.dataset.v === String(rkF[b.dataset.f] || ''));
+  }
 }
 
 function rkFilterLabels() {
