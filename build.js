@@ -146,7 +146,10 @@ function bdStats(b) {
 
   for (const e of eff) {
     if (e.k === 'atk') { if (e.pct) B += e.v / 100; else A += e.v; continue; }
-    if (e.k === 'critx') { critX = Math.max(critX, e.v / 100); continue; }
+    /* 회심 공격 시 터지는 배율만 받습니다. 흉회심의 «마이너스 회심 발동 시» 배율도
+       같은 k 로 오는데, critX 는 아래에서 양수 회심에만 곱해지므로 그대로 받으면
+       회심이 내려갔는데 점수가 오르는 정반대 결과가 됩니다. */
+    if (e.k === 'critx') { if (e.onCrit) critX = Math.max(critX, e.v / 100); continue; }
     if (e.k === 'dmg') { F += e.v / 100; continue; }
     if (e.k === 'ele') {
       /* 속성 강화는 무기 속성이 같을 때만 붙습니다. 속성 표기가 없으면 어떤 속성이든 붙습니다. */
@@ -1000,7 +1003,6 @@ $('#bd-clear').addEventListener('click', () => {
   bdSave(); bdRender(); bdDlg().close();
 });
 $('#bd-modal-close').addEventListener('click', () => bdDlg().close());
-closeOnBackdrop(bdDlg());
 
 $('#bd-add').addEventListener('click', () => {
   if (bdState.builds.length >= BD_MAX) return toast(`빌드는 ${BD_MAX}개까지입니다`);
@@ -1015,9 +1017,9 @@ $('#bd-detail').addEventListener('click', () => {
 /* ── 추천 빌드 ─────────────────────────────────────────────────── */
 /* 등록은 recommend.js 가 아니라 여기 있습니다. 올릴 대상이 «지금 보고 있는 빌드»라
    빌드 상태를 아는 쪽에서 여는 편이 단순합니다. */
-const RC_TIER_OPT = [['beginner', '초보자'], ['expert', '숙련자']];
-const RC_SCENE_OPT = [['field', '필드사냥'], ['intercept', '요격전'], ['swarm', '대량출현'], ['chain', '대연속'], ['elder', '고룡토벌']];
-const RC_PARTY_OPT = [['solo', '개인전'], ['party', '파티사냥']];
+/* 어휘는 recommend.js 의 RC_TIER / RC_SCENE / RC_PARTY 하나만 씁니다. 여기 사본을
+   두면 상황을 하나 추가할 때 한쪽만 고쳐, 등록은 되는데 카드에 영문 키가 찍히고
+   필터 칩은 안 생기는 상태가 됩니다. 읽는 시점이 창을 여는 때라 로드 순서와 무관합니다. */
 let bdRecBi = null;
 
 function bdOpenRecommend(bi) {
@@ -1031,12 +1033,12 @@ function bdOpenRecommend(bi) {
     + ` · 방어구 ${worn}부위 · 점수 ${bdStats(b).score}`;
   const pick = (id, opts, multi) => {
     $(id).innerHTML = opts.map(([k, n]) =>
-      `<button type="button" class="rc-p" data-pick-val="${k}"${!multi && k === opts[0][0] ? ' data-one="1"' : ''}>${esc(n)}</button>`).join('');
+      `<button type="button" class="rc-p" data-pick-val="${k}">${esc(n)}</button>`).join('');
     $(id).dataset.multi = multi ? '1' : '';
   };
-  pick('#rc-tier', RC_TIER_OPT, false);
-  pick('#rc-scene', RC_SCENE_OPT, true);
-  pick('#rc-party', RC_PARTY_OPT, true);
+  pick('#rc-tier', Object.entries(RC_TIER), false);
+  pick('#rc-scene', Object.entries(RC_SCENE), true);
+  pick('#rc-party', Object.entries(RC_PARTY), true);
   $('#rc-tier').querySelector('.rc-p').classList.add('on');   // 초보자를 기본으로
   $('#rc-easy').checked = false;
   $('#rc-nick').value = lastNick();
@@ -1068,15 +1070,22 @@ $('#rc-add-form').addEventListener('submit', async e => {
   const tier = bdRecPicked('#rc-tier')[0];
   const scenes = bdRecPicked('#rc-scene');
   const party = bdRecPicked('#rc-party');
-  const nick = $('#rc-nick').value.trim();
+  /* 다른 등록 폼 셋과 같은 규칙으로 접습니다 — 한 사람이 탭마다 다른 이름으로
+     보이지 않도록. */
+  const nick = $('#rc-nick').value.trim().replace(/\s+/g, ' ');
   const pw = $('#rc-pw').value;
-  const fail = !tier ? '초보자인지 숙련자인지 골라 주세요.'
+  const fail = !nick ? '닉네임을 입력해 주세요.'
+    : !tier ? '초보자인지 숙련자인지 골라 주세요.'
     : !scenes.length ? '어디에서 쓰는 빌드인지 하나 이상 골라 주세요.'
     : !party.length ? '개인전인지 파티사냥인지 골라 주세요.'
-    : pw.length < 4 ? '비밀번호는 4자 이상이어야 합니다.' : null;
+    : pw.length < PW_MIN ? `비밀번호는 ${PW_MIN}자 이상이어야 합니다.` : null;
   if (fail) { err.textContent = fail; err.hidden = false; return; }
 
   const wt = BUILD.weaponTypes.find(t => t.k === b.wt);
+  /* 나머지 등록·삭제 폼과 같이 잠급니다. 없으면 모바일에서 두 번 눌렸을 때
+     똑같은 추천빌드가 두 개 생깁니다(서버에 unique 제약이 없습니다). */
+  const submit = $('#rc-add-submit');
+  submit.disabled = true;
   try {
     const r = await rest('rpc/add_recommended_build', {
       method: 'POST',
@@ -1098,6 +1107,8 @@ $('#rc-add-form').addEventListener('submit', async e => {
   } catch (e2) {
     err.textContent = '등록하지 못했습니다 — ' + e2.message;
     err.hidden = false;
+  } finally {
+    submit.disabled = false;
   }
 });
 
@@ -1107,7 +1118,12 @@ $('#rc-add-form').addEventListener('submit', async e => {
    미리보기처럼 «읽기만» 하는 곳에서도 쓸 수 있습니다. 못 읽으면 null. */
 function bdParse(param, title) {
   const kv = {};
-  for (const part of decodeURIComponent(param || '').split(',')) {
+  /* 퍼센트 인코딩이 깨진 문자열이면 decodeURIComponent 가 던집니다. DB 는 길이만 보고
+     받아 주므로 그런 행이 하나만 있어도 추천빌드 목록이 통째로 안 그려지고, 카드가
+     없으니 삭제 버튼에도 닿지 못합니다. «못 읽으면 null» 이 이 함수의 계약입니다. */
+  let raw;
+  try { raw = decodeURIComponent(param || ''); } catch { return null; }
+  for (const part of raw.split(',')) {
     const i = part.indexOf('=');
     if (i > 0) kv[part.slice(0, i)] = part.slice(i + 1);
   }
@@ -1134,7 +1150,9 @@ function bdParse(param, title) {
    덮어쓰지 않고 새 카드로 얹습니다. */
 function bdAdopt(param, title) {
   const b = bdParse(param, title);
-  if (!b) return false;
+  /* 실패 이유는 여기서 다 알립니다. 호출부가 false 하나만 보고 «읽지 못했습니다» 로
+     뭉뚱그리면, 개수가 꽉 찬 것뿐인데 빌드가 깨진 줄로 읽습니다. */
+  if (!b) return toast('빌드를 읽지 못했습니다'), false;
   if (bdState.builds.length >= BD_MAX) return toast(`빌드는 ${BD_MAX}개까지입니다`), false;
   bdState.builds.push(b);
   bdSave(); bdRender();

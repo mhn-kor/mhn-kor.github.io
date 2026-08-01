@@ -34,6 +34,9 @@ function closeOnBackdrop(dlg) {
   dlg.addEventListener('pointerdown', e => { from = e.target; });
   dlg.addEventListener('click', e => { if (e.target === dlg && from === dlg) dlg.close(); });
 }
+/* 창마다 따로 붙이면 빠뜨립니다 — 실제로 추천빌드 창 4개가 빠져 있었습니다.
+   스크립트는 전부 dialog 마크업 뒤에서 로드되므로 여기서 한 번에 겁니다. */
+document.querySelectorAll('dialog').forEach(closeOnBackdrop);
 
 /* 앱 친구추가 딥링크. 코드는 항상 숫자 12자리로 검증한 뒤에만 넣습니다. */
 const addFriendUrl = code => 'mhnow:///ADDFRIEND?FRIEND_ID=' + code;
@@ -352,7 +355,10 @@ async function showMore() {
   if (loading) return loading;
   loading = (async () => {
     await ensure(pageSize + PAGE);
-    if (pageSize >= filtered.length && exhausted) return;
+    /* 여기서 일찍 빠져나가면 안 됩니다. filtered 는 render() 안에서만 다시 계산되므로
+       방금 ensure() 가 받아온 행이 반영되기 전 값이고, 그걸 보고 건너뛰면 받아온 행이
+       영영 안 그려집니다. 게다가 #more 의 hidden 도 render() 에서만 갱신되어 버튼이
+       남고, 아래 rAF 가 매 프레임 자신을 다시 부릅니다. */
     pageSize += PAGE;
     render();
   })().catch(err => { console.error(err); toast('더 불러오지 못했습니다'); })
@@ -395,6 +401,10 @@ let press = null;         // 길게 누르는 중인 카드
 let swallowClick = false; // 길게 누른 뒤 따라오는 click 이 체크를 토글하지 않도록
 
 $('#grid').addEventListener('pointerdown', e => {
+  /* 삼킬 click 은 반드시 이 pointerdown 을 앞세웁니다. 여기서 풀어야, 길게 누른 뒤
+     click 이 아예 오지 않는 경우(손가락으로 밀어 스크롤하고 떼기, 안드로이드 롱프레스)
+     표시가 켜진 채 남아 다음 탭 한 번을 통째로 먹는 일이 없습니다. */
+  swallowClick = false;
   const card = e.target.closest('.card');
   if (!card || e.button === 2) return;
   press = { x: e.clientX, y: e.clientY, t: setTimeout(() => { press = null; swallowClick = true; arm(card); }, 550) };
@@ -455,7 +465,6 @@ const fErr = $('#f-err');
 
 $('#open-reg').addEventListener('click', () => { fErr.hidden = true; reg.showModal(); $('#f-nick').focus(); });
 $('#reg-cancel').addEventListener('click', () => reg.close());
-closeOnBackdrop(reg);   // 배경 클릭
 
 fCode.addEventListener('input', () => {
   const raw = digits(fCode.value);
@@ -489,6 +498,9 @@ $('#reg-form').addEventListener('submit', async e => {
   try {
     const saved = await store.add({ nickname, code, password });
     rows.unshift(saved || { nickname, code, created_at: new Date().toISOString() });
+    /* total 은 서버가 준 전체 개수라 아직 안 받아온 행까지 셉니다. 같이 늘리지 않으면
+       «10명 표시 · 전체 9명» 처럼 표시수가 전체수를 넘어섭니다. */
+    if (total != null) total++;
     render();
     reg.close();
     $('#reg-form').reset();
@@ -530,7 +542,6 @@ function askPassword(mode, code) {
 }
 
 $('#del-cancel').addEventListener('click', () => del.close());
-closeOnBackdrop(del);
 
 const fail = msg => { dErr.textContent = msg; dErr.hidden = false; };
 
@@ -562,6 +573,7 @@ $('#del-form').addEventListener('submit', async e => {
        구분해 주지 않으므로 목록에 없는 코드를 캐낼 수 없습니다. */
     if (!await store.remove(pending.code, password)) return fail('비밀번호가 일치하지 않습니다.');
     rows = rows.filter(r => r.code !== pending.code);
+    if (total != null) total--;
     cards.get(pending.code)?.remove();
     cards.delete(pending.code);
     checked.delete(pending.code);
@@ -716,7 +728,6 @@ $('#panel-smelt').addEventListener('click', e => {
 });
 
 $('#mon-close').addEventListener('click', () => monDlg.close());
-closeOnBackdrop(monDlg);
 
 /* ── 닉네임 자동완성 (추천빌드 · 리더보드 등록창 공용) ──────────────
    친구 코드에 등록해 둔 닉네임을 그대로 씁니다. 같은 사람이 탭마다 다른 이름을 쓰면
@@ -736,6 +747,10 @@ closeOnBackdrop(monDlg);
      pick(v) → 골랐을 때. hintSel 은 null 이면 없는 대로 둡니다.                    */
 function nickAuto(inputSel, listSel, hintSel, opt = {}) {
   const inp = $(inputSel), box = $(listSel), hint = hintSel ? $(hintSel) : null;
+  /* 배포 직후 10분은 옛 index.html 과 새 스크립트가 섞일 수 있습니다(위 캐시 주석).
+     그때 목록 요소가 없으면 여기서 던져, 뒤에 오는 최상위 문장이 통째로 등록되지
+     않습니다 — 모달을 열고도 닫지 못하게 됩니다. */
+  if (!inp || !box) return;
   let timer, items = [], at = -1;
 
   const close = () => { box.hidden = true; inp.setAttribute('aria-expanded', 'false'); at = -1; };
@@ -756,7 +771,9 @@ function nickAuto(inputSel, listSel, hintSel, opt = {}) {
   };
   const move = d => {
     if (box.hidden || !items.length) return;
-    at = (at + d + items.length) % items.length;
+    /* at 이 -1 이면 «아직 아무것도 안 골랐다» 는 뜻이라 그대로 셈에 넣으면 안 됩니다.
+       ↑ 를 처음 누를 때 마지막이 아니라 끝에서 두 번째로 가 버립니다. */
+    at = at < 0 ? (d > 0 ? 0 : items.length - 1) : (at + d + items.length) % items.length;
     for (const li of box.children) {
       const on = +li.dataset.i === at;
       li.setAttribute('aria-selected', on);
@@ -810,7 +827,10 @@ function nickAuto(inputSel, listSel, hintSel, opt = {}) {
      보내므로, 훑는 도중에 골라지지 않습니다. */
   let onBox = false;
   box.addEventListener('pointerdown', e => {
-    onBox = true;
+    /* 마우스는 바로 아래에서 고르고 닫으므로 이 표시가 필요 없습니다. 켜 두면 목록이
+       사라진 자리로 pointerup 이 안 와서 표시가 켜진 채 굳고, 그 뒤로 blur 가 목록을
+       영영 닫지 못합니다. */
+    onBox = e.pointerType !== 'mouse';
     if (e.pointerType !== 'mouse') return;
     const li = e.target.closest('[data-i]');
     if (!li) return;
@@ -824,6 +844,12 @@ function nickAuto(inputSel, listSel, hintSel, opt = {}) {
     if (li) pick(+li.dataset.i);
   });
   box.addEventListener('pointercancel', () => { onBox = false; });
+  /* 손가락으로 고르면 목록이 그 자리에서 사라져, 브라우저가 같은 좌표를 다시 짚어
+     밑에 깔린 버튼으로 click 을 흘려보냅니다(몬스터 고르는 창이 겹쳐 열리거나 칩이
+     같이 켜집니다). pointerup 을 막는 것으로는 안 되고 touchend 를 막아야 합니다. */
+  box.addEventListener('touchend', e => {
+    if (e.target.closest('[data-i]')) e.preventDefault();
+  }, { passive: false });
   /* 손가락이 목록에 닿으면 입력칸이 초점을 잃습니다. 그대로 닫으면 훑는 도중에
      목록이 사라지므로, 손이 목록에 있는 동안은 닫지 않습니다. */
   inp.addEventListener('blur', () => setTimeout(() => { if (!onBox) close(); }, 120));

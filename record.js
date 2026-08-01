@@ -50,7 +50,11 @@ const rkCanon = v => (v.kind === 'yt'
   ? `https://www.youtube.com/watch?v=${v.id}`
   : `https://x.com/i/status/${v.id}`);
 
+/* X 는 공개 썸네일이 없습니다 — 미리보기 이미지는 임베드 안에서만 나오고, 트윗 정보를
+   주는 syndication 엔드포인트는 브라우저에서 CORS 로 막힙니다(직접 확인).
+   빈 검은 칸으로 두면 고장 난 것처럼 보이므로 X 마크를 깔아 둡니다. */
 const rkThumb = v => (v.kind === 'yt' ? `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` : '');
+const RK_X_MARK = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7 8.1L23.3 22h-6.5l-5-6.6L6 22H2.9l7.5-8.6L2 2h6.6l4.6 6.1zm-1.1 18.1h1.7L7.4 3.8H5.6z"/></svg>';
 
 /* 재생을 누른 뒤에야 iframe 을 끼웁니다. 목록에 처음부터 iframe 을 깔면
    한 화면에 유튜브 플레이어가 여러 개 올라와 스크롤이 버벅입니다.
@@ -182,6 +186,11 @@ async function rkLoad() {
     const r = await rest(`records?select=${RK_COLS}&order=time_sec.asc,created_at.asc&limit=${RK_LIMIT}`);
     if (!r.ok) throw new Error(await r.text());
     rkRows = await r.json();
+    /* 자르는 축이 «전역 최속» 이라 판(몬스터·난이도) 단위와 무관하게 잘립니다. 상한에
+       닿으면 느린 판이 통째로 «기록 없음» 으로 보이므로, 조용히 넘어가지 않게 남깁니다.
+       ponytail: 지금은 경고만. 상한에 실제로 닿으면 판별 조회로 바꿔야 합니다
+       (records_board_idx 가 (monster,star,variant,time_sec) 라 그대로 탑니다). */
+    if (rkRows.length >= RK_LIMIT) console.warn(`기록 ${RK_LIMIT}건 상한에 닿았습니다 — 느린 판이 잘려 있습니다`);
     rkRefresh();
     rkOpenFromUrl();
   } catch (err) {
@@ -203,13 +212,23 @@ function rkRefresh() {
 
 /* 지금 화면에 깔린 목록. 크게 보기 모달의 이전/다음이 이 순서로 넘어갑니다. */
 let rkShown = [];
-const rkList = () => rkRows.filter(rkPass);   // 서버가 이미 시간 오름차순으로 줍니다
+/* 'time' 이 기본 — 이 탭은 «최속 토벌» 목록이라 빠른 순이 먼저입니다.
+   'new' 는 방금 올라온 기록을 보러 오는 사람을 위한 것입니다. */
+let rkSort = 'time';
+const rkList = () => {
+  const rows = rkRows.filter(rkPass);         // 서버가 이미 시간 오름차순으로 줍니다
+  return rkSort === 'new'
+    ? rows.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) || b.id - a.id)
+    : rows;
+};
 
 function rkRender() {
   rkShown = rkList();
   /* 순위는 '지금 보고 있는 판'의 순위입니다. 몬스터를 안 고르면 여러 몬스터가
-     섞여 있어 숫자가 뜻을 잃으므로, 그때는 번호를 아예 안 붙입니다. */
-  const ranked = !!rkF.monster;
+     섞여 있어 숫자가 뜻을 잃으므로, 그때는 번호를 아예 안 붙입니다.
+     최신순으로 보는 동안에도 번호는 순위가 아니라 줄 번호가 되므로 붙이지 않습니다
+     (왕관은 데이터에서 세므로 어떤 순서로 보든 그대로입니다). */
+  const ranked = !!rkF.monster && rkSort === 'time';
 
   $('#rk-list').innerHTML = rkShown.map((r, i) => rkItem(r, i, ranked ? i + 1 : 0)).join('');
   $('#rk-count').textContent = rkShown.length === rkRows.length
@@ -240,7 +259,9 @@ function rkItem(r, i, rank) {
   return `
   <li class="rk-item" data-id="${r.id}">
     ${v ? `<button class="rk-play" type="button" data-i="${i}" aria-label="${esc(r.nickname)} 영상 크게 보기">
-      ${v.kind === 'yt' ? `<img src="${esc(rkThumb(v))}" alt="" loading="lazy" onerror="this.hidden=true">` : ''}
+      ${v.kind === 'yt'
+        ? `<img src="${esc(rkThumb(v))}" alt="" loading="lazy" onerror="this.hidden=true">`
+        : `<span class="rk-xbg" aria-hidden="true">${RK_X_MARK}</span>`}
       <span class="rk-pi" aria-hidden="true">▶</span>${badges}
     </button>` : `<div class="rk-play none">${badges}<p class="rk-noembed">영상을 표시할 수 없습니다</p></div>`}
     <div class="rk-info">
@@ -313,6 +334,13 @@ function rkFilterUI() {
     // '전체' 칩(data-v="")만 켜진 상태로 되돌립니다.
     for (const b of $('#rk-filter').querySelectorAll('.mt-chip')) b.classList.toggle('on', !b.dataset.v);
     rkFilterLabels();
+    rkRender();
+  });
+
+  /* 정렬 바꾸기. 필터가 아니라 보는 순서라서 «필터 초기화»로는 안 풀립니다. */
+  $('#rk-sort').addEventListener('click', e => {
+    rkSort = rkSort === 'time' ? 'new' : 'time';
+    e.currentTarget.setAttribute('aria-pressed', String(rkSort === 'new'));
     rkRender();
   });
 }
@@ -401,7 +429,6 @@ function rkListUI() {
   $('#rk-v-prev').addEventListener('click', () => rkOpenView(rkAt - 1));
   $('#rk-v-next').addEventListener('click', () => rkOpenView(rkAt + 1));
   $('#rk-v-close').addEventListener('click', () => $('#rk-view').close());
-  closeOnBackdrop($('#rk-view'));
   /* 화살표로도 넘깁니다. dialog 가 열려 있는 동안 키보드 초점이 안에 있습니다. */
   $('#rk-view').addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft') rkOpenView(rkAt - 1);
@@ -409,6 +436,22 @@ function rkListUI() {
   });
   // 닫을 때 iframe 을 걷어냅니다. 남겨두면 뒤에서 소리가 계속 납니다.
   $('#rk-view').addEventListener('close', () => { $('#rk-v-body').innerHTML = ''; rkAt = -1; });
+
+  /* X 임베드는 유튜브와 달리 비율이 정해져 있지 않고(트윗 글·버튼이 같이 들어갑니다),
+     다 그린 뒤 제 높이를 postMessage 로 알려 줍니다. 그 값을 안 쓰면 남는 높이에 맞춰
+     잘려서 영상 아래쪽과 «X에서 보기» 줄이 안 보입니다. 창보다 크면 창 안에서 스크롤됩니다. */
+  window.addEventListener('message', e => {
+    if (e.origin !== 'https://platform.twitter.com') return;
+    /* 브라우저·버전에 따라 문자열로도 객체로도 옵니다. 문자열만 다루면 조용히 안 걸립니다. */
+    let d = e.data;
+    if (typeof d === 'string') { try { d = JSON.parse(d); } catch (err) { return; } }
+    const m = d && d['twttr.embed'];
+    if (!m || m.method !== 'twttr.private.resize') return;
+    const p = (m.params || [])[0] || {};
+    const f = $('#rk-v-body iframe');
+    // 늦게 온 메시지가 이미 넘어간 다음 트윗의 칸을 건드리지 않게 id 를 맞춰 봅니다.
+    if (f && p.height && f.src.includes(`id=${(p.data || {}).tweet_id}`)) f.style.height = p.height + 'px';
+  });
 
   $('#rk-v-kakao').addEventListener('click', () => rkShare(rkShown[rkAt]));
   $('#rk-v-copy').addEventListener('click', () => {
@@ -565,7 +608,10 @@ function rkFormUI() {
   /* 초 단위 정수만 받습니다. inputmode 는 모바일 자판만 바꿀 뿐이고 form 이 novalidate 라
      pattern 도 안 걸립니다 — 친구 코드 칸처럼 입력하는 족족 숫자만 남깁니다. */
   $('#rk-time').addEventListener('input', e => {
-    e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 4);
+    /* 소수점은 «지우지» 말고 그 뒤를 잘라냅니다. 지우기만 하면 45.32 가 4532 초로
+       조용히 둔갑합니다. ':' 는 일부러 안 건드립니다 — 1:23 을 거기서 자르면
+       1초라는 가짜 세계기록이 되어 지금(123초)보다 나쁩니다. */
+    e.target.value = e.target.value.replace(/\..*/, '').replace(/[^0-9]/g, '').slice(0, 4);
   });
 
   /* URL 을 붙여넣는 즉시 무엇으로 인식했는지 보여줍니다. 등록 후에야 틀린 걸
@@ -591,11 +637,9 @@ function rkFormUI() {
     $('#rk-nick').focus();
   });
   $('#rk-cancel').addEventListener('click', () => $('#rk-reg').close());
-  closeOnBackdrop($('#rk-reg'));
   $('#rk-reg-form').addEventListener('submit', rkSubmit);
 
   $('#rk-del-cancel').addEventListener('click', () => $('#rk-del').close());
-  closeOnBackdrop($('#rk-del'));
   $('#rk-del-form').addEventListener('submit', rkDelete);
 }
 
@@ -610,13 +654,13 @@ async function rkSubmit(e) {
   const password = $('#rk-pw').value;
 
   const bad = !nickname ? '닉네임을 입력해 주세요.'
-    : nickname.length > 20 ? '닉네임은 20자 이내로 입력해 주세요.'
+    : nickname.length > NICK_MAX ? `닉네임은 ${NICK_MAX}자 이내로 입력해 주세요.`
     : !rkForm.monster ? '몬스터를 골라주세요.'
     : !rkForm.weapon ? '무기를 골라주세요.'
     : time_sec == null ? '토벌 시간은 초 단위 정수로 적어주세요. 예) 45'
     : !vid ? '유튜브 또는 X 영상 주소만 등록할 수 있습니다.'
     : buildRaw && !build ? '빌드 링크는 빌드 탭의 공유 링크(?build=…)를 붙여넣어 주세요.'
-    : password.length < 4 ? '삭제용 비밀번호는 4자 이상 입력해 주세요.'
+    : password.length < PW_MIN ? `삭제용 비밀번호는 ${PW_MIN}자 이상 입력해 주세요.`
     : null;
   if (bad) { err.textContent = bad; err.hidden = false; return; }
 

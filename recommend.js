@@ -55,6 +55,9 @@ async function rcLoad() {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     rcRows = await r.json();
   } catch (e) {
+    /* 실패는 «받아왔음» 이 아닙니다. 되돌려 놓지 않으면 탭을 다시 열었을 때
+       다시 받아오지도 않고 «아직 등록된 추천 빌드가 없습니다» 로 굳습니다. */
+    rcLoaded = false;
     box.innerHTML = '<p class="bd-empty">목록을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.</p>';
     return;
   }
@@ -210,7 +213,7 @@ $('#rc-cm-form').addEventListener('submit', async e => {
   const body = $('#rc-cm-body').value.trim();
   const bad = !nick ? '닉네임을 입력해 주세요.'
     : !body ? '내용을 입력해 주세요.'
-    : pw.length < 4 ? '비밀번호는 4자 이상이어야 합니다.' : null;
+    : pw.length < PW_MIN ? `비밀번호는 ${PW_MIN}자 이상이어야 합니다.` : null;
   if (bad) { err.textContent = bad; err.hidden = false; return; }
 
   const btn = $('#rc-cm-submit');
@@ -260,14 +263,21 @@ async function rcVote(id, v) {
       method: 'POST',
       body: JSON.stringify({ p_id: id, p_vote: v, p_device: rcDevice() }),
     });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!r.ok) {
+      /* 한 IP 가 한 빌드에 넣을 수 있는 표에 상한이 있습니다(schema.sql 의 VOTE_PER_IP).
+         왜 안 되는지 알려주지 않으면 눌러도 아무 일이 없는 것처럼 보입니다. */
+      const msg = (await r.json().catch(() => ({}))).message || '';
+      throw new Error(msg.includes('VOTE_LIMIT') ? '같은 곳에서 이미 여러 번 투표했습니다' : 'HTTP ' + r.status);
+    }
     const out = await r.json();
     const row = rcRows.find(x => x.id === id);
-    if (row) { row.up = out.up; row.down = out.down; }
+    /* score 도 서버가 up/down 으로 다시 계산한 값이라 같이 받아 갱신해야 합니다.
+       안 그러면 ▲를 눌러 숫자는 오르는데 옆의 추천도 배지가 옛 값으로 남습니다. */
+    if (row) { row.up = out.up; row.down = out.down; if (out.score != null) row.score = out.score; }
     if (out.mine == null) delete rcMine[id]; else rcMine[id] = out.mine;
     rcRender();
   } catch (e) {
-    toast('표를 반영하지 못했습니다');
+    toast(/VOTE_LIMIT|이미 여러 번/.test(e.message) ? e.message : '표를 반영하지 못했습니다');
   }
 }
 
@@ -279,7 +289,7 @@ function rcUse(id) {
   if (!row) return;
   if (typeof bdAdopt !== 'function') { location.href = `?build=${row.build}#build`; return; }
   const ok = bdAdopt(row.build, row.title || `${rcWeaponName(row.weapon)} 빌드`);
-  if (!ok) return toast('빌드를 읽지 못했습니다');
+  if (!ok) return;                    // 이유는 bdAdopt 가 이미 알렸습니다
   location.hash = '#build';
   toast('내 빌드에 담았습니다');
 }

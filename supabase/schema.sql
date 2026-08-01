@@ -63,11 +63,20 @@ revoke all on public.app_config from anon;
 
 -- !! 실제 마스터 비밀번호는 이 파일에 넣지 마세요 !!
 -- 저장소가 공개라 커밋하는 순간 누구나 남의 코드를 지울 수 있게 됩니다.
--- 아래를 SQL Editor 에서 값만 바꿔 직접 실행하세요 (README 참고):
+--
+-- 마스터 비밀번호는 «길고 무작위» 여야 합니다. 삭제 함수들이 «본인 비번 이거나 마스터»
+-- 로 판정하고 참/거짓을 그대로 돌려주므로, 자기 글을 대상으로 후보를 넣어 보면 응답이
+-- 그대로 마스터 비밀번호 판별기가 됩니다. 시도 횟수 제한은 없습니다 — 유일한 방어선이
+-- 길이입니다. 사람이 외울 값이 아니니 20자 이상 무작위로 만드세요.
+-- cost 12 는 한 번 맞춰 보는 데 드는 시간을 8보다 16배로 올립니다(로그인이 아니라
+-- 삭제할 때만 쓰는 값이라 체감 지연이 없습니다).
 --
 --   insert into public.app_config (key, value)
---   values ('master_pw', extensions.crypt('여기에실제비밀번호', extensions.gen_salt('bf', 8)))
+--   values ('master_pw', extensions.crypt('여기에실제비밀번호', extensions.gen_salt('bf', 12)))
 --   on conflict (key) do update set value = excluded.value;
+--
+-- 값을 짓기 귀찮으면 이렇게 만들고 결과를 따로 보관하세요:
+--   select encode(extensions.gen_random_bytes(16), 'base64');
 --
 -- 해제하려면:  delete from public.app_config where key = 'master_pw';
 
@@ -303,6 +312,12 @@ create table if not exists public.recommended_votes (
   created_at timestamptz not null default now(),
   primary key (build_id, voter)
 );
+-- voter 는 기기값이 섞인 해시라 브라우저가 마음대로 바꿀 수 있습니다 — 그것만으로는
+-- 중복을 못 막습니다. 위조할 수 없는 축(IP)을 따로 두고 한 IP 가 만들 수 있는 표 수를
+-- 제한합니다. create table if not exists 는 이미 있는 표를 안 건드리므로 alter 로 얹습니다.
+alter table public.recommended_votes add column if not exists ip_hash text;
+create index if not exists recommended_votes_ip_idx
+  on public.recommended_votes (build_id, ip_hash);
 
 -- 빌드에 달리는 댓글. «차지액스로도 쓸만해요» 같은 한두 줄짜리라 답글은 두지
 -- 않았습니다. 필요해지면 parent_id 한 컬럼을 얹으면 됩니다.
@@ -404,10 +419,39 @@ begin
   return n > 0;
 end $$;
 
+-- ── 요청한 사람의 IP ────────────────────────────────────────────────
+-- x-forwarded-for 는 프록시가 «뒤에» 덧붙이는 헤더입니다. 그래서 맨 앞 요소는
+-- 클라이언트가 직접 채워 보낼 수 있고(위조 가능), 가장 가까운 프록시가 붙인
+-- 맨 뒤 요소만 믿을 수 있습니다. 전용 헤더가 있으면 그쪽을 먼저 씁니다.
+create or replace function public.client_ip() returns text
+language plpgsql stable
+set search_path = public, extensions, pg_temp
+as $$
+declare h json; xff text;
+begin
+  h := coalesce(current_setting('request.headers', true)::json, '{}'::json);
+  xff := coalesce(h ->> 'x-forwarded-for', '');
+  return coalesce(
+    nullif(btrim(coalesce(h ->> 'cf-connecting-ip', '')), ''),
+    nullif(btrim(coalesce(h ->> 'true-client-ip', '')), ''),
+    nullif(btrim(coalesce(h ->> 'x-real-ip', '')), ''),
+    nullif(btrim(split_part(xff, ',', array_length(string_to_array(xff, ','), 1))), ''),
+    '');
+end $$;
+
+-- 위 IP 가 사람을 가르는 값인지. 프록시 안쪽 주소만 보이는 환경이면 모든 방문자가
+-- 같은 값이 되어 상한이 «사이트 전체 3표» 가 되어 버립니다. 그때는 상한을 걸지
+-- 않습니다 — 막지 못하는 편이, 아무도 투표하지 못하는 것보다 낫습니다.
+create or replace function public.ip_is_distinguishing(ip text) returns boolean
+language sql immutable as $$
+  select ip <> '' and ip !~ '^(127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|::1$|fc|fd)'
+$$;
+
 -- ── 좋아요 / 싫어요 ─────────────────────────────────────────────────
 -- 같은 걸 다시 누르면 취소, 반대를 누르면 갈아탑니다.
--- IP 는 PostgREST 가 넘겨주는 요청 헤더에서 읽습니다. 클라이언트가 보내는 값이
--- 아니라 프록시가 붙이는 값이라 브라우저에서 위조할 수 없습니다.
+-- p_device 는 브라우저가 정하는 값이라 신뢰하지 않습니다. 표를 «가르는» 데만 쓰고,
+-- «막는» 일은 아래 IP 당 상한이 합니다.
+
 create or replace function public.vote_recommended_build(
   p_id bigint, p_vote smallint, p_device text
 ) returns json
@@ -417,21 +461,31 @@ set search_path = public, extensions, pg_temp
 as $$
 declare
   ip   text;
+  iph  text;
   who  text;
   cur  smallint;
   r    record;
+  VOTE_PER_IP constant int := 3;   -- 한 IP 가 한 빌드에 만들 수 있는 표 수
 begin
   if p_vote not in (1, -1) then
     raise exception 'BAD_VOTE';
   end if;
-  ip := split_part(coalesce(
-          current_setting('request.headers', true)::json ->> 'x-forwarded-for', ''), ',', 1);
+  ip  := public.client_ip();
+  iph := encode(digest(ip, 'sha256'), 'hex');
   who := encode(digest(coalesce(btrim(ip), '') || '|' || coalesce(btrim(p_device), ''), 'sha256'), 'hex');
 
   select v into cur from public.recommended_votes where build_id = p_id and voter = who;
 
   if cur is null then
-    insert into public.recommended_votes (build_id, voter, v) values (p_id, who, p_vote);
+    /* 새 표입니다. p_device 를 갈아 끼우며 부르면 voter 가 매번 달라져 여기로 오므로,
+       위조할 수 없는 IP 쪽에서 셉니다. 한 집·한 사무실에서 몇 사람이 누르는 것은
+       막지 않되, 혼자 수백 표를 넣는 것은 막습니다. */
+    if public.ip_is_distinguishing(ip)
+       and (select count(*) from public.recommended_votes
+             where build_id = p_id and ip_hash = iph) >= VOTE_PER_IP then
+      raise exception 'VOTE_LIMIT';
+    end if;
+    insert into public.recommended_votes (build_id, voter, v, ip_hash) values (p_id, who, p_vote, iph);
   elsif cur = p_vote then
     delete from public.recommended_votes where build_id = p_id and voter = who;
   else
@@ -447,7 +501,11 @@ begin
    where b.id = p_id
    returning b.up, b.down into r;
 
+  /* score 는 up/down 에서 나오는 값이라 표가 바뀌면 반드시 같이 바뀝니다. 안 돌려주면
+     화면이 ▲ 숫자만 고치고 옆의 추천도 배지는 옛 값으로 남습니다. 뷰와 같은 식을
+     두 번 적지 않도록 뷰에서 그대로 읽습니다. */
   return json_build_object('up', r.up, 'down', r.down,
+    'score', (select score from public.recommended_ranked where id = p_id),
     'mine', (select v from public.recommended_votes where build_id = p_id and voter = who));
 end $$;
 
@@ -461,8 +519,8 @@ set search_path = public, extensions, pg_temp
 as $$
 declare ip text; who text;
 begin
-  ip := split_part(coalesce(
-          current_setting('request.headers', true)::json ->> 'x-forwarded-for', ''), ',', 1);
+  -- vote_recommended_build 와 반드시 같은 방식으로 만들어야 «내가 누른 표» 가 맞습니다.
+  ip := public.client_ip();
   who := encode(digest(coalesce(btrim(ip), '') || '|' || coalesce(btrim(p_device), ''), 'sha256'), 'hex');
   return coalesce((select json_object_agg(build_id, v)
                      from public.recommended_votes
@@ -510,6 +568,9 @@ begin
   return n > 0;
 end $$;
 
+-- 도우미는 security definer 함수 안에서만 씁니다. RPC 로 직접 부를 이유가 없습니다.
+revoke all on function public.client_ip()                from public, anon;
+revoke all on function public.ip_is_distinguishing(text) from public, anon;
 revoke all on function public.add_recommended_build(text, text, text, text, text, text[], text[], boolean, text) from public, anon;
 revoke all on function public.delete_recommended_build(bigint, text)              from public, anon;
 revoke all on function public.vote_recommended_build(bigint, smallint, text)      from public, anon;

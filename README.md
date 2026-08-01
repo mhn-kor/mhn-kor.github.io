@@ -305,6 +305,38 @@ DB 인덱스(`records_board_idx`)도 같은 조합입니다.
 
 `rkOrder` / `rkKey` / `rkGroup` / `rkTopMap` 을 고쳤다면 `node tools/record-test.js` 를 꼭 돌려보세요.
 
+## 추천 투표의 중복 방지 — 배포 후 한 번 확인하세요
+
+표를 가르는 `voter` 해시에는 브라우저가 정하는 기기값(`p_device`)이 섞여 있습니다.
+그 값은 저장소를 지우면 바뀌므로 **그것만으로는 중복을 못 막습니다.** 막는 일은
+위조할 수 없는 IP 쪽이 합니다 — `schema.sql` 의 `VOTE_PER_IP`(기본 3)가 한 IP 가
+한 빌드에 만들 수 있는 표 수를 제한하고, 넘으면 `VOTE_LIMIT` 으로 거절합니다.
+
+IP 는 `client_ip()` 가 `cf-connecting-ip` → `true-client-ip` → `x-real-ip` →
+`x-forwarded-for` 의 **맨 뒤** 순서로 읽습니다. `x-forwarded-for` 는 프록시가 뒤에
+덧붙이는 헤더라 맨 앞은 브라우저가 채워 보낼 수 있고, 맨 뒤만 믿을 수 있습니다.
+
+> **확인이 필요한 이유:** 어느 헤더도 사람을 가르지 못하는 환경(전부 사설 주소)이면
+> 모든 방문자가 같은 IP 로 보여 «사이트 전체 3표» 가 되어 버립니다. 그래서
+> `ip_is_distinguishing()` 이 사설·루프백 주소면 상한을 **아예 걸지 않습니다.**
+> 막지 못하는 편이, 아무도 투표하지 못하는 것보다 낫기 때문입니다.
+>
+> **배포 후 이렇게 한 번만 확인하세요.** 같은 기기에서 추천 빌드 하나에 ▲를 누르고,
+> 개발자도구로 `localStorage.removeItem('mhnkr.device')` 후 새로고침을 반복해
+> **4번 투표**해 보세요.
+> - 4번째가 «같은 곳에서 이미 여러 번 투표했습니다» 로 막히면 → 정상 동작합니다.
+> - 4번 다 들어가면 → 상한이 꺼져 있는 것입니다. Supabase 가 어떤 헤더를 주는지
+>   확인해 `client_ip()` 의 순서를 맞춰 주세요.
+
+로컬(`docker compose`)에서는 도커가 보여주는 주소가 사설 대역이라 상한이 꺼져 있습니다.
+상한 자체를 시험하려면 공인 IP 를 직접 넣어 부르세요.
+
+```
+curl -X POST http://localhost:8080/rest/v1/rpc/vote_recommended_build \
+  -H 'Content-Type: application/json' -H 'X-Forwarded-For: 203.0.113.5' \
+  -d '{"p_id":2,"p_vote":1,"p_device":"아무거나"}'
+```
+
 ## 추천 빌드 탭의 댓글
 
 ```
@@ -501,14 +533,23 @@ node tools/build-test.js                                       # 무기 스킬 �
 **이 저장소는 공개입니다. 실제 값을 절대 커밋하지 마세요.** 커밋하는 순간 마스터키가 아니라
 누구나 누를 수 있는 삭제 버튼이 됩니다. 값은 대시보드에서만 넣습니다.
 
+> **길고 무작위인 값을 쓰세요. 짧으면 알아맞힐 수 있습니다.**
+> 삭제 함수는 «본인 비밀번호이거나 마스터» 로 판정하고 참/거짓을 그대로 돌려줍니다.
+> 그래서 자기 글을 하나 올려 두고 그 id 로 삭제를 반복해 부르면, 응답 자체가
+> 마스터 비밀번호 판별기가 됩니다. 시도 횟수 제한은 없으므로 **유일한 방어선이 길이**입니다.
+> 사람이 외울 값이 아니니 20자 이상 무작위로 만드세요.
+
 ```sql
 -- SQL Editor 에서 직접 실행. 이 문장은 저장소에 남기지 마세요.
+-- 값이 떠오르지 않으면:  select encode(extensions.gen_random_bytes(16), 'base64');
 insert into public.app_config (key, value)
-values ('master_pw', extensions.crypt('여기에실제비밀번호', extensions.gen_salt('bf', 8)))
+values ('master_pw', extensions.crypt('여기에실제비밀번호', extensions.gen_salt('bf', 12)))
 on conflict (key) do update set value = excluded.value;
 ```
 
 - 평문이 아니라 **bcrypt 해시로만** 저장됩니다.
+- `gen_salt('bf', 12)` 는 한 번 맞춰 보는 데 드는 시간을 8보다 **16배**로 올립니다.
+  삭제할 때만 쓰는 값이라 사람이 느끼는 지연은 없습니다.
 - `app_config` 는 RLS 를 켜고 정책을 하나도 만들지 않아 anon 이 **읽지도 쓰지도 못합니다.**
   `security definer` 함수만 소유자 권한으로 읽습니다.
 - **삭제 전용입니다.** 끌어올리기(`bump_friend_code`)에는 통하지 않습니다.
