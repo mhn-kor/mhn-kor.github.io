@@ -1319,6 +1319,14 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rn-t { font-size: .92rem; font-weight: 800; color: var(--amber-hi); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
 .rn-wp { grid-column: 2 / -1; font-size: .74rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* 무기 칩은 좁은 화면에서 그림만 남깁니다 — 14종에 이름까지 붙으면 필터가 화면 절반을 먹습니다.
+   이름은 title 에 남아 있고, 손가락으로 누를 만하도록 그림을 키웁니다. */
+@media (max-width: 640px) {
+  #rn-filter .mt-chip img + span { display: none; }
+  #rn-filter .mt-chip:has(img) { padding: 6px 10px; }
+  #rn-filter .mt-chip img { width: 22px; height: 22px; }
+}
+
 /* 태블릿 폭에서는 몬스터를 위로 올리고 일반 · 차원변이를 반씩 나눠 씁니다.
    세 칸을 유지하면 순위 칸이 좁아 닉네임이 통째로 잘립니다. */
 @media (max-width: 900px) {

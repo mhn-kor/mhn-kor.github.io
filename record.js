@@ -245,11 +245,15 @@ function rkItem(r, i, rank) {
 }
 
 /* ── 필터 ──────────────────────────────────────────────────────────── */
-/* 난이도·종류 칩. 리더보드와 랭킹이 같은 칩을 씁니다. cur 와 같은 값이 켜진 채로 나옵니다.
-   «전체»가 필요한 쪽(리더보드)은 부르면서 목록 앞에 넣습니다 — 랭킹은 판을 하나로 정해야 해서 없습니다. */
+/* 난이도·종류·무기 칩. 리더보드와 랭킹이 같은 칩을 씁니다. cur 와 같은 값이 켜진 채로 나옵니다.
+   항목은 [값, 이름], 아이콘이 있으면 [값, 이름, 그림]입니다. 좁은 화면에서는 그림만 남으므로
+   이름을 title 로도 답니다 — display:none 인 글자는 읽어주는 기기도 건너뜁니다.
+   «전체»가 필요한 쪽은 부르면서 목록 앞에 넣습니다(랭킹의 난이도는 판을 정해야 해서 없습니다). */
 const rkChips = (name, items, cur = '') => `<div class="mt-chips">${
-  items.map(([v, label]) => `
-    <button class="mt-chip${String(v) === String(cur) ? ' on' : ''}" data-f="${name}" data-v="${esc(String(v))}">${esc(label)}</button>`).join('')
+  items.map(([v, label, img]) => `
+    <button class="mt-chip${String(v) === String(cur) ? ' on' : ''}" data-f="${name}" data-v="${esc(String(v))}"${
+      img ? ` title="${esc(label)}"` : ''}>${
+      img ? `<img src="${esc(img)}" width="18" height="18" alt="" loading="lazy">` : ''}<span>${esc(label)}</span></button>`).join('')
 }</div>`;
 
 const RK_ALL = ['', '전체'];
@@ -703,7 +707,11 @@ async function rkDelete(e) {
    섞는 게 아닙니다. 난이도만 고르고 나면 남는 축이 몬스터뿐이라 모든 몬스터를
    한 줄씩 세울 수 있습니다(기록이 없는 몬스터도 자리를 지킵니다). */
 let rnDrawn = false;
-const rnF = { star: 10 };                      // 대부분이 찾는 난이도를 기본값으로
+const rnF = { star: 10, weapon: '' };          // 대부분이 찾는 난이도를 기본값으로, 무기는 전체
+
+/* 무기는 판을 가르는 값이 아니라 «그 무기만 남긴 판»입니다. 고르면 그 안에서 1·2·3위를
+   다시 셉니다 — 전체일 때가 리더보드 카드의 왕관과 같은 순위입니다. */
+const rnRows = () => (rnF.weapon ? rkRows.filter(r => r.weapon === rnF.weapon) : rkRows);
 
 /* 고룡은 ★8 이 가장 높은 등급이라 난이도 칩을 타지 않습니다. ★10 을 골랐다고 고룡 줄이
    통째로 비면 «아직 기록이 없다»로 잘못 읽힙니다. 등록도 ★8 만 받습니다(rkFormLabels). */
@@ -713,7 +721,9 @@ const rnKey = (m, variant) => `${m.id}|${rnStar(m)}|${variant}`;
 function rnUI() {
   $('#rn-filter').innerHTML = `
     <p class="stone-label">난이도</p>
-    ${rkChips('star', RK_STARS.map(s => [s, '★' + s]), rnF.star)}`;
+    ${rkChips('star', RK_STARS.map(s => [s, '★' + s]), rnF.star)}
+    <p class="stone-label">무기</p>
+    ${rkChips('weapon', [RK_ALL, ...rkWeapons().map(w => [w.k, w.n, `assets/part/${w.k}.png`])], rnF.weapon)}`;
 
   $('#rn-filter').addEventListener('click', e => {
     const chip = e.target.closest('.mt-chip');
@@ -728,13 +738,14 @@ function rnUI() {
   /* 크게 보기는 그 판 전체를 목록으로 받습니다 — 창 안의 이전/다음이 4위, 5위로 이어집니다. */
   $('#rn-list').addEventListener('click', e => {
     const b = e.target.closest('.rn-e');
-    if (b) rkOpenView(Number(b.dataset.i), rkGroup(rkRows).get(b.dataset.k) || []);
+    // 화면과 같은 목록을 넘겨야 합니다 — 무기를 걸어 둔 채 열면 그 무기의 순위대로 넘어갑니다.
+    if (b) rkOpenView(Number(b.dataset.i), rkGroup(rnRows()).get(b.dataset.k) || []);
   });
 }
 
 function rnRender() {
-  /* 줄마다 보는 난이도가 다를 수 있으므로(고룡은 늘 ★8) 전체를 묶어 두고 줄마다 꺼내 씁니다. */
-  const g = rkGroup(rkRows);
+  /* 줄마다 보는 난이도가 다를 수 있으므로(고룡은 늘 ★8) 통째로 묶어 두고 줄마다 꺼내 씁니다. */
+  const g = rkGroup(rnRows());
   const mons = rkFailed ? [] : rkMons();         // 못 불러왔으면 빈 순위표를 그리지 않습니다
   /* 고룡에는 차원변이가 없습니다. 빈 칸을 세워 두면 «없는 것»과 «아직 없는 것»이 같아 보이므로
      아예 칸을 안 만듭니다 — 옛 기록이 남아 있을 때만 그 칸이 다시 나옵니다. */
