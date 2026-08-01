@@ -1158,7 +1158,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 }
 .rk-noembed { margin: 0; padding: 34px 12px; text-align: center; font-size: .8rem; color: var(--muted); }
 
-.rk-info { padding: 9px 10px 11px; display: grid; gap: 7px; }
+/* minmax(0,1fr): 기본 auto 열은 min-content 아래로 못 줄어듭니다. 닉네임 줄은
+   flex 라 min-content 가 «닉네임 전체 + 아이콘 3개» 라서, 긴 닉네임이면 열이
+   카드보다 넓어지고 아이콘이 카드 밖으로 밀려 잘렸습니다. */
+.rk-info { padding: 9px 10px 11px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 7px; }
 .rk-nick {
   display: flex; align-items: center; gap: 3px; margin: 0;
   font-size: .85rem; font-weight: 700; letter-spacing: -.02em;
