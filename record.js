@@ -89,8 +89,14 @@ const rkBuildParam = raw => {
    한 줄에 세울 수 없습니다(DB 인덱스 records_board_idx 도 같은 조합입니다).
    같은 시간이면 먼저 올린 쪽이 위입니다. 그래도 같으면 id 로 갈라 순서를 못 박습니다 —
    비기면 그릴 때마다 1위가 바뀌는 목록이 됩니다. */
+/* 시각은 «문자열» 로 견주면 안 됩니다. Postgres 는 마이크로초가 0 이면 소수부를 통째로
+   빼고(2026-08-01T12:30:00+00:00) 주는데, 등록 직후 끼워넣는 행은 toISOString 의
+   «…​.123Z» 라 형태가 갈립니다. 그 자리에서 '.' 과 '+', 숫자와 'Z' 의 대소가 뒤집힙니다.
+   값이 없는 옛 행은 0 이라 지금처럼 맨 앞에 옵니다. */
+const rkTs = r => Date.parse(r.created_at) || 0;
+
 const rkOrder = (a, b) => a.time_sec - b.time_sec
-  || String(a.created_at || '').localeCompare(String(b.created_at || ''))
+  || rkTs(a) - rkTs(b)
   || a.id - b.id;
 
 const rkKey = r => `${r.monster}|${r.star}|${r.variant}`;
@@ -183,7 +189,10 @@ async function rkLoad() {
   try {
     // 같은 시간이면 먼저 올린 쪽이 위입니다(rkOrder 와 같은 규칙). limit 이 걸려 있으므로
     // 자르는 기준도 서버가 같이 알아야 합니다.
-    const r = await rest(`records?select=${RK_COLS}&order=time_sec.asc,created_at.asc&limit=${RK_LIMIT}`);
+    /* id 까지 넣어야 rkOrder 와 «완전히» 같은 규칙이 됩니다. 시간·시각이 모두 같은 행들의
+       순서를 서버에 맡기면 정렬이 안정적이지 않아 실행마다 달라지고, 그 순서가 그대로
+       왕관이 되어 랭킹·리더보드·명예의 전당이 한꺼번에 틀어집니다. */
+    const r = await rest(`records?select=${RK_COLS}&order=time_sec.asc,created_at.asc,id.asc&limit=${RK_LIMIT}`);
     if (!r.ok) throw new Error(await r.text());
     rkRows = await r.json();
     /* 자르는 축이 «전역 최속» 이라 판(몬스터·난이도) 단위와 무관하게 잘립니다. 상한에
@@ -218,7 +227,7 @@ let rkSort = 'time';
 const rkList = () => {
   const rows = rkRows.filter(rkPass);         // 서버가 이미 시간 오름차순으로 줍니다
   return rkSort === 'new'
-    ? rows.slice().sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')) || b.id - a.id)
+    ? rows.slice().sort((a, b) => rkTs(b) - rkTs(a) || b.id - a.id)
     : rows;
 };
 
@@ -238,9 +247,14 @@ function rkRender() {
 
   const state = $('#rk-state');
   state.hidden = rkShown.length > 0;
-  state.textContent = rkRows.length
-    ? '조건에 맞는 기록이 없습니다. 필터를 바꿔보세요.'
-    : '아직 등록된 기록이 없습니다. 첫 기록을 올려보세요!';
+  /* 목록이 비어 있는 데는 «못 받아왔다» 와 «진짜 0건» 두 뜻이 있습니다. 실패를 먼저
+     보지 않으면, 정렬이나 필터를 한 번 누른 순간 오류 안내가 «아직 기록이 없습니다» 로
+     덮여 사용자가 원인을 알 수 없게 됩니다(랭킹 쪽 rnRender 는 이미 이걸 봅니다). */
+  state.textContent = rkFailed
+    ? '기록을 불러오지 못했습니다. 새로고침해 주세요.'
+    : rkRows.length
+      ? '조건에 맞는 기록이 없습니다. 필터를 바꿔보세요.'
+      : '아직 등록된 기록이 없습니다. 첫 기록을 올려보세요!';
 }
 
 /* 숏츠가 기준이라 카드는 세로(9:16)입니다. 유튜브 썸네일(4:3)에 세로 영상이
@@ -425,6 +439,16 @@ function rkListUI() {
     const play = e.target.closest('.rk-play');
     if (play) rkOpenView(Number(play.dataset.i), rkList());
   });
+}
+
+/* 크게 보기 창은 리더보드와 랭킹이 같이 씁니다. 리스너를 rkListUI() 안에 두면
+   랭킹 탭만 열었을 때(drawRank 는 rkListUI 를 안 부릅니다) 창은 열리는데 이전·다음·
+   닫기·화살표·공유가 전부 죽고, 닫아도 iframe 이 남아 소리가 계속 납니다.
+   먼저 연 탭이 한 번만 겁니다. */
+let rkViewDrawn = false;
+function rkViewUI() {
+  if (rkViewDrawn) return;
+  rkViewDrawn = true;
 
   $('#rk-v-prev').addEventListener('click', () => rkOpenView(rkAt - 1));
   $('#rk-v-next').addEventListener('click', () => rkOpenView(rkAt + 1));
@@ -794,8 +818,10 @@ function rnUI() {
     rnRender();
   });
 
-  /* 크게 보기는 그 판 전체를 목록으로 받습니다 — 창 안의 이전/다음이 4위, 5위로 이어집니다. */
-  $('#rn-list').addEventListener('click', e => {
+  /* 크게 보기는 그 판 전체를 목록으로 받습니다 — 창 안의 이전/다음이 4위, 5위로 이어집니다.
+     고룡은 #rn-list 가 아니라 형제인 #rn-elders 에 그려집니다. 둘의 공통 조상에 걸어야
+     양쪽 다 잡힙니다 — #rn-list 에 걸면 고룡 줄은 눌러도 아무 일이 없습니다. */
+  $('#panel-rank').addEventListener('click', e => {
     const b = e.target.closest('.rn-e');
     // 화면과 같은 목록을 넘겨야 합니다 — 무기를 걸어 둔 채 열면 그 무기의 순위대로 넘어갑니다.
     if (b) rkOpenView(Number(b.dataset.i), rkGroup(rnRows()).get(b.dataset.k) || []);
@@ -808,8 +834,12 @@ function rnRender() {
   const mons = rkFailed ? [] : rkMons();         // 못 불러왔으면 빈 순위표를 그리지 않습니다
   /* 고룡에는 차원변이가 없습니다. 빈 칸을 세워 두면 «없는 것»과 «아직 없는 것»이 같아 보이므로
      아예 칸을 안 만듭니다 — 옛 기록이 남아 있을 때만 그 칸이 다시 나옵니다. */
+  /* 고룡은 rnKey 가 ★을 8 로 못박으므로(rnStar), ★9·★10 으로 올라간 옛 기록은 어느 칸에도
+     안 잡혀 리더보드에만 있고 랭킹에는 안 보였습니다. ★8 판이 비었을 때만 고른 ★의 기록을
+     대신 씁니다 — 판을 섞지 않으니 왕관 규칙은 그대로입니다.
+     일반 몬스터는 rnKey 가 이미 rnF.star 라 두 번째 조회가 같은 키가 되어 동작이 같습니다. */
   const cols = m => Object.keys(RK_VARIANT)
-    .map(v => [v, g.get(rnKey(m, v)) || []])
+    .map(v => [v, g.get(rnKey(m, v)) || g.get(`${m.id}|${rnF.star}|${v}`) || []])
     .filter(([v, l]) => v === 'normal' || m.group !== 'elder' || l.length);
 
   /* 기록이 있는 몬스터를 위로 올리고, 그 안에서는 게임(재료 탭) 순서 그대로 둡니다.
@@ -919,6 +949,7 @@ function drawRecord() {
   rkDrawn = true;
   rkFilterUI();
   rkListUI();
+  rkViewUI();
   rkModalUI();
   rkFormUI();
   rkReady();
@@ -928,6 +959,7 @@ function drawRank() {
   if (rnDrawn) return;
   rnDrawn = true;
   rnUI();
+  rkViewUI();          // 랭킹에서도 같은 크게 보기 창을 엽니다
   // 리더보드를 먼저 열었으면 이미 받아온 목록으로 즉시, 아니면 다 받은 뒤에 그립니다.
   rkReady().then(rnRender);
 }
