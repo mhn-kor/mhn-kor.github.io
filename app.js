@@ -804,14 +804,29 @@ function nickAuto(inputSel, listSel, hintSel, opt = {}) {
       pick(at);
     }
   });
-  /* click 은 blur 뒤에 와서 목록이 이미 닫힙니다. pointerdown 에서 포커스를 지킵니다. */
+  /* 마우스는 pointerdown 에서 골라야 합니다. click 은 blur 뒤에 와서 목록이 이미 닫힙니다.
+     손가락은 여기서 잡으면 닿자마자 골라져 목록을 훑어 내릴 수 없습니다. 그래서 뗄 때
+     고릅니다 — 훑어 내리기 시작하면 브라우저가 화면 넘기기를 가져가며 pointercancel 을
+     보내므로, 훑는 도중에 골라지지 않습니다. */
+  let onBox = false;
   box.addEventListener('pointerdown', e => {
+    onBox = true;
+    if (e.pointerType !== 'mouse') return;
     const li = e.target.closest('[data-i]');
     if (!li) return;
     e.preventDefault();
     pick(+li.dataset.i);
   });
-  inp.addEventListener('blur', () => setTimeout(close, 120));
+  box.addEventListener('pointerup', e => {
+    onBox = false;
+    if (e.pointerType === 'mouse') return;
+    const li = e.target.closest('[data-i]');
+    if (li) pick(+li.dataset.i);
+  });
+  box.addEventListener('pointercancel', () => { onBox = false; });
+  /* 손가락이 목록에 닿으면 입력칸이 초점을 잃습니다. 그대로 닫으면 훑는 도중에
+     목록이 사라지므로, 손이 목록에 있는 동안은 닫지 않습니다. */
+  inp.addEventListener('blur', () => setTimeout(() => { if (!onBox) close(); }, 120));
 }
 
 /* 마지막에 쓴 닉네임. 등록창을 열 때 미리 채워 두면 매번 다시 치지 않아도 됩니다. */
