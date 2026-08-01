@@ -15,6 +15,7 @@
 const RK_LIMIT = 500;                                   // 한 번에 받아올 상한
 const RK_VARIANT = { normal: '일반', dim: '차원변이' };
 const RK_STARS = [8, 9, 10];
+const RK_STAR_DEFAULT = 10;                             // 등록창 기본 난이도
 /* 고룡은 ★6 과 ★8 만 있고 ★8 이 가장 높습니다. 최속 기록은 최고 난이도에서만 뜻이 있으므로
    ★6 은 아예 받지 않고, 등록도 랭킹도 ★8 하나로 고정합니다. */
 const RK_ELDER_STAR = 8;
@@ -133,7 +134,11 @@ let rkRows = [];
 let rkTop = new Map();      // 기록 id → 판 안에서의 순위(1~3). 데이터가 바뀔 때만 다시 셉니다.
 let rkFailed = false;
 let rkDrawn = false;
-const rkF = { star: 0, variant: '', monster: '', weapon: '', style: '' };
+/* 처음 열었을 때의 필터. ★10 으로 시작합니다 — 최고 난이도 기록을 보러 오는 사람이
+   대부분이고, 전체로 두면 같은 몬스터가 난이도별로 여러 줄 섞여 나옵니다.
+   «필터 초기화»도 전체가 아니라 이 상태로 되돌립니다. */
+const RK_F0 = { star: 10, variant: '', monster: '', weapon: '', style: '' };
+const rkF = { ...RK_F0 };
 
 const rkMons = () => (typeof MATERIAL === 'undefined' ? [] : MATERIAL.monsters);
 const rkMon = id => rkMons().find(m => m.id === id) || null;
@@ -159,6 +164,12 @@ const rkPickHtml = (kind, v, empty) => {
 };
 
 const rkElder = id => (rkMon(id) || {}).group === 'elder';
+
+/* 왕관을 다투는 판은 몬스터마다 하나뿐입니다 — 최고 난이도(★10, 고룡은 ★8).
+   ★8·★9 는 거쳐 가는 단계라 최속을 겨루지 않습니다. 랭킹 탭에 난이도 칩이 없는 이유이고,
+   리더보드 카드의 왕관도 여기서 걸러진 기록에만 붙습니다. */
+const rkRankStar = id => (rkElder(id) ? RK_ELDER_STAR : RK_STAR_DEFAULT);
+const rkRanked = r => r.star === rkRankStar(r.monster);
 
 /* 카드·크게 보기에 붙는 갈래 딱지. 일반 몬스터의 «일반»은 대부분이라 적지 않습니다 — 소음이 됩니다. */
 const rkKindChip = r => (r.variant === 'dim' ? '<span class="chip dim">차원변이</span>'
@@ -214,7 +225,7 @@ async function rkLoad() {
 /* 목록이 바뀌었을 때. 순위(왕관)는 데이터가 바뀔 때만 다시 세면 됩니다 —
    필터는 무엇을 보여줄지만 정할 뿐 누가 1위인지를 바꾸지 않습니다. */
 function rkRefresh() {
-  rkTop = rkTopMap(rkRows);
+  rkTop = rkTopMap(rkRows.filter(rkRanked));   // 최고 난이도 판에만 왕관이 붙습니다
   rkRender();
   if (rnDrawn) rnRender();
 }
@@ -243,7 +254,8 @@ function rkRender() {
   $('#rk-count').textContent = rkShown.length === rkRows.length
     ? `${rkRows.length}건`
     : `${rkShown.length}건 / 전체 ${rkRows.length}건`;
-  $('#rk-reset').hidden = !rkF.star && !rkF.variant && !rkF.monster && !rkF.weapon && !rkF.style;
+  // 처음 상태 그대로면 되돌릴 것이 없습니다(★10 은 기본값이라 «걸린 필터»가 아닙니다).
+  $('#rk-reset').hidden = Object.keys(RK_F0).every(k => rkF[k] === RK_F0[k]);
 
   const state = $('#rk-state');
   state.hidden = rkShown.length > 0;
@@ -311,9 +323,9 @@ const RK_ALL = ['', '전체'];
 function rkFilterUI() {
   $('#rk-filter').innerHTML = `
     <p class="stone-label">난이도</p>
-    ${rkChips('star', [RK_ALL, ...RK_STARS.map(s => [s, '★' + s])])}
+    ${rkChips('star', [RK_ALL, ...RK_STARS.map(s => [s, '★' + s])], rkF.star)}
     <p class="stone-label">종류</p>
-    ${rkChips('variant', [RK_ALL, ...Object.entries(RK_VARIANT), [RK_ELDER_F, '고룡']])}
+    ${rkChips('variant', [RK_ALL, ...Object.entries(RK_VARIANT), [RK_ELDER_F, '고룡']], rkF.variant)}
     <p class="stone-label">몬스터 · 무기</p>
     <div class="rk-selects">
       <div class="field"><span>몬스터</span>
@@ -335,18 +347,20 @@ function rkFilterUI() {
     const chip = e.target.closest('.mt-chip');
     if (!chip) return;
     rkF[chip.dataset.f] = chip.dataset.f === 'star' ? Number(chip.dataset.v || 0) : chip.dataset.v;
-    for (const b of $('#rk-filter').querySelectorAll(`.mt-chip[data-f="${chip.dataset.f}"]`)) {
-      b.classList.toggle('on', b === chip);
-    }
+    /* 고룡은 ★8 이 최고 난이도입니다. 기본값 ★10 이 걸린 채로 «고룡»을 누르면 늘 0건이라
+       고른 보람이 없으므로 난이도도 함께 옮깁니다. */
+    if (rkF.variant === RK_ELDER_F && rkF.star && rkF.star !== RK_ELDER_STAR) rkF.star = RK_ELDER_STAR;
+    rkChipSync();
     rkRender();
   });
 
   $('#rk-fstyle').addEventListener('change', e => { rkF.style = e.target.value; rkRender(); });
   $('#rk-reset').addEventListener('click', () => {
-    rkF.star = 0;
-    rkF.variant = rkF.monster = rkF.weapon = rkF.style = '';
-    // '전체' 칩(data-v="")만 켜진 상태로 되돌립니다.
-    for (const b of $('#rk-filter').querySelectorAll('.mt-chip')) b.classList.toggle('on', !b.dataset.v);
+    Object.assign(rkF, RK_F0);
+    // 처음 상태의 칩(난이도는 ★10, 나머지는 '전체')만 켜진 채로 되돌립니다.
+    for (const b of $('#rk-filter').querySelectorAll('.mt-chip')) {
+      b.classList.toggle('on', b.dataset.v === String(RK_F0[b.dataset.f] || ''));
+    }
     rkFilterLabels();
     rkRender();
   });
@@ -605,11 +619,17 @@ function rkFormLabels() {
 
   /* 고룡은 ★8 이 가장 높은 등급이고(그 아래는 ★6 이라 이 표에 없습니다) 차원변이도 없습니다.
      목록에서 아예 빼서 올릴 수 없게 합니다 — 화면에서 감추기만 하면 잘못 고른 기록이 그대로 남습니다. */
-  const elder = (rkMon(rkForm.monster) || {}).group === 'elder';
+  const elder = rkElder(rkForm.monster);
   rkPickOne('#rk-star', elder ? [RK_ELDER_STAR] : RK_STARS, s => s, s => '★' + s);
   rkPickOne('#rk-var', Object.entries(RK_VARIANT).filter(([v]) => !elder || v === 'normal'),
     v => v[0], v => v[1]);
+  /* 고룡에서 다른 몬스터로 옮겨오면 기본값(★10)으로 되돌립니다. 고룡일 때는 ★8 하나뿐이라
+     rkPickOne 이 «고르고 있던 값»으로 지켜 주는데, 그 값을 다음 몬스터가 물려받으면 안 됩니다.
+     목록을 다시 채운 «뒤»여야 ★10 이 실제로 있는 항목이 됩니다. */
+  if (rkFormElder && !elder) $('#rk-star').value = String(RK_STAR_DEFAULT);
+  rkFormElder = elder;
 }
+let rkFormElder = false;      // 직전에 고른 몬스터가 고룡이었나
 
 /* 선택칸을 다시 채우되 고르고 있던 값이 아직 있으면 그대로 둡니다.
    그냥 다시 그리면 몬스터를 바꿀 때마다 난이도가 첫 항목으로 되돌아갑니다. */
@@ -622,7 +642,7 @@ function rkPickOne(sel, list, val, label) {
 function rkFormUI() {
   rkFormLabels();                 // 난이도·종류 선택칸을 채웁니다
   // 대부분의 기록이 10성이라 기본값으로 둡니다. 잘못 올려도 지우려면 비밀번호가 필요합니다.
-  $('#rk-star').value = '10';
+  $('#rk-star').value = String(RK_STAR_DEFAULT);
 
   $('#rk-reg-form').addEventListener('click', e => {
     const pick = e.target.closest('.rk-pick');
@@ -732,7 +752,7 @@ async function rkSubmit(e) {
        고룡을 올린 직후에는 난이도 목록이 ★8 뿐이므로, 목록을 되살린 «뒤에» 10성으로 돌립니다. */
     rkForm.monster = rkForm.weapon = null;
     rkFormLabels();
-    $('#rk-star').value = '10';
+    $('#rk-star').value = String(RK_STAR_DEFAULT);
     $('#rk-nick').value = lastNick();               // reset() 이 지운 닉네임은 되살립니다
     $('#rk-nick-hint').hidden = true;
     $('#rk-preview').className = 'preview';
@@ -787,31 +807,29 @@ async function rkDelete(e) {
 
    한 줄 = 몬스터 하나, 그 안에 일반 · 차원변이가 나란히 섭니다. 둘은 각각 다른 판
    (rkKey = 몬스터 · 난이도 · 종류)이라 왕관도 따로 셉니다 — 나란히 두는 건 보기 편해서일 뿐
-   섞는 게 아닙니다. 난이도만 고르고 나면 남는 축이 몬스터뿐이라 모든 몬스터를
-   한 줄씩 세울 수 있습니다(기록이 없는 몬스터도 자리를 지킵니다). */
+   섞는 게 아닙니다.
+
+   난이도는 고르지 않습니다. 왕관을 다투는 판은 몬스터마다 하나(★10, 고룡은 ★8)뿐이라
+   (rkRankStar) 고를 것이 없습니다 — ★8·★9 는 거쳐 가는 단계지 최속을 겨루는 자리가 아닙니다.
+   그래서 남는 축이 몬스터뿐이고, 모든 몬스터를 한 줄씩 세울 수 있습니다. */
 let rnDrawn = false;
-const rnF = { star: 10, weapon: '' };          // 대부분이 찾는 난이도를 기본값으로, 무기는 전체
+const rnF = { weapon: '' };                    // 무기는 전체가 기본
 
 /* 무기는 판을 가르는 값이 아니라 «그 무기만 남긴 판»입니다. 고르면 그 안에서 1·2·3위를
    다시 셉니다 — 전체일 때가 리더보드 카드의 왕관과 같은 순위입니다. */
 const rnRows = () => (rnF.weapon ? rkRows.filter(r => r.weapon === rnF.weapon) : rkRows);
 
-/* 고룡은 ★8 이 가장 높은 등급이라 난이도 칩을 타지 않습니다. ★10 을 골랐다고 고룡 줄이
-   통째로 비면 «아직 기록이 없다»로 잘못 읽힙니다. 등록도 ★8 만 받습니다(rkFormLabels). */
-const rnStar = m => (m.group === 'elder' ? RK_ELDER_STAR : rnF.star);
-const rnKey = (m, variant) => `${m.id}|${rnStar(m)}|${variant}`;
+const rnKey = (m, variant) => `${m.id}|${rkRankStar(m.id)}|${variant}`;
 
 function rnUI() {
   $('#rn-filter').innerHTML = `
-    <p class="stone-label">난이도</p>
-    ${rkChips('star', RK_STARS.map(s => [s, '★' + s]), rnF.star)}
     <p class="stone-label">무기</p>
     ${rkChips('weapon', [RK_ALL, ...rkWeapons().map(w => [w.k, w.n, `assets/part/${w.k}.png`])], rnF.weapon)}`;
 
   $('#rn-filter').addEventListener('click', e => {
     const chip = e.target.closest('.mt-chip');
     if (!chip) return;
-    rnF[chip.dataset.f] = chip.dataset.f === 'star' ? Number(chip.dataset.v || 0) : chip.dataset.v;
+    rnF[chip.dataset.f] = chip.dataset.v;
     for (const b of $('#rn-filter').querySelectorAll(`.mt-chip[data-f="${chip.dataset.f}"]`)) {
       b.classList.toggle('on', b === chip);
     }
@@ -829,17 +847,13 @@ function rnUI() {
 }
 
 function rnRender() {
-  /* 줄마다 보는 난이도가 다를 수 있으므로(고룡은 늘 ★8) 통째로 묶어 두고 줄마다 꺼내 씁니다. */
+  /* 줄마다 보는 난이도가 다릅니다(고룡은 ★8, 나머지는 ★10). 통째로 묶어 두고 줄마다 꺼내 씁니다. */
   const g = rkGroup(rnRows());
   const mons = rkFailed ? [] : rkMons();         // 못 불러왔으면 빈 순위표를 그리지 않습니다
   /* 고룡에는 차원변이가 없습니다. 빈 칸을 세워 두면 «없는 것»과 «아직 없는 것»이 같아 보이므로
      아예 칸을 안 만듭니다 — 옛 기록이 남아 있을 때만 그 칸이 다시 나옵니다. */
-  /* 고룡은 rnKey 가 ★을 8 로 못박으므로(rnStar), ★9·★10 으로 올라간 옛 기록은 어느 칸에도
-     안 잡혀 리더보드에만 있고 랭킹에는 안 보였습니다. ★8 판이 비었을 때만 고른 ★의 기록을
-     대신 씁니다 — 판을 섞지 않으니 왕관 규칙은 그대로입니다.
-     일반 몬스터는 rnKey 가 이미 rnF.star 라 두 번째 조회가 같은 키가 되어 동작이 같습니다. */
   const cols = m => Object.keys(RK_VARIANT)
-    .map(v => [v, g.get(rnKey(m, v)) || g.get(`${m.id}|${rnF.star}|${v}`) || []])
+    .map(v => [v, g.get(rnKey(m, v)) || []])
     .filter(([v, l]) => v === 'normal' || m.group !== 'elder' || l.length);
 
   /* 기록이 있는 몬스터를 위로 올리고, 그 안에서는 게임(재료 탭) 순서 그대로 둡니다.
@@ -850,7 +864,7 @@ function rnRender() {
 
   $('#rn-list').innerHTML = normal.map(([m, c]) => rnRow(m, c)).join('');
   $('#rn-elders').innerHTML = elders.map(([m, c]) => rnRow(m, c)).join('');
-  $('#rn-elders-h').hidden = !mons.length;
+  $('#rn-list-h').hidden = $('#rn-elders-h').hidden = !mons.length;
   // 화면에 깔린 것만 셉니다 — 고룡이 다른 난이도를 보고 있어 rkRows 전체와는 다릅니다.
   const all = [...normal, ...elders];
   const n = all.reduce((s, [, c]) => s + c.reduce((t, [, l]) => t + l.length, 0), 0);
