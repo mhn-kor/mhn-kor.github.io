@@ -23,8 +23,8 @@ for (const f of ['build-data.js', 'build.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 }
 /* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
-const [BUILD, bdWSkills, bdTotals, bdNewBuild] =
-  ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild'].map(n => vm.runInContext(n, ctx));
+const [BUILD, bdWSkills, bdTotals, bdNewBuild, bdBulkRows, bdArmorSkills] =
+  ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild', 'bdBulkRows', 'bdArmorSkills'].map(n => vm.runInContext(n, ctx));
 
 let fail = 0;
 const check = (label, fn) => {
@@ -69,6 +69,27 @@ check('스킬 합계에 고른 무기의 스킬이 들어간다', () => {
   assert.strictEqual(total.get('포술'), 1, '건랜스인데 포술이 없습니다');
   assert.ok(!total.has('속전속결'), '태도 스킬이 섞였습니다');
   assert.ok(!total.has('무기 종류에 따라 다름'), '자리표시자가 합계에 섞였습니다');
+});
+
+/* 일괄선택 검색 — 스킬은 전체 일치, 이름은 부분 일치, 걸린 부위만 남습니다. */
+check('일괄선택: 빈 검색은 가진 부위를 모두 보여 준다', () => {
+  const rows = bdBulkRows('');
+  assert.strictEqual(rows.length, BUILD.sets.filter(s => Object.keys(s.pieces).length).length);
+  for (const r of rows) assert.strictEqual(r.hit.length, Object.keys(r.s.pieces).length, `${r.s.key} 부위 수가 다릅니다`);
+});
+
+check('일괄선택: 스킬은 이름 전체가 같아야 걸린다', () => {
+  const rows = bdBulkRows('공격');
+  assert.ok(rows.length, '«공격» 스킬을 가진 방어구가 있어야 합니다');
+  for (const r of rows) for (const k of r.hit) {
+    const pc = r.s.pieces[k];
+    const byName = (r.s.name + pc.name).replace(/\s+/g, '').includes('공격');
+    assert.ok(byName || pc.skills.some(x => x.s === '공격'),
+      `${r.s.key}/${k}: «공격» 이 아닌 스킬(${pc.skills.map(x => x.s)})이 걸렸습니다`);
+  }
+  /* 자동완성으로 고른 전체 이름은 그대로 걸려야 합니다. */
+  assert.ok(bdArmorSkills().includes('불속성 공격 강화'), '자동완성 목록에 스킬이 빠졌습니다');
+  assert.ok(bdBulkRows('불속성 공격 강화').length, '전체 이름으로 검색해도 결과가 없습니다');
 });
 
 console.log(fail ? `실패 ${fail}건` : '모두 통과');

@@ -214,6 +214,31 @@ iframe 은 창을 열 때만 만들고 닫을 때 걷어냅니다 — 목록에 
 값이 있으면 카드에 `빌드 보기` 버튼이 붙어 그 빌드가 열립니다.
 나중에 추천 빌드를 만들 때는 이 컬럼(또는 `records.id`)으로 영상과 빌드를 이으면 됩니다.
 
+## 추천 빌드 탭의 댓글
+
+```
+supabase/schema.sql   public.recommended_comments
+                      + recommended_comments_public (pw_hash 뺀 읽기 전용 뷰)
+                      + add_recommended_comment / delete_recommended_comment
+recommend.js          rcCmOpen / rcCmDraw · 등록 · 삭제
+```
+
+댓글은 **미리보기 창 안**에 있습니다. 카드에는 `💬 N` 개수만 붙고, 누르면 그 창이 열립니다.
+목록에서 여러 개를 펼치면 스크롤이 걷잡을 수 없이 길어지기 때문입니다.
+
+개수(`comments`)는 `recommended_ranked` 뷰가 같이 세어 내려줍니다 — 따로 부르면 목록 요청이
+두 번이 됩니다. `create or replace view` 는 **맨 뒤에 컬럼 추가만** 허용하므로 새 컬럼은 항상
+`select` 목록 끝에 붙이세요.
+
+답글(대댓글)은 없습니다. 한두 줄짜리 반응이 대부분이라 필요해지면 `parent_id` 한 컬럼을
+얹으면 됩니다.
+
+삭제 창은 **빌드 삭제 창(`#rc-del`)을 같이 씁니다.** 묻는 것도(비밀번호) 규칙도 같아서
+창을 하나 더 두면 마크업만 두 벌이 됩니다 — `rcDelKind` 로 부를 함수만 갈립니다.
+
+> 스키마를 고쳤으니 **Supabase SQL Editor 에 `supabase/schema.sql` 을 다시 실행하세요.**
+> 안 하면 목록 조회가 `comments` 컬럼을 찾지 못해 추천빌드 탭이 통째로 비어 보입니다.
+
 ## 재료 탭
 
 몬스터 · 무기/방어구 · 현재 등급 → 목표 등급을 고르면 그 구간의 강화 재료와 제니를 합산합니다.

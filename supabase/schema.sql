@@ -304,12 +304,37 @@ create table if not exists public.recommended_votes (
   primary key (build_id, voter)
 );
 
-alter table public.recommended_builds enable row level security;
-alter table public.recommended_votes  enable row level security;
+-- 빌드에 달리는 댓글. «차지액스로도 쓸만해요» 같은 한두 줄짜리라 답글은 두지
+-- 않았습니다. 필요해지면 parent_id 한 컬럼을 얹으면 됩니다.
+-- 삭제 규칙은 이 저장소의 다른 글과 같습니다 — 등록할 때 정한 비밀번호이거나 마스터.
+create table if not exists public.recommended_comments (
+  id         bigint      generated always as identity primary key,
+  build_id   bigint      not null references public.recommended_builds(id) on delete cascade,
+  nickname   text        not null check (char_length(btrim(nickname)) between 1 and 20),
+  body       text        not null check (char_length(btrim(body)) between 1 and 300),
+  created_at timestamptz not null default now(),
+  pw_hash    text        not null
+);
+
+-- 한 빌드의 댓글을 시간순으로 읽는 것이 유일한 조회 방식입니다.
+create index if not exists recommended_comments_build_idx
+  on public.recommended_comments (build_id, created_at);
+
+alter table public.recommended_builds   enable row level security;
+alter table public.recommended_votes    enable row level security;
+alter table public.recommended_comments enable row level security;
 
 -- pw_hash 는 클라이언트로 나가면 안 됩니다. 컬럼 권한으로 막습니다.
-revoke all on public.recommended_builds from anon;
-revoke all on public.recommended_votes  from anon;
+revoke all on public.recommended_builds   from anon;
+revoke all on public.recommended_votes    from anon;
+revoke all on public.recommended_comments from anon;
+
+-- 읽기는 pw_hash 를 뺀 뷰로만. 빌드 목록과 같은 이유로 컬럼을 하나하나 적습니다.
+create or replace view public.recommended_comments_public as
+select c.id, c.build_id, c.nickname, c.body, c.created_at
+  from public.recommended_comments c;
+
+grant select on public.recommended_comments_public to anon;
 
 -- ── 추천도 ──────────────────────────────────────────────────────────
 -- 오래될수록 낮아지고(3주에 절반), 좋아요는 올리고 싫어요는 더 크게 내립니다.
@@ -324,7 +349,11 @@ select b.id, b.nickname, b.title, b.build, b.weapon, b.tier,
          (1 + b.up * 2 - b.down * 3)::numeric
          * (1.0 / (1.0 + extract(epoch from (now() - b.created_at)) / 86400 / 21))
          * (case when b.tier = 'beginner' and b.easy_farm then 1.8 else 1.0 end)
-       ), 2) as score
+       ), 2) as score,
+       /* 카드에 «댓글 3» 을 붙이려고 같이 셉니다. 목록이 300줄이라 줄마다 세도
+          부담이 없고, 따로 부르면 목록 요청이 두 번이 됩니다.
+          create or replace view 는 «맨 뒤에 컬럼 추가» 만 허용하므로 여기 끝에 둡니다. */
+       (select count(*) from public.recommended_comments c where c.build_id = b.id) as comments
   from public.recommended_builds b;
 
 grant select on public.recommended_ranked to anon;
@@ -440,11 +469,56 @@ begin
                     where voter = who and build_id = any(coalesce(p_ids, '{}'))), '{}'::json);
 end $$;
 
+-- ── 댓글 ────────────────────────────────────────────────────────────
+create or replace function public.add_recommended_comment(
+  p_build_id bigint, p_nickname text, p_body text, p_password text
+) returns bigint
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare new_id bigint;
+begin
+  if p_password is null or char_length(p_password) < 4 then
+    raise exception 'PASSWORD_TOO_SHORT';
+  end if;
+  insert into public.recommended_comments (build_id, nickname, body, pw_hash)
+  values (p_build_id, btrim(p_nickname), btrim(p_body),
+          crypt(p_password, gen_salt('bf', 8)))
+  returning id into new_id;
+  return new_id;
+end $$;
+
+-- 빌드 삭제와 같은 규칙 — 본인 비밀번호이거나 마스터일 때만.
+create or replace function public.delete_recommended_comment(
+  p_id bigint, p_password text
+) returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare n int;
+begin
+  delete from public.recommended_comments
+   where id = p_id
+     and (
+       pw_hash = crypt(p_password, pw_hash)
+       or exists (select 1 from public.app_config
+                   where key = 'master_pw' and value = crypt(p_password, value))
+     );
+  get diagnostics n = row_count;
+  return n > 0;
+end $$;
+
 revoke all on function public.add_recommended_build(text, text, text, text, text, text[], text[], boolean, text) from public, anon;
 revoke all on function public.delete_recommended_build(bigint, text)              from public, anon;
 revoke all on function public.vote_recommended_build(bigint, smallint, text)      from public, anon;
 revoke all on function public.my_recommended_votes(bigint[], text)                from public, anon;
+revoke all on function public.add_recommended_comment(bigint, text, text, text)   from public, anon;
+revoke all on function public.delete_recommended_comment(bigint, text)            from public, anon;
 grant execute on function public.add_recommended_build(text, text, text, text, text, text[], text[], boolean, text) to anon;
 grant execute on function public.delete_recommended_build(bigint, text)           to anon;
 grant execute on function public.vote_recommended_build(bigint, smallint, text)   to anon;
 grant execute on function public.my_recommended_votes(bigint[], text)             to anon;
+grant execute on function public.add_recommended_comment(bigint, text, text, text) to anon;
+grant execute on function public.delete_recommended_comment(bigint, text)         to anon;

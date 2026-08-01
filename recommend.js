@@ -16,7 +16,9 @@ const RC_LIMIT = 300;
 const RC_TIER = { beginner: '초보자', expert: '숙련자' };
 const RC_SCENE = { field: '필드사냥', intercept: '요격전', swarm: '대량출현', chain: '대연속', elder: '고룡토벌' };
 const RC_PARTY = { solo: '개인전', party: '파티사냥' };
-const RC_COLS = 'id,nickname,title,build,weapon,tier,scenes,party,easy_farm,up,down,created_at,score';
+const RC_COLS = 'id,nickname,title,build,weapon,tier,scenes,party,easy_farm,up,down,created_at,score,comments';
+
+const RC_CM_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>';
 
 let rcRows = [];
 let rcMine = {};                 // { 빌드id: 1 | -1 }  내가 누른 것
@@ -103,6 +105,7 @@ function rcCard(r, rank) {
     <div class="rc-act">
       <button class="rc-v up${mine === 1 ? ' on' : ''}" data-vote="${r.id}:1" title="좋아요">▲ <b>${r.up}</b></button>
       <button class="rc-v down${mine === -1 ? ' on' : ''}" data-vote="${r.id}:-1" title="싫어요">▼ <b>${r.down}</b></button>
+      <button class="rc-v cm" data-rc-view="${r.id}" title="댓글 보기">${RC_CM_ICON} <b>${r.comments || 0}</b></button>
       <span class="rc-t score rc-score" title="추천도 — 오래될수록 낮아지고 좋아요·싫어요가 반영됩니다">추천도 <b>${r.score}</b></span>
       <button class="btn ghost" data-rc-view="${r.id}">미리보기</button>
       <button class="btn ghost" data-rc-use="${r.id}">가져오기</button>
@@ -130,10 +133,95 @@ function rcView(id) {
   $('#rc-view-title').textContent = r.title || rcWeaponName(r.weapon) + ' 빌드';
   $('#rc-view-sub').textContent =
     `${rcWeaponName(r.weapon)} · ${r.nickname} · 추천도 ${r.score}`;
-  $('#rc-view-body').innerHTML = bdPreviewHtml(b);
+  $('#rc-view-gear').innerHTML = bdPreviewHtml(b);
   $('#rc-view-use').dataset.rcUse = id;
+  rcCmOpen(id);
   $('#rc-view').showModal();
 }
+
+/* ── 댓글 ─────────────────────────────────────────────────────────── */
+/* 지금 열려 있는 빌드. 창이 하나뿐이라 하나만 들고 있으면 됩니다. */
+let rcCmId = null;
+
+/* 창을 열 때마다 새로 받습니다. 한 빌드에 몇 줄뿐이라 캐시할 가치가 없고,
+   남이 방금 단 댓글이 안 보이는 편이 훨씬 나쁩니다. */
+async function rcCmOpen(id) {
+  rcCmId = id;
+  const row = rcRows.find(x => x.id === id);
+  $('#rc-cm-n').textContent = (row && row.comments) || 0;
+  $('#rc-cm-err').hidden = true;
+  $('#rc-cm-body').value = '';
+  if (!$('#rc-cm-nick').value) $('#rc-cm-nick').value = lastNick();
+  $('#rc-cm-nick-hint').hidden = true;
+  $('#rc-cm-list').innerHTML = '<li class="rc-cm-empty">불러오는 중…</li>';
+  try {
+    const r = await rest(`recommended_comments_public?select=id,nickname,body,created_at`
+      + `&build_id=eq.${id}&order=created_at.asc`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    /* 창이 이미 닫혔거나 다른 빌드로 넘어갔으면 늦게 온 응답은 버립니다. */
+    if (rcCmId !== id) return;
+    rcCmDraw(id, await r.json());
+  } catch (e) {
+    if (rcCmId === id) $('#rc-cm-list').innerHTML = '<li class="rc-cm-empty">댓글을 불러오지 못했습니다.</li>';
+  }
+}
+
+/* 목록과 개수를 한 번에 맞춥니다. 카드의 «댓글 N» 도 같이 고쳐야 창을 닫았을 때
+   숫자가 어긋나지 않습니다. */
+function rcCmDraw(id, list) {
+  $('#rc-cm-n').textContent = list.length;
+  $('#rc-cm-list').innerHTML = list.length
+    ? list.map(c => `<li class="rc-cm-i" data-cm="${c.id}">
+        <p class="rc-cm-by">${esc(c.nickname)} · ${when(c.created_at)}
+          <button class="icon danger rc-cm-del" data-act="cmdel" aria-label="댓글 삭제" title="삭제 (비밀번호 필요)">${TRASH_ICON}</button>
+        </p>
+        <p class="rc-cm-b">${esc(c.body)}</p>
+      </li>`).join('')
+    : '<li class="rc-cm-empty">아직 댓글이 없습니다. 먼저 한마디 남겨 보세요.</li>';
+  const row = rcRows.find(x => x.id === id);
+  if (row) { row.comments = list.length; rcRender(); }
+}
+
+$('#rc-cm-list').addEventListener('click', e => {
+  const d = e.target.closest('[data-act="cmdel"]');
+  if (d) rcAskDelete(+d.closest('[data-cm]').dataset.cm, 'comment');
+});
+
+$('#rc-cm-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = $('#rc-cm-err');
+  err.hidden = true;
+  const nick = $('#rc-cm-nick').value.trim().replace(/\s+/g, ' ');
+  const pw = $('#rc-cm-pw').value;
+  const body = $('#rc-cm-body').value.trim();
+  const bad = !nick ? '닉네임을 입력해 주세요.'
+    : !body ? '내용을 입력해 주세요.'
+    : pw.length < 4 ? '비밀번호는 4자 이상이어야 합니다.' : null;
+  if (bad) { err.textContent = bad; err.hidden = false; return; }
+
+  const btn = $('#rc-cm-submit');
+  btn.disabled = true;
+  try {
+    const r = await rest('rpc/add_recommended_comment', {
+      method: 'POST',
+      body: JSON.stringify({ p_build_id: rcCmId, p_nickname: nick, p_body: body, p_password: pw }),
+    });
+    /* 서버가 왜 거절했는지 그대로 보여 줍니다 — 길이 제한처럼 다시 눌러도
+       소용없는 실패를 «잠시 뒤 다시» 로 뭉뚱그리면 알아볼 길이 없습니다. */
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || `HTTP ${r.status}`);
+    saveNick(nick);
+    $('#rc-cm-body').value = '';
+    await rcCmOpen(rcCmId);
+  } catch (e2) {
+    err.textContent = '댓글을 남기지 못했습니다 — ' + e2.message;
+    err.hidden = false;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* 닉네임 자동완성. 등록창·리더보드와 같은 것을 씁니다 — app.js 의 nickAuto(). */
+nickAuto('#rc-cm-nick', '#rc-cm-nick-list', '#rc-cm-nick-hint');
 
 /* 필터 칩. 무기는 전체 + 14종, 나머지는 전체 + 항목입니다. */
 function rcChips() {
@@ -183,12 +271,25 @@ function rcUse(id) {
 }
 
 /* ── 삭제 ─────────────────────────────────────────────────────────── */
+/* 빌드와 댓글이 창 하나를 같이 씁니다. 묻는 것도(비밀번호) 규칙도 같아서
+   창을 하나 더 두면 마크업만 두 벌이 됩니다. kind 로 부를 함수만 갈립니다. */
 let rcDelId = null;
-function rcAskDelete(id) {
-  const row = rcRows.find(x => x.id === id);
-  if (!row) return;
+let rcDelKind = 'build';
+function rcAskDelete(id, kind = 'build') {
+  let what;
+  if (kind === 'comment') {
+    const li = $('#rc-cm-list').querySelector(`[data-cm="${id}"]`);
+    if (!li) return;
+    what = `<b>댓글</b> · ${esc(li.querySelector('.rc-cm-b').textContent.slice(0, 40))}`;
+  } else {
+    const row = rcRows.find(x => x.id === id);
+    if (!row) return;
+    what = `<b>${esc(row.title || rcWeaponName(row.weapon) + ' 빌드')}</b> · ${esc(row.nickname)}`;
+  }
   rcDelId = id;
-  $('#rc-del-what').innerHTML = `<b>${esc(row.title || rcWeaponName(row.weapon) + ' 빌드')}</b> · ${esc(row.nickname)}`;
+  rcDelKind = kind;
+  $('#rc-del h2').textContent = kind === 'comment' ? '댓글 삭제' : '추천 빌드 삭제';
+  $('#rc-del-what').innerHTML = what;
   $('#rc-del-pw').value = '';
   $('#rc-del-err').hidden = true;
   $('#rc-del').showModal();
@@ -243,14 +344,20 @@ $('#rc-del-form').addEventListener('submit', async e => {
   const err = $('#rc-del-err');
   err.hidden = true;
   try {
-    const r = await rest('rpc/delete_recommended_build', {
+    const isCm = rcDelKind === 'comment';
+    const r = await rest(`rpc/delete_recommended_${isCm ? 'comment' : 'build'}`, {
       method: 'POST', body: JSON.stringify({ p_id: rcDelId, p_password: pw }),
     });
     const ok = r.ok && (await r.json()) === true;
     if (!ok) { err.textContent = '비밀번호가 다릅니다.'; err.hidden = false; return; }
-    rcRows = rcRows.filter(x => x.id !== rcDelId);
     $('#rc-del').close();
-    rcRender();
+    if (isCm) {
+      /* 지운 뒤 목록을 다시 받습니다 — 개수와 카드의 «댓글 N» 이 한 번에 맞습니다. */
+      await rcCmOpen(rcCmId);
+    } else {
+      rcRows = rcRows.filter(x => x.id !== rcDelId);
+      rcRender();
+    }
     toast('삭제했습니다');
   } catch (e2) {
     err.textContent = '삭제하지 못했습니다.'; err.hidden = false;

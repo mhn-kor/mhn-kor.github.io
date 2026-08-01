@@ -220,7 +220,7 @@ function bdOpenBulk(bi) {
   bdPick = { kind: 'bulk', bi };
   bdBulk = {};
   for (const { k } of BD_PARTS()) bdBulk[k] = b[k] || null;
-  bdOpen('방어구 일괄선택', '', true, { placeholder: '몬스터 · 방어구 · 스킬 검색' });
+  bdOpen('방어구 일괄선택', '', true, { placeholder: '몬스터 · 방어구 · 스킬 검색', skills: true });
   bdFillBulk('');
 }
 
@@ -230,27 +230,46 @@ function bdBulkSets() {
     .sort((a, b) => a.o - b.o || a.g - b.g || a.u - b.u || a.id - b.id);
 }
 
-function bdFillBulk(q) {
-  const norm = t => String(t).toLowerCase().replace(/\s+/g, '');
+/* 검색은 세트가 아니라 부위 단위로 겁니다. 세트만 걸러 다섯 칸을 다 보여 주면
+   어느 부위가 걸린 건지 눌러 봐야 압니다. 몬스터·방어구 이름은 부분 일치지만
+   스킬명은 전체가 같아야 합니다(«공격» 에 «불속성 공격 강화» 가 끼지 않도록).
+   대신 스킬 전체 이름은 검색칸 자동완성으로 채웁니다. */
+function bdBulkRows(q) {
+  const norm = t => String(t).toLowerCase().replace(/[\s　]+/g, '');
   const needle = norm(q);
-  const parts = BD_PARTS();
-
-  const rows = bdBulkSets().filter(s => {
-    if (!needle) return true;
-    const txt = s.name + parts.map(p => {
+  return bdBulkSets().map(s => ({
+    s,
+    hit: BD_PARTS().filter(p => {
       const pc = s.pieces[p.k];
-      return pc ? pc.name + pc.skills.map(x => x.s).join('') : '';
-    }).join('');
-    return norm(txt).includes(needle);
-  });
+      if (!pc) return false;
+      return !needle || norm(s.name + pc.name).includes(needle)
+        || pc.skills.some(x => norm(x.s) === needle);
+    }).map(p => p.k),
+  })).filter(r => r.hit.length);
+}
 
-  $('#bd-modal-body').innerHTML = rows.length ? `<ul class="bd-blist">${rows.map(s => `
+/* 검색칸 자동완성(datalist)에 넣을 방어구 스킬 이름. 목록은 바뀌지 않으니 한 번만 모읍니다. */
+let bdSkNames = null;
+function bdArmorSkills() {
+  if (!bdSkNames) {
+    const all = new Set();
+    for (const s of BUILD.sets) for (const k in s.pieces) s.pieces[k].skills.forEach(x => all.add(x.s));
+    bdSkNames = [...all].sort((a, b) => a.localeCompare(b, 'ko'));
+  }
+  return bdSkNames;
+}
+
+function bdFillBulk(q) {
+  const parts = BD_PARTS();
+  const rows = bdBulkRows(q);
+
+  $('#bd-modal-body').innerHTML = rows.length ? `<ul class="bd-blist">${rows.map(({ s, hit }) => `
     <li class="bd-brow">
       ${bdMon(s.key)}
       <span class="bd-bn">${esc(s.name)}</span>
       <span class="bd-bp">${parts.map(p => {
         const pc = s.pieces[p.k];
-        if (!pc) return '<i class="bd-bx"></i>';
+        if (!pc || !hit.includes(p.k)) return '<i class="bd-bx"></i>';
         const on = bdBulk[p.k] === s.key;
         return `<button class="bd-bb${on ? ' on' : ''}" data-bulk-pick="${esc(s.key)}:${p.k}"
           title="${esc(pc.name)} · ${pc.skills.map(x => x.s + ' ' + x.lv).join(', ')}${pc.slot ? ' · 표류석 ' + pc.slot + '칸' : ''}">
@@ -366,7 +385,9 @@ function bdKakaoArgs(bi) {
   const b = bdState.builds[bi];
   const w = bdWeaponOf(b);
   const args = {
-    HEADER: bdTight([bdShareText(b).title, w ? w.name : ''].filter(Boolean).join('·')),
+    /* 빌드명을 직접 지었으면 그 이름만 씁니다. 이름이 없어 «대검 빌드» 같은
+       기본 제목이 될 때만 무기명을 덧붙입니다. */
+    HEADER: bdTight((b.n || '').trim() || [bdShareText(b).title, w ? w.name : ''].filter(Boolean).join('·')),
     /* 링크 칸에 쓰는 두 형태를 모두 보냅니다. 어느 쪽을 템플릿에 넣었든 맞습니다.
          ${URL}                                    → 전체 주소 (단독으로 넣을 때)
          https://mhn-kor.github.io/qr/?build=${BUILD}#build  → 쿼리 값 자리에 넣을 때
@@ -701,6 +722,11 @@ function bdOpen(title, bodyHtml, withSearch, opt = {}) {
   if (withSearch) {
     $('#bd-q').value = '';
     $('#bd-q').placeholder = opt.placeholder || '몬스터 · 장비 · 스킬 검색';
+    /* 스킬 자동완성은 부르는 쪽이 요청할 때만 붙입니다(일괄선택). */
+    if (opt.skills) {
+      $('#bd-sklist').innerHTML = bdArmorSkills().map(n => `<option value="${esc(n)}">`).join('');
+      $('#bd-q').setAttribute('list', 'bd-sklist');
+    } else $('#bd-q').removeAttribute('list');
   }
   bdDlg().showModal();
   if (withSearch) $('#bd-q').focus();

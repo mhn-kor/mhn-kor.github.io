@@ -1298,6 +1298,7 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 7px;
 }
 .rc-v b { font-variant-numeric: tabular-nums; }
+.rc-v.cm:hover { color: var(--amber-hi); border-color: rgba(233,161,59,.5); }
 .rc-v.up:hover, .rc-v.up.on { color: var(--jade); border-color: rgba(75,196,154,.5); background: rgba(75,196,154,.12); }
 .rc-v.down:hover, .rc-v.down.on { color: var(--red); border-color: rgba(224,90,80,.5); background: rgba(224,90,80,.12); }
 /* 태그와 같은 알약 모양을 씁니다. 숫자만 덩그러니 두면 그게 무슨 값인지 안 보입니다. */
@@ -1407,6 +1408,33 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rc-view-foot { flex: none; margin: 0 20px; padding: 12px 0 16px; border-top: 1px solid var(--line); }
 .rc-view-foot .btn { width: 100%; padding: 10px; }
 
+/* 댓글 */
+#rc-cm { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.rc-cm-h { margin: 0 0 8px; font-size: .84rem; letter-spacing: -.02em; }
+.rc-cm-h b { color: var(--amber); font-variant-numeric: tabular-nums; }
+.rc-cm-list { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 6px; }
+.rc-cm-i { padding: 7px 9px; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 8px; }
+.rc-cm-by {
+  display: flex; align-items: center; gap: 4px; margin: 0 0 3px;
+  font-size: .72rem; color: var(--muted);
+}
+.rc-cm-del { flex: none; margin-left: auto; }
+/* 줄바꿈은 그대로 살리고, 띄어쓰기 없는 긴 글이 창을 밀어내지 않게 끊습니다. */
+.rc-cm-b { margin: 0; font-size: .82rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rc-cm-empty { padding: 10px 2px; font-size: .78rem; color: var(--muted); text-align: center; }
+
+.rc-cm-form { display: grid; gap: 8px; }
+/* 좁은 화면에서는 닉네임·비밀번호가 세로로 쌓입니다. */
+.rc-cm-who { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rc-cm-form textarea {
+  width: 100%; box-sizing: border-box; resize: vertical; min-height: 52px;
+  font: inherit; font-size: .84rem; padding: 8px 10px;
+  color: var(--bone); background: rgba(255,255,255,.04);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.rc-cm-form textarea:focus { outline: none; border-color: rgba(233,161,59,.5); }
+#rc-cm-submit { justify-self: end; padding: 7px 16px; font-size: .8rem; }
+
 .bd-pvl { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 5px; }
 .bd-pv { display: flex; align-items: center; gap: 9px; padding: 6px 8px;
   background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 8px; }
@@ -1421,4 +1449,6 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   #rc-view { width: calc(100% - 16px); max-width: none;
     height: calc(100vh - 16px); height: calc(100dvh - 16px); max-height: none; }
   .rc-brief { margin-left: 0; }
+  /* 좁은 화면에서 닉네임·비밀번호를 나란히 두면 둘 다 못 읽을 만큼 좁아집니다. */
+  .rc-cm-who { grid-template-columns: 1fr; }
 }
