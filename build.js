@@ -220,7 +220,7 @@ function bdOpenBulk(bi) {
   bdPick = { kind: 'bulk', bi };
   bdBulk = {};
   for (const { k } of BD_PARTS()) bdBulk[k] = b[k] || null;
-  bdOpen('방어구 일괄선택', '', true, { placeholder: '몬스터 · 방어구 · 스킬 검색', skills: true });
+  bdOpen('방어구 일괄선택', '', true, { placeholder: '몬스터 · 방어구 · 스킬 검색' });
   bdFillBulk('');
 }
 
@@ -248,7 +248,7 @@ function bdBulkRows(q) {
   })).filter(r => r.hit.length);
 }
 
-/* 검색칸 자동완성(datalist)에 넣을 방어구 스킬 이름. 목록은 바뀌지 않으니 한 번만 모읍니다. */
+/* 자동완성에 띄울 방어구 스킬 이름. 목록은 바뀌지 않으니 한 번만 모읍니다. */
 let bdSkNames = null;
 function bdArmorSkills() {
   if (!bdSkNames) {
@@ -722,14 +722,6 @@ function bdOpen(title, bodyHtml, withSearch, opt = {}) {
   if (withSearch) {
     $('#bd-q').value = '';
     $('#bd-q').placeholder = opt.placeholder || '몬스터 · 장비 · 스킬 검색';
-    /* 스킬 자동완성은 부르는 쪽이 요청할 때만 붙입니다(일괄선택).
-       배포 직후 10분은 옛 index.html 과 새 build.js 가 섞일 수 있어(위 캐시 주석)
-       datalist 가 없을 수 있습니다. 그때는 자동완성만 빠지고 검색은 그대로 됩니다. */
-    const dl = $('#bd-sklist');
-    if (opt.skills && dl) {
-      dl.innerHTML = bdArmorSkills().map(n => `<option value="${esc(n)}">`).join('');
-      $('#bd-q').setAttribute('list', 'bd-sklist');
-    } else $('#bd-q').removeAttribute('list');
   }
   bdDlg().showModal();
   if (withSearch) $('#bd-q').focus();
@@ -962,6 +954,21 @@ $('#bd-q').addEventListener('input', e => {
   if (bdPick?.kind === 'gear') bdFillGear(v);
   else if (bdPick?.kind === 'ds') bdFillStone(v);
   else if (bdPick?.kind === 'bulk') bdFillBulk(v);
+});
+
+/* 스킬 이름 자동완성. 검색은 전체 일치라 이름을 다 쳐야 하므로, 치는 동안 후보를 띄웁니다.
+   후보는 부분 일치로 찾습니다(«공격» → 불속성 공격 강화…). 골라야 검색이 걸립니다.
+   목록은 app.js 의 nickAuto 를 그대로 씁니다 — datalist 는 너비도 위치도 브라우저가
+   정해 버려 입력칸과 어긋나고, 바로 뜨지도 않습니다(app.js 주석 참고).
+   #bd-q 는 다른 모달과 리더보드도 같이 쓰므로 일괄선택일 때만 후보를 냅니다. */
+nickAuto('#bd-q', '#bd-q-list', null, {
+  list: q => {
+    if (bdDlg().dataset.owner !== 'build' || bdPick?.kind !== 'bulk') return [];
+    const norm = t => String(t).toLowerCase().replace(/[\s　]+/g, '');
+    const needle = norm(q);
+    return bdArmorSkills().filter(s => norm(s).includes(needle)).slice(0, 12);
+  },
+  pick: v => bdFillBulk(v),
 });
 /* 합산·적용 줄은 #bd-modal-body 바깥의 footer 라 따로 받습니다. */
 $('#bd-bulk-foot').addEventListener('click', e => {

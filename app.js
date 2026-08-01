@@ -720,9 +720,13 @@ monDlg.addEventListener('click', e => { if (e.target === monDlg) monDlg.close();
        <input id="…" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="…-list">
        <ul class="rc-ac-list" id="…-list" role="listbox" hidden></ul>
      </div>
-     <small id="…-hint" hidden>친구 코드에 등록된 닉네임입니다.</small>            */
-function nickAuto(inputSel, listSel, hintSel) {
-  const inp = $(inputSel), box = $(listSel), hint = $(hintSel);
+     <small id="…-hint" hidden>친구 코드에 등록된 닉네임입니다.</small>
+
+   opt 로 닉네임 말고 다른 것도 채울 수 있습니다(빌드 탭 스킬 검색이 씁니다).
+     list(q) → 후보 배열. 주면 서버 대신 이걸 씁니다. 손안에 있으니 기다리지 않고 곧바로 그립니다.
+     pick(v) → 골랐을 때. hintSel 은 null 이면 없는 대로 둡니다.                    */
+function nickAuto(inputSel, listSel, hintSel, opt = {}) {
+  const inp = $(inputSel), box = $(listSel), hint = hintSel ? $(hintSel) : null;
   let timer, items = [], at = -1;
 
   const close = () => { box.hidden = true; inp.setAttribute('aria-expanded', 'false'); at = -1; };
@@ -734,7 +738,13 @@ function nickAuto(inputSel, listSel, hintSel) {
     box.hidden = false;
     inp.setAttribute('aria-expanded', 'true');
   };
-  const pick = i => { if (!items[i]) return; inp.value = items[i]; hint.hidden = false; close(); };
+  const pick = i => {
+    if (!items[i]) return;
+    inp.value = items[i];
+    if (hint) hint.hidden = false;
+    close();
+    if (opt.pick) opt.pick(items[i]);
+  };
   const move = d => {
     if (box.hidden || !items.length) return;
     at = (at + d + items.length) % items.length;
@@ -749,9 +759,11 @@ function nickAuto(inputSel, listSel, hintSel) {
   inp.addEventListener('input', () => {
     clearTimeout(timer);
     const q = inp.value.trim();
-    hint.hidden = true;
+    if (hint) hint.hidden = true;
     at = -1;
     if (!q) return close();
+    /* 손안의 목록은 기다릴 이유가 없습니다. 한 글자마다 곧바로 그립니다. */
+    if (opt.list) return show(opt.list(q));
     /* 글자마다 부르면 요청이 쏟아집니다. 손을 멈춘 뒤에 한 번만 묻습니다. */
     timer = setTimeout(async () => {
       try {
@@ -766,7 +778,7 @@ function nickAuto(inputSel, listSel, hintSel) {
         }
         if (inp.value.trim() !== q) return;        // 그새 더 쳤으면 버립니다
         show(seen);
-        hint.hidden = !seen.includes(q);
+        if (hint) hint.hidden = !seen.includes(q);
       } catch (e) { /* 자동완성은 없어도 등록에 지장이 없습니다 */ }
     }, 250);
   });

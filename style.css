@@ -682,7 +682,8 @@ h2.sec em { font-style: normal; color: var(--amber-hi); }
 }
 #bd-modal-close:hover { color: var(--bone); background: rgba(255,255,255,.12); }
 #bd-modal h2 img { width: 24px; height: 24px; flex: none; }
-.bd-srow { display: flex; align-items: center; gap: 8px; margin: 0 20px 12px; }
+/* position 은 스킬 자동완성 목록(#bd-q-list)의 기준입니다. 검색줄 너비에 딱 맞습니다. */
+.bd-srow { position: relative; display: flex; align-items: center; gap: 8px; margin: 0 20px 12px; }
 .bd-srow[hidden] { display: none; }
 .bd-search {
   display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
