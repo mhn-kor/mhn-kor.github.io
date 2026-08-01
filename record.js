@@ -134,6 +134,7 @@ let rkRows = [];
 let rkTop = new Map();      // 기록 id → 판 안에서의 순위(1~3). 데이터가 바뀔 때만 다시 셉니다.
 let rkFailed = false;
 let rkDrawn = false;
+let rkPager = null;         // 목록을 조금씩 그립니다 (app.js 의 makePager)
 /* 처음 열었을 때의 필터. ★10 으로 시작합니다 — 최고 난이도 기록을 보러 오는 사람이
    대부분이고, 전체로 두면 같은 몬스터가 난이도별로 여러 줄 섞여 나옵니다.
    «필터 초기화»도 전체가 아니라 이 상태로 되돌립니다. */
@@ -255,7 +256,12 @@ function rkRender() {
      (왕관은 데이터에서 세므로 어떤 순서로 보든 그대로입니다). */
   const ranked = !!rkF.monster && rkSort === 'time';
 
-  $('#rk-list').innerHTML = rkShown.map((r, i) => rkItem(r, i, ranked ? i + 1 : 0)).join('');
+  /* app.js 가 record.js 뒤에 로드되므로 최상위가 아니라 여기서 만듭니다(파일 머리 주석 참고).
+     크게 보기의 이전/다음은 rkShown 전체를 넘기므로, 안 그린 뒷줄로도 넘어갑니다. */
+  if (!rkPager) rkPager = makePager(24, rkRender);
+  const list = $('#rk-list');
+  list.innerHTML = rkPager.take(rkShown).map((r, i) => rkItem(r, i, ranked ? i + 1 : 0)).join('');
+  rkPager.watch(list, rkShown);
   $('#rk-count').textContent = rkShown.length === rkRows.length
     ? `${rkRows.length}건`
     : `${rkShown.length}건 / 전체 ${rkRows.length}건`;

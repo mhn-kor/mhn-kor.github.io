@@ -38,6 +38,30 @@ function closeOnBackdrop(dlg) {
    스크립트는 전부 dialog 마크업 뒤에서 로드되므로 여기서 한 번에 겁니다. */
 document.querySelectorAll('dialog').forEach(closeOnBackdrop);
 
+/* ── 목록을 조금씩 그리기 ──────────────────────────────────────────
+   손안에 있는 배열에서 «화면에 얹는 양»만 나눕니다. 서버를 다시 부르지 않으므로
+   왕관·명예의 전당처럼 전체를 봐야 맞는 계산과 «N건» 표시가 그대로 맞습니다.
+   서버에서 끊어 받는 것은 다른 이야기입니다 — 친구 코드 탭의 loadChunk 를 보세요.
+
+   일부러 «처음으로 되돌리기»를 두지 않았습니다. 필터를 바꿔도 이미 늘려 둔 만큼
+   그리는데, 그건 사용자가 스크롤로 직접 요청한 양이고 최악이라도 지금과 같습니다. */
+function makePager(step, redraw) {
+  let n = step;
+  const io = new IntersectionObserver(
+    es => { if (es.some(e => e.isIntersecting)) { n += step; redraw(); } },
+    { rootMargin: '600px' });
+  return {
+    take: rows => rows.slice(0, n),
+    /* 마지막 카드가 다가오면 늘립니다. 따로 버튼을 두지 않아 감시 대상이 목록 안에
+       있고, 그릴 때마다 마지막이 바뀌므로 다시 겁니다. 다 그렸으면 감시를 끊어
+       스스로 멈춥니다. 앞에서부터 자르므로 카드에 박힌 번호(data-i)는 그대로입니다. */
+    watch: (list, rows) => {
+      io.disconnect();
+      if (rows.length > n && list.lastElementChild) io.observe(list.lastElementChild);
+    },
+  };
+}
+
 /* 앱 친구추가 딥링크. 코드는 항상 숫자 12자리로 검증한 뒤에만 넣습니다. */
 const addFriendUrl = code => 'mhnow:///ADDFRIEND?FRIEND_ID=' + code;
 

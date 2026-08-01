@@ -31,6 +31,7 @@ let rcRows = [];
 let rcMine = {};                 // { 빌드id: 1 | -1 }  내가 누른 것
 let rcFilter = { weapon: '', tier: '', scene: '', party: '', easy: false };
 let rcLoaded = false;
+let rcPager = null;         // 목록을 조금씩 그립니다 (app.js 의 makePager)
 
 /* 기기 식별자. 표를 기기당 한 번으로 묶는 데만 씁니다(서버는 여기에 IP 를 더해 해싱).
    지우면 다시 누를 수 있지만, IP 가 같으면 서버가 같은 사람으로 봅니다. */
@@ -86,10 +87,13 @@ function rcMatch(r) {
 function rcRender() {
   rcChips();
   const rows = rcRows.filter(rcMatch);
-  $('#rc-count').textContent = `${rows.length}개`;
-  $('#rc-list').innerHTML = rows.length
-    ? rows.map((r, i) => rcCard(r, i + 1)).join('')
+  $('#rc-count').textContent = `${rows.length}개`;   // 개수는 늘 «거른 전체»입니다
+  if (!rcPager) rcPager = makePager(12, rcRender);
+  const list = $('#rc-list');
+  list.innerHTML = rows.length
+    ? rcPager.take(rows).map((r, i) => rcCard(r, i + 1)).join('')
     : `<p class="bd-empty">${rcRows.length ? '조건에 맞는 빌드가 없습니다.' : '아직 등록된 추천 빌드가 없습니다. 빌드 탭에서 올려 보세요.'}</p>`;
+  rcPager.watch(list, rows);
 }
 
 function rcCard(r, rank) {
