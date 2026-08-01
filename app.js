@@ -837,19 +837,28 @@ const saveNick = n => localStorage.setItem(NICK_KEY, n);
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {
   const h = location.hash.slice(1);
-  const tab = ['codes', 'smelt', 'build', 'material', 'record', 'recommend'].includes(h) ? h : 'notice';
-  for (const t of ['notice', 'codes', 'smelt', 'build', 'material', 'record', 'recommend']) $('#panel-' + t).hidden = tab !== t;
+  const tab = ['codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend'].includes(h) ? h : 'notice';
+  for (const t of ['notice', 'codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend']) $('#panel-' + t).hidden = tab !== t;
   if (tab === 'smelt') drawSmelt();
   // build.js 는 app.js 의 $ / esc / toast 를 쓰므로 뒤에 로드됩니다.
   // 첫 호출 시점에는 아직 없을 수 있어 확인 후 부릅니다(로드 직후 스스로 한 번 그립니다).
   if (tab === 'build' && typeof drawBuild === 'function') drawBuild();
   if (tab === 'material') drawMaterial();
   if (tab === 'record') drawRecord();
+  if (tab === 'rank') drawRank();          // 리더보드와 같은 목록을 record.js 가 같이 그립니다
   if (tab === 'recommend' && typeof drawRecommend === 'function') drawRecommend();
   for (const a of document.querySelectorAll('.tabs a')) {
     a.toggleAttribute('aria-current', a.dataset.tab === tab);
   }
   if (tab === 'codes') refresh();
+  /* 탭은 해시만 바꾸므로 공유 링크로 들어왔을 때 ?build= · ?rec= 가 다른 탭까지 따라옵니다.
+     그 주소를 복사해 나눠 주면 남의 빌드·기록이 딸려 가고, 그 자리에서 새로고침하면
+     저장해 둔 내 빌드 대신 링크의 빌드가 다시 열립니다. 그 값을 읽는 탭에서만 남깁니다.
+     주소만 갈아 끼웁니다(replaceState) — 뒤로 가기 기록은 건드리지 않습니다. */
+  const url = new URL(location);
+  if (tab !== 'build') url.searchParams.delete('build');
+  if (tab !== 'record' && tab !== 'rank') url.searchParams.delete('rec');
+  if (url.href !== location.href) history.replaceState(null, '', url);
 }
 window.addEventListener('hashchange', () => { showTab(); window.scrollTo(0, 0); });
 // 이미 친구 코드 탭에 있을 때 탭을 다시 눌러도 새로고침되도록 (hashchange 가 안 뜸)
