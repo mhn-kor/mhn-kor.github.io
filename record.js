@@ -18,6 +18,8 @@ const RK_STARS = [8, 9, 10];
 /* 고룡은 ★6 과 ★8 만 있고 ★8 이 가장 높습니다. 최속 기록은 최고 난이도에서만 뜻이 있으므로
    ★6 은 아예 받지 않고, 등록도 랭킹도 ★8 하나로 고정합니다. */
 const RK_ELDER_STAR = 8;
+/* 리더보드 «종류» 칩에만 있는 값입니다. DB 의 variant 가 아니라 몬스터 갈래라 등록칸에는 없습니다. */
+const RK_ELDER_F = 'elder';
 
 /* ── 영상 URL ──────────────────────────────────────────────────────
    유튜브(숏츠·일반)와 X 만 받습니다. 지원하지 않는 주소는 null 이라 등록에서 막힙니다. */
@@ -146,8 +148,21 @@ const rkPickHtml = (kind, v, empty) => {
     + `<b${it ? '' : ' class="empty"'}>${esc(it ? it.n : empty)}</b>`;
 };
 
+const rkElder = id => (rkMon(id) || {}).group === 'elder';
+
+/* 카드·크게 보기에 붙는 갈래 딱지. 일반 몬스터의 «일반»은 대부분이라 적지 않습니다 — 소음이 됩니다. */
+const rkKindChip = r => (r.variant === 'dim' ? '<span class="chip dim">차원변이</span>'
+  : rkElder(r.monster) ? '<span class="chip elder">고룡</span>' : '');
+
+/* «종류» 칩은 셋이 겹치지 않게 나눕니다 — 일반 · 차원변이 · 고룡을 합치면 전체가 됩니다.
+   고룡은 variant 값이 아니라 몬스터 갈래(MATERIAL 의 group)라 여기서만 갈라 봅니다.
+   고룡은 늘 variant='normal' 이므로 «일반»에서는 빼야 셋이 서로 겹치지 않습니다. */
+const rkVariantPass = r => (rkF.variant === RK_ELDER_F ? rkElder(r.monster)
+  : rkF.variant === 'normal' ? r.variant === 'normal' && !rkElder(r.monster)
+  : r.variant === rkF.variant);
+
 const rkPass = r => (!rkF.star || r.star === rkF.star)
-  && (!rkF.variant || r.variant === rkF.variant)
+  && (!rkF.variant || rkVariantPass(r))
   && (!rkF.monster || r.monster === rkF.monster)
   && (!rkF.weapon || r.weapon === rkF.weapon)
   && (!rkF.style || r.style === rkF.style);
@@ -237,7 +252,7 @@ function rkItem(r, i, rank) {
       <div class="rk-tags">
         <span class="chip">${mon ? `<img class="rk-mi" src="assets/monster/${esc(mon.icon)}.png" width="16" height="16" alt="" loading="lazy">` : ''}${esc(mon ? mon.name : r.monster)}</span>
         <span class="chip star">★${r.star}</span>
-        ${r.variant === 'dim' ? '<span class="chip dim">차원변이</span>' : ''}
+        ${rkKindChip(r)}
         <span class="chip">${esc(rkWeaponName(r.weapon))}${r.style ? ` <b>${esc(r.style)}</b>` : ''}</span>
       </div>
     </div>
@@ -263,7 +278,7 @@ function rkFilterUI() {
     <p class="stone-label">난이도</p>
     ${rkChips('star', [RK_ALL, ...RK_STARS.map(s => [s, '★' + s])])}
     <p class="stone-label">종류</p>
-    ${rkChips('variant', [RK_ALL, ...Object.entries(RK_VARIANT)])}
+    ${rkChips('variant', [RK_ALL, ...Object.entries(RK_VARIANT), [RK_ELDER_F, '고룡']])}
     <p class="stone-label">몬스터 · 무기</p>
     <div class="rk-selects">
       <div class="field"><span>몬스터</span>
@@ -480,7 +495,7 @@ function rkOpenView(i, list) {
   $('#rk-v-tags').innerHTML = `
     <span class="chip">${mon ? `<img class="rk-mi" src="assets/monster/${esc(mon.icon)}.png" width="16" height="16" alt="">` : ''}${esc(mon ? mon.name : r.monster)}</span>
     <span class="chip star">★${r.star}</span>
-    ${r.variant === 'dim' ? '<span class="chip dim">차원변이</span>' : ''}
+    ${rkKindChip(r)}
     <span class="chip">${esc(rkWeaponName(r.weapon))}${r.style ? ` <b>${esc(r.style)}</b>` : ''}</span>`;
 
   /* X 임베드는 제 높이를 알려주지 않아 CSS 로 고정합니다. 유튜브만 세로 비율입니다. */
@@ -766,6 +781,7 @@ function rnRender() {
   const all = [...normal, ...elders];
   const n = all.reduce((s, [, c]) => s + c.reduce((t, [, l]) => t + l.length, 0), 0);
   $('#rn-count').textContent = `${all.filter(([, c]) => rnCount(c)).length}종 기록 · 총 ${n}건`;
+  rnHallDraw(all.flatMap(([, c]) => c.map(([, l]) => l)));
 
   const state = $('#rn-state');
   state.hidden = !rkFailed;
@@ -775,6 +791,50 @@ function rnRender() {
 /* 기록이 하나라도 있으면 1, 없으면 0. 정렬은 «있다/없다»로만 가릅니다 —
    건수로 줄을 세우면 3건짜리가 1위 기록이 더 빠른 줄보다 위로 올라옵니다. */
 const rnCount = c => (c.some(([, l]) => l.length) ? 1 : 0);
+
+/* ── 명예의 전당 ────────────────────────────────────────────────────
+   토벌 시간은 몬스터마다 달라 서로 비교할 수 없습니다. 하지만 «왕관 수»는 비교됩니다 —
+   지금 보고 있는 판들에서 1·2·3위를 몇 개씩 가졌는지 세어 헌터끼리 줄을 세웁니다.
+   같은 사람인지는 닉네임으로만 압니다(이 사이트는 어디서나 닉네임이 곧 이름입니다). */
+function rnHall(boards) {
+  const by = new Map();
+  for (const list of boards) {
+    list.slice(0, 3).forEach((r, i) => {
+      const e = by.get(r.nickname) || { nick: r.nickname, c: [0, 0, 0], best: r };
+      e.c[i]++;
+      if (r.time_sec < e.best.time_sec) e.best = r;   // 자랑거리로 붙일 «가장 빠른 기록»
+      by.set(r.nickname, e);
+    });
+  }
+  // 금이 먼저, 같으면 은 · 동 순. 그래도 같으면 이름순 — 그릴 때마다 순서가 바뀌면 안 됩니다.
+  return [...by.values()].sort((a, b) =>
+    b.c[0] - a.c[0] || b.c[1] - a.c[1] || b.c[2] - a.c[2] || a.nick.localeCompare(b.nick, 'ko'));
+}
+
+const RN_MEDAL = ['금', '은', '동'];
+const rnMedals = c => c.map((n, i) => (n
+  ? `<span class="hall-m c${i + 1}" title="${RN_MEDAL[i]}관 ${n}개">${RK_CROWN}<b>${n}</b></span>` : '')).join('');
+
+function rnHallDraw(boards) {
+  const hall = rnHall(boards);
+  $('#rn-hall').hidden = !hall.length;
+  if (!hall.length) return;
+
+  $('#rn-podium').innerHTML = hall.slice(0, 3).map((h, i) => `
+    <li class="pod p${i + 1}">
+      <span class="pod-rank">${i + 1}</span>
+      <span class="pod-crown">${RK_CROWN}</span>
+      <b class="pod-nick">${esc(h.nick)}</b>
+      <span class="pod-medals">${rnMedals(h.c)}</span>
+      <span class="pod-best">최속 ${rkTime(h.best.time_sec)} · ${esc(rkMon(h.best.monster) ? rkMon(h.best.monster).name : h.best.monster)}</span>
+    </li>`).join('');
+
+  /* 4위부터는 명패 한 줄씩. 열 명까지만 — 그 아래는 왕관이 하나뿐이라 줄 세우는 뜻이 옅어집니다. */
+  const rest = hall.slice(3, 10);
+  $('#rn-rest').hidden = !rest.length;
+  $('#rn-rest').innerHTML = rest.map((h, i) => `
+    <li><span class="hall-no">${i + 4}</span><b>${esc(h.nick)}</b>${rnMedals(h.c)}</li>`).join('');
+}
 
 function rnRow(mon, cols) {
   return `
@@ -797,7 +857,7 @@ function rnCol(mon, variant, list) {
       </p>
       ${list.length ? `<ol class="rn-top">
         ${list.slice(0, 3).map((x, i) => `
-          <li><button class="rn-e" type="button" data-k="${esc(rnKey(mon, variant))}" data-i="${i}"
+          <li><button class="rn-e${i ? '' : ' first'}" type="button" data-k="${esc(rnKey(mon, variant))}" data-i="${i}"
                       aria-label="${esc(mon.name)} ${RK_VARIANT[variant]} ${i + 1}위 ${esc(x.nickname)} ${rkTime(x.time_sec)} 영상 크게 보기">
             ${rkCrown(i + 1)}
             <span class="rn-nick">${esc(x.nickname)}</span>

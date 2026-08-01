@@ -961,6 +961,8 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   * { transition: none !important; }
+  /* 1위 상패를 스치는 빛. 움직임을 원치 않는 사람에게는 멈춰 둡니다. */
+  .pod.p1::after { animation: none; }
 }
 
 /* ── 재료 ─────────────────────────────── */
@@ -1198,6 +1200,7 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rk-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .rk-tags .chip.star { color: var(--amber-hi); }
 .rk-tags .chip.dim { color: #CBA6F7; background: rgba(160,120,230,.16); border-color: rgba(160,120,230,.45); }
+.rk-tags .chip.elder { color: #7FE3C0; background: rgba(75,196,154,.14); border-color: rgba(75,196,154,.42); }
 /* 빌드가 딸린 기록. 카드 아래에 «빌드 보기» 버튼을 두면 그 카드만 키가 커져 줄이
    들쭉날쭉해집니다. 썸네일 왼쪽 아래에 표시만 하고, 여는 것은 크게 보기 창의
    «빌드 보기» 가 맡습니다. */
@@ -1284,7 +1287,135 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 }
 
 /* ── 랭킹 ──────────────────────────────────────────
-   한 줄이 판 하나(몬스터 · 난이도 · 종류)입니다. 왼쪽에 몬스터, 오른쪽에 1 · 2 · 3위. */
+   기록을 올린 사람이 «내 이름이 저기 있다»고 느껴야 하는 화면이라, 다른 탭보다 빛과 여백을
+   넉넉히 씁니다. 색은 사이트 그대로 호박빛 · 뼈색이고 새 글꼴도 새 이미지도 쓰지 않습니다 —
+   빛(그라디언트 · 후광)과 크기 차이만으로 위계를 만듭니다. */
+.rn-hero h1 { font-size: clamp(1.75rem, 5vw, 2.9rem); }
+/* 금박 글자. 배경을 글자 모양으로 오려 냅니다. */
+.rn-hero h1 em {
+  background: linear-gradient(122deg, #FBE7B4 10%, #E9A13B 50%, #FBE7B4 90%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* 전당 상패. 위쪽 금빛 선과 머리 위 후광이 «벽에 걸린 판» 을 만듭니다. */
+.hall {
+  position: relative; overflow: hidden; margin: 22px 0 26px; padding: 30px 20px 24px;
+  background:
+    radial-gradient(120% 86% at 50% -28%, rgba(233,161,59,.20), transparent 64%),
+    linear-gradient(180deg, #1F1911, #16110D);
+  border: 1px solid var(--line); clip-path: var(--bevel);
+}
+.hall[hidden] { display: none; }
+.hall::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+}
+.hall-h {
+  margin: 0 0 20px; text-align: center;
+  font-size: .74rem; font-weight: 700; letter-spacing: .2em; color: var(--amber);
+}
+.hall-h span { display: inline-flex; align-items: center; gap: 12px; }
+.hall-h span::before, .hall-h span::after {
+  content: ""; width: 36px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(233,161,59,.75));
+}
+.hall-h span::after { transform: scaleX(-1); }
+
+/* 시상대 — 1위 가운데, 2위 왼쪽, 3위 오른쪽. 읽는 순서(1·2·3)는 그대로 두고 자리만 옮깁니다. */
+/* 넓은 화면에서 폭을 풀어 두면 상패 셋이 현수막처럼 늘어져 시상대로 안 보입니다. */
+.podium {
+  list-style: none; margin: 0 auto; padding: 0; max-width: 720px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: end;
+}
+.pod {
+  position: relative; display: grid; justify-items: center; align-content: end; gap: 5px;
+  min-width: 0; min-height: 150px; padding: 16px 8px 14px; text-align: center;
+  background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.012));
+  border: 1px solid var(--line); border-radius: 10px 10px 3px 3px;
+}
+.pod.p1 {
+  order: 2; min-height: 202px; padding-top: 24px;
+  border-color: rgba(233,161,59,.5);
+  background: linear-gradient(180deg, rgba(233,161,59,.20), rgba(233,161,59,.03) 62%);
+  box-shadow: 0 -20px 44px -20px rgba(233,161,59,.55) inset, 0 10px 34px rgba(0,0,0,.45);
+}
+.pod.p2 {
+  order: 1; min-height: 174px;
+  border-color: rgba(190,200,214,.3);
+  background: linear-gradient(180deg, rgba(214,222,232,.12), rgba(255,255,255,.012) 62%);
+}
+.pod.p3 {
+  order: 3;
+  border-color: rgba(206,138,87,.32);
+  background: linear-gradient(180deg, rgba(206,138,87,.13), rgba(255,255,255,.012) 62%);
+}
+/* 1위 상패에만 도는 빛. 5초에 한 번 스치듯 지나갑니다 — 계속 번쩍이면 이름을 못 읽습니다. */
+.pod.p1::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(102deg, transparent 42%, rgba(255,240,205,.2) 50%, transparent 58%);
+  background-size: 280% 100%; background-repeat: no-repeat;
+  animation: pod-shine 5.4s ease-in-out infinite;
+}
+@keyframes pod-shine { 0%, 70% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+
+.pod-rank {
+  position: absolute; top: 7px; left: 10px;
+  font-size: .72rem; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.pod-crown {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  color: #241D16; background: linear-gradient(135deg, #F7D98A, #DFA22E);
+}
+.pod-crown svg { width: 20px; height: 20px; }
+.pod.p1 .pod-crown { width: 54px; height: 54px; box-shadow: 0 0 30px rgba(245,197,107,.5); }
+.pod.p1 .pod-crown svg { width: 27px; height: 27px; }
+.pod.p2 .pod-crown { background: linear-gradient(135deg, #EFF3F8, #B4BDC9); }
+.pod.p3 .pod-crown { background: linear-gradient(135deg, #E3AA78, #AE6C3A); }
+
+.pod-nick {
+  max-width: 100%; font-size: .9rem; font-weight: 800; letter-spacing: -.02em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pod.p1 .pod-nick { font-size: 1.14rem; color: #FBE7B4; text-shadow: 0 0 26px rgba(245,197,107,.4); }
+.pod-medals { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.pod-best { max-width: 100%; font-size: .7rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 금 · 은 · 동 개수. 왕관과 같은 색을 써서 목록의 왕관과 곧바로 이어집니다. */
+.hall-m {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 6px 2px 4px; border-radius: 999px;
+  font-size: .68rem; font-weight: 800; color: #241D16;
+  background: linear-gradient(135deg, #F7D98A, #DFA22E);
+  font-variant-numeric: tabular-nums;
+}
+.hall-m svg { width: 10px; height: 10px; }
+.hall-m.c2 { background: linear-gradient(135deg, #EFF3F8, #B4BDC9); }
+.hall-m.c3 { background: linear-gradient(135deg, #E3AA78, #AE6C3A); }
+
+/* 4위부터는 명패 한 줄씩. 시상대와 같은 무게로 두면 1위가 묻힙니다. */
+.hall-rest {
+  list-style: none; margin: 18px 0 0; padding: 16px 0 0; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 6px;
+}
+.hall-rest[hidden] { display: none; }
+.hall-rest li {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px 5px 7px; font-size: .8rem;
+  background: rgba(255,255,255,.04); border: 1px solid var(--line); border-radius: 999px;
+}
+.hall-no { min-width: 17px; text-align: center; font-size: .7rem; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 560px) {
+  /* 세 칸을 유지하면 한 칸이 110px 남짓이라 닉네임이 두 글자만 남습니다.
+     1위를 위에 넓게 두고 2 · 3위를 아래 나란히 세웁니다. */
+  .podium { grid-template-columns: 1fr 1fr; }
+  .pod { min-height: 0; }
+  .pod.p1 { order: 0; grid-column: 1 / -1; min-height: 0; }
+  .pod.p2 { order: 1; min-height: 0; }
+  .pod.p3 { order: 2; }
+}
+
+/* 한 줄이 판 하나(몬스터 · 난이도 · 종류)입니다. 왼쪽에 몬스터, 오른쪽에 1 · 2 · 3위. */
 .rn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .rn-row {
   display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px;
@@ -1292,7 +1423,8 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   background: var(--surface); border: 1px solid var(--line); clip-path: var(--bevel);
 }
 .rn-mon { display: flex; align-items: center; gap: 10px; min-width: 0; align-self: center; }
-.rn-mon > img { width: 42px; height: 42px; flex: none; object-fit: contain; }
+/* 아이콘 뒤에 옅은 불빛. 어두운 판에서 몬스터가 «떠 있게» 보입니다. */
+.rn-mon > img { width: 42px; height: 42px; flex: none; object-fit: contain; filter: drop-shadow(0 2px 10px rgba(233,161,59,.22)); }
 /* minmax(0,…) 과 같은 이유로 min-width:0 — 긴 몬스터 이름이 칸을 밀어냅니다. */
 .rn-mon > b { min-width: 0; font-size: .95rem; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 일반 · 차원변이 한 칸씩. 머리에 종류 칩을 달아 두 칸을 헷갈리지 않게 합니다. */
@@ -1315,6 +1447,14 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 }
 .rn-e:hover { background: #2E251C; border-color: rgba(233,161,59,.45); }
 .rn-e:focus-visible { outline: 2px solid var(--amber); outline-offset: -1px; }
+/* 1위만 금빛을 입힙니다. 셋이 같은 무게면 «누가 1위인지»가 왕관 하나에만 걸립니다. */
+.rn-e.first {
+  background: linear-gradient(100deg, rgba(233,161,59,.17), rgba(233,161,59,.03) 62%);
+  border-color: rgba(233,161,59,.4);
+}
+.rn-e.first:hover { background: linear-gradient(100deg, rgba(233,161,59,.26), rgba(233,161,59,.06) 62%); }
+.rn-e.first .rn-nick { font-size: .92rem; color: #FBE7B4; }
+.rn-e.first .rn-t { font-size: 1rem; text-shadow: 0 0 18px rgba(245,197,107,.3); }
 .rn-nick { min-width: 0; font-size: .86rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rn-t { font-size: .92rem; font-weight: 800; color: var(--amber-hi); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
 .rn-wp { grid-column: 2 / -1; font-size: .74rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

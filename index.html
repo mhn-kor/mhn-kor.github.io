@@ -24,7 +24,7 @@
 <!-- GitHub Pages 는 파일마다 max-age=600 으로 따로 캐시합니다. 새 index.html 과 옛 style.css 가
      10분간 섞일 수 있으므로 버전을 붙여 강제로 새로 받게 합니다.
      style.css / app.js 를 고칠 때마다 아래 두 곳의 v= 값을 같이 올려주세요. -->
-<link rel="stylesheet" href="style.css?v=20260802r">
+<link rel="stylesheet" href="style.css?v=20260802s">
 </head>
 <body>
 
@@ -307,14 +307,23 @@
      리더보드와 같은 기록을 몬스터별로 접어 1·2·3위만 보여줍니다. record.js 가 그립니다. -->
 <section class="wrap panel" id="panel-rank" hidden>
 
-  <div class="hero tight">
-    <span class="kicker">랭킹</span>
-    <h1>몬스터별 <em>왕관</em> 순위표</h1>
-    <p>난이도를 고르면 <b>모든 몬스터</b>가 한 줄씩 줄을 섭니다. 한 줄 안에서 <b>일반과 차원변이</b>가 나란히, 각각 1 · 2 · 3위에 금 · 은 · 동 왕관이 붙습니다.<br>
+  <div class="hero tight rn-hero">
+    <span class="kicker">명예의 전당</span>
+    <h1>이 이름들은 <em>기록으로 남습니다</em></h1>
+    <p>난이도를 고르면 <b>모든 몬스터</b>가 한 줄씩 줄을 섭니다. 한 줄 안에서 <b>일반과 차원변이</b>가 나란히,
+       각각 1 · 2 · 3위에 금 · 은 · 동 왕관이 붙습니다.<br>
        같은 시간이면 <b>먼저 올린 기록</b>이 위입니다. 이름을 누르면 그 영상을 크게 볼 수 있습니다.</p>
   </div>
 
   <div class="card-box mt-filter" id="rn-filter"></div>
+
+  <!-- 헌터별 왕관 수. 토벌 시간은 몬스터마다 달라 비교할 수 없지만 왕관 수는 비교됩니다.
+       내용은 record.js 의 rnHallDraw 가 채웁니다. -->
+  <section class="hall" id="rn-hall" hidden aria-labelledby="rn-hall-h">
+    <p class="hall-h" id="rn-hall-h"><span>왕관을 가장 많이 쓴 헌터</span></p>
+    <ol class="podium" id="rn-podium"></ol>
+    <ol class="hall-rest" id="rn-rest" hidden></ol>
+  </section>
 
   <div class="bd-tools">
     <a class="btn ghost" href="#record">리더보드에서 기록 등록</a>
@@ -693,24 +702,24 @@
      됩니다(SDK 기본 템플릿은 3줄 제한). 비우면 3줄 예비 카드로 내려갑니다. */
   window.KAKAO_TEMPLATE_ID = 135805;
 </script>
-<script src="smelt-data.js?v=20260802r"></script>
-<script src="build-data.js?v=20260802r"></script>
-<script src="build-styles.js?v=20260802r"></script>
-<script src="skill-desc.js?v=20260802r"></script>
+<script src="smelt-data.js?v=20260802s"></script>
+<script src="build-data.js?v=20260802s"></script>
+<script src="build-styles.js?v=20260802s"></script>
+<script src="skill-desc.js?v=20260802s"></script>
 <!-- material.js 는 app.js 보다 먼저 읽혀야 합니다. 첫 화면이 #material 이면
      app.js 가 곧바로 drawMaterial() 을 부릅니다. -->
-<script src="material-data.js?v=20260802r"></script>
-<script src="material.js?v=20260802r"></script>
+<script src="material-data.js?v=20260802s"></script>
+<script src="material.js?v=20260802s"></script>
 <!-- record.js 도 app.js 의 showTab() 이 곧바로 부를 수 있으므로 먼저 읽힙니다.
      app.js 의 $ / esc / rest 는 함수 안에서만 쓰므로 순서가 앞서도 됩니다. -->
-<script src="record.js?v=20260802r"></script>
+<script src="record.js?v=20260802s"></script>
 <script src="vendor/qrcode.min.js"></script>
-<script src="app.js?v=20260802r"></script>
+<script src="app.js?v=20260802s"></script>
 <!-- build.js 는 app.js 의 $ / esc / toast 를 씁니다. 반드시 뒤에 둡니다.
      showTab() 은 DOMContentLoaded 이후 호출되므로 순서가 늦어도 됩니다. -->
-<script src="build.js?v=20260802r"></script>
+<script src="build.js?v=20260802s"></script>
 <!-- recommend.js 는 app.js 의 $ / rest / toast 와 build.js 의 bdAdopt 를 씁니다.
      둘 다 로드된 뒤여야 하므로 맨 뒤에 둡니다. -->
-<script src="recommend.js?v=20260802r"></script>
+<script src="recommend.js?v=20260802s"></script>
 </body>
 </html>
