@@ -4,7 +4,8 @@
    (스키마 CHECK 가 막아 등록이 통째로 실패) 순위가 어긋납니다.
    record.js 의 rkVid / rkCanon / rkParse / rkTime 을 고쳤다면 반드시 돌려보세요. */
 const path = require('path');
-const { rkVid, rkCanon, rkEmbed, rkTime, rkParse, rkBuildParam } = require(path.join(__dirname, '..', 'record.js'));
+const { rkVid, rkCanon, rkEmbed, rkTime, rkParse, rkBuildParam,
+  rkOrder, rkKey, rkGroup, rkTopMap } = require(path.join(__dirname, '..', 'record.js'));
 
 // supabase/schema.sql 의 video_url CHECK 와 같은 식입니다. 여기가 통과하면 DB 도 통과합니다.
 const CHECK = /^https:\/\/(www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|x\.com\/i\/status\/[0-9]{5,25})$/;
@@ -89,5 +90,33 @@ ok('로컬 주소도', rkBuildParam('http://localhost:8080/?build=w%3Dnarg#build
 ok('빌드가 아닌 링크', rkBuildParam('https://mhn-kor.github.io/qr/#build'), null);
 ok('빈 값', rkBuildParam(''), null);
 
-console.log(fail ? `실패 ${fail}건` : '통과 — 영상 URL · 시간 · 빌드 링크');
+/* ── 순위 (랭킹 탭 · 리더보드 왕관) ──────────────────────────────
+   판은 «몬스터 · 난이도 · 종류»이고, 같은 시간이면 먼저 올린 쪽이 위입니다. */
+const rec = (id, monster, star, variant, time_sec, created_at) =>
+  ({ id, monster, star, variant, time_sec, created_at });
+
+ok('판 이름', rkKey(rec(1, 'rathalos', 10, 'dim', 45, '')), 'rathalos|10|dim');
+
+const rows = [
+  rec(1, 'rathalos', 10, 'dim', 50, '2026-07-01T00:00:00Z'),
+  rec(2, 'rathalos', 10, 'dim', 45, '2026-07-03T00:00:00Z'),   // 늦게 올렸지만 더 빠름 → 1위
+  rec(3, 'rathalos', 10, 'dim', 50, '2026-06-01T00:00:00Z'),   // 50초 동률 중 가장 먼저 → 2위
+  rec(4, 'rathalos', 10, 'normal', 30, '2026-07-01T00:00:00Z'),// 종류가 다르면 다른 판
+  rec(5, 'rathalos', 8, 'dim', 30, '2026-07-01T00:00:00Z'),    // 난이도가 다르면 다른 판
+  rec(6, 'diablos', 10, 'dim', 99, '2026-07-01T00:00:00Z'),
+  rec(7, 'rathalos', 10, 'dim', 55, '2026-07-01T00:00:00Z'),
+].sort(rkOrder);
+
+ok('같은 시간이면 먼저 올린 쪽이 위', rows.filter(r => rkKey(r) === 'rathalos|10|dim').map(r => r.id),
+  [2, 3, 1, 7]);
+ok('판이 넷', [...rkGroup(rows).keys()].sort(),
+  ['diablos|10|dim', 'rathalos|10|dim', 'rathalos|10|normal', 'rathalos|8|dim']);
+ok('왕관은 판마다 3위까지', [...rkTopMap(rows)].sort((a, b) => a[0] - b[0]),
+  [[1, 3], [2, 1], [3, 2], [4, 1], [5, 1], [6, 1]]);   // 7번은 4위라 왕관 없음
+
+/* created_at 이 없는 옛 행이 섞여도 순서가 흔들리면 안 됩니다(그릴 때마다 1위가 바뀝니다). */
+const same = [rec(9, 'm', 10, 'dim', 40), rec(8, 'm', 10, 'dim', 40)].sort(rkOrder);
+ok('시간·시각이 같으면 id 순', same.map(r => r.id), [8, 9]);
+
+console.log(fail ? `실패 ${fail}건` : '통과 — 영상 URL · 시간 · 빌드 링크 · 순위');
 process.exit(fail ? 1 : 0);

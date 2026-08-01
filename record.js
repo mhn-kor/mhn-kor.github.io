@@ -15,6 +15,9 @@
 const RK_LIMIT = 500;                                   // 한 번에 받아올 상한
 const RK_VARIANT = { normal: '일반', dim: '차원변이' };
 const RK_STARS = [8, 9, 10];
+/* 고룡은 ★6 과 ★8 만 있고 ★8 이 가장 높습니다. 최속 기록은 최고 난이도에서만 뜻이 있으므로
+   ★6 은 아예 받지 않고, 등록도 랭킹도 ★8 하나로 고정합니다. */
+const RK_ELDER_STAR = 8;
 
 /* ── 영상 URL ──────────────────────────────────────────────────────
    유튜브(숏츠·일반)와 X 만 받습니다. 지원하지 않는 주소는 null 이라 등록에서 막힙니다. */
@@ -73,10 +76,50 @@ const rkBuildParam = raw => {
   return m && m[1].length <= 8000 ? m[1] : null;
 };
 
-if (typeof module !== 'undefined') module.exports = { rkVid, rkCanon, rkEmbed, rkTime, rkParse, rkBuildParam };
+/* ── 순위 ──────────────────────────────────────────────────────────
+   순위를 두 곳(랭킹 탭 · 리더보드 왕관)이 쓰므로 세는 규칙은 여기 한 벌만 둡니다.
+
+   한 «판»은 몬스터 · 난이도 · 종류입니다 — ★8 일반과 ★10 차원변이는 같은 사냥이 아니라
+   한 줄에 세울 수 없습니다(DB 인덱스 records_board_idx 도 같은 조합입니다).
+   같은 시간이면 먼저 올린 쪽이 위입니다. 그래도 같으면 id 로 갈라 순서를 못 박습니다 —
+   비기면 그릴 때마다 1위가 바뀌는 목록이 됩니다. */
+const rkOrder = (a, b) => a.time_sec - b.time_sec
+  || String(a.created_at || '').localeCompare(String(b.created_at || ''))
+  || a.id - b.id;
+
+const rkKey = r => `${r.monster}|${r.star}|${r.variant}`;
+
+/* 판별로 묶습니다. 넣은 순서를 그대로 두므로 rkRows(=rkOrder 로 정렬됨)를 주면 각 판도 순위순입니다. */
+function rkGroup(rows) {
+  const g = new Map();
+  for (const r of rows) {
+    const k = rkKey(r);
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(r);
+  }
+  return g;
+}
+
+/* 기록 id → 그 판에서의 순위. 왕관은 3위까지라 거기까지만 담습니다. */
+function rkTopMap(rows) {
+  const top = new Map();
+  for (const list of rkGroup(rows).values()) list.slice(0, 3).forEach((r, i) => top.set(r.id, i + 1));
+  return top;
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { rkVid, rkCanon, rkEmbed, rkTime, rkParse, rkBuildParam, rkOrder, rkKey, rkGroup, rkTopMap };
+}
+
+/* 금 · 은 · 동 왕관. 리더보드 카드 왼쪽 위와 랭킹 탭이 같이 씁니다.
+   viewBox 만 있는 SVG 는 CSS 가 늦으면 부풀어 오르므로 width/height 를 붙입니다. */
+const RK_CROWN = '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true"><path d="M2.4 6.6 7 10.2 12 3.4l5 6.8 4.6-3.6-1.8 10.1H4.2zM4.4 18.6h15.2v2.1H4.4z"/></svg>';
+const rkCrown = n => (n ? `<span class="rk-crown c${n}" title="${n}위">${RK_CROWN}<b>${n}</b></span>` : '');
 
 /* ── 상태 ──────────────────────────────────────────────────────────── */
 let rkRows = [];
+let rkTop = new Map();      // 기록 id → 판 안에서의 순위(1~3). 데이터가 바뀔 때만 다시 셉니다.
+let rkFailed = false;
 let rkDrawn = false;
 const rkF = { star: 0, variant: '', monster: '', weapon: '', style: '' };
 
@@ -112,25 +155,43 @@ const rkPass = r => (!rkF.star || r.star === rkF.star)
 /* ── 목록 ──────────────────────────────────────────────────────────── */
 const RK_COLS = 'id,nickname,monster,star,variant,weapon,style,time_sec,video_url,build,created_at';
 
+/* 리더보드와 랭킹이 같은 목록을 씁니다. 먼저 연 쪽이 받아오고 다른 쪽은 그 약속을 기다립니다 —
+   탭마다 부르면 같은 500 행을 두 번 받습니다. */
+let rkReq = null;
+const rkReady = () => (rkReq || (rkReq = rkLoad()));
+
 async function rkLoad() {
   try {
-    const r = await rest(`records?select=${RK_COLS}&order=time_sec.asc&limit=${RK_LIMIT}`);
+    // 같은 시간이면 먼저 올린 쪽이 위입니다(rkOrder 와 같은 규칙). limit 이 걸려 있으므로
+    // 자르는 기준도 서버가 같이 알아야 합니다.
+    const r = await rest(`records?select=${RK_COLS}&order=time_sec.asc,created_at.asc&limit=${RK_LIMIT}`);
     if (!r.ok) throw new Error(await r.text());
     rkRows = await r.json();
-    rkRender();
+    rkRefresh();
     rkOpenFromUrl();
   } catch (err) {
     console.error(err);
+    rkFailed = true;
     $('#rk-state').hidden = false;
     $('#rk-state').textContent = '기록을 불러오지 못했습니다. 새로고침해 주세요.';
+    if (rnDrawn) rnRender();
   }
+}
+
+/* 목록이 바뀌었을 때. 순위(왕관)는 데이터가 바뀔 때만 다시 세면 됩니다 —
+   필터는 무엇을 보여줄지만 정할 뿐 누가 1위인지를 바꾸지 않습니다. */
+function rkRefresh() {
+  rkTop = rkTopMap(rkRows);
+  rkRender();
+  if (rnDrawn) rnRender();
 }
 
 /* 지금 화면에 깔린 목록. 크게 보기 모달의 이전/다음이 이 순서로 넘어갑니다. */
 let rkShown = [];
+const rkList = () => rkRows.filter(rkPass);   // 서버가 이미 시간 오름차순으로 줍니다
 
 function rkRender() {
-  rkShown = rkRows.filter(rkPass);             // 서버가 이미 time_sec 오름차순으로 줍니다
+  rkShown = rkList();
   /* 순위는 '지금 보고 있는 판'의 순위입니다. 몬스터를 안 고르면 여러 몬스터가
      섞여 있어 숫자가 뜻을 잃으므로, 그때는 번호를 아예 안 붙입니다. */
   const ranked = !!rkF.monster;
@@ -154,9 +215,12 @@ function rkRender() {
 function rkItem(r, i, rank) {
   const v = rkVid(r.video_url);
   const mon = rkMon(r.monster);
+  /* 왼쪽 위: 그 판(몬스터·난이도·종류)에서 3위 안이면 왕관, 아니면 지금 보고 있는 판의 번호.
+     왕관은 필터와 무관한 «진짜» 순위라 무엇을 걸러 보든 같은 카드에 같은 왕관이 붙습니다. */
   const badges = `
-    ${rank ? `<span class="rk-no${rank <= 3 ? ' top' : ''}">${rank}</span>` : ''}
+    ${rkCrown(rkTop.get(r.id)) || (rank ? `<span class="rk-no${rank <= 3 ? ' top' : ''}">${rank}</span>` : '')}
     <span class="rk-src">${v ? (v.kind === 'yt' ? 'YouTube' : 'X') : '영상'}</span>
+    ${r.build ? '<span class="rk-bdg" title="빌드가 함께 등록된 기록입니다">빌드 있음</span>' : ''}
     <span class="rk-t">${rkTime(r.time_sec)}</span>`;
   return `
   <li class="rk-item" data-id="${r.id}">
@@ -176,23 +240,26 @@ function rkItem(r, i, rank) {
         ${r.variant === 'dim' ? '<span class="chip dim">차원변이</span>' : ''}
         <span class="chip">${esc(rkWeaponName(r.weapon))}${r.style ? ` <b>${esc(r.style)}</b>` : ''}</span>
       </div>
-      ${r.build ? `<a class="btn ghost rk-bd" href="?build=${esc(r.build)}#build">빌드 보기</a>` : ''}
     </div>
   </li>`;
 }
 
 /* ── 필터 ──────────────────────────────────────────────────────────── */
-function rkFilterUI() {
-  const chips = (name, items) => `<div class="mt-chips">${
-    [['', '전체'], ...items].map(([v, label]) => `
-      <button class="mt-chip${v === '' ? ' on' : ''}" data-f="${name}" data-v="${esc(String(v))}">${esc(label)}</button>`).join('')
-  }</div>`;
+/* 난이도·종류 칩. 리더보드와 랭킹이 같은 칩을 씁니다. cur 와 같은 값이 켜진 채로 나옵니다.
+   «전체»가 필요한 쪽(리더보드)은 부르면서 목록 앞에 넣습니다 — 랭킹은 판을 하나로 정해야 해서 없습니다. */
+const rkChips = (name, items, cur = '') => `<div class="mt-chips">${
+  items.map(([v, label]) => `
+    <button class="mt-chip${String(v) === String(cur) ? ' on' : ''}" data-f="${name}" data-v="${esc(String(v))}">${esc(label)}</button>`).join('')
+}</div>`;
 
+const RK_ALL = ['', '전체'];
+
+function rkFilterUI() {
   $('#rk-filter').innerHTML = `
     <p class="stone-label">난이도</p>
-    ${chips('star', RK_STARS.map(s => [s, '★' + s]))}
+    ${rkChips('star', [RK_ALL, ...RK_STARS.map(s => [s, '★' + s])])}
     <p class="stone-label">종류</p>
-    ${chips('variant', Object.entries(RK_VARIANT))}
+    ${rkChips('variant', [RK_ALL, ...Object.entries(RK_VARIANT)])}
     <p class="stone-label">몬스터 · 무기</p>
     <div class="rk-selects">
       <div class="field"><span>몬스터</span>
@@ -307,8 +374,9 @@ function rkListUI() {
       if (!row) return;
       return act.dataset.act === 'kakao' ? rkShare(row) : bdCopyLink(rkShareUrl(row));
     }
+    /* 랭킹 탭이 크게 보기 목록을 바꿔 놓았을 수 있으므로, 열 때 지금 깔린 목록을 같이 넘깁니다. */
     const play = e.target.closest('.rk-play');
-    if (play) rkOpenView(Number(play.dataset.i));
+    if (play) rkOpenView(Number(play.dataset.i), rkList());
   });
 
   $('#rk-v-prev').addEventListener('click', () => rkOpenView(rkAt - 1));
@@ -394,7 +462,10 @@ function rkOpenFromUrl() {
   else toast('그 기록을 찾지 못했습니다');
 }
 
-function rkOpenView(i) {
+/* list 를 주면 그 목록을 크게 보기의 «이전/다음» 범위로 삼습니다(랭킹 탭은 그 판 전체를 넘깁니다).
+   안 주면 지금 걸린 범위 그대로 — 창 안의 이전/다음이 그렇게 부릅니다. */
+function rkOpenView(i, list) {
+  if (list) rkShown = list;
   const r = rkShown[i];
   if (!r) return;                       // 처음/끝에서 더 넘기려 한 경우
   rkAt = i;
@@ -438,23 +509,34 @@ function rkAskDelete(id) {
 const rkOpt = (list, val, label) => list.map(x => `<option value="${esc(String(val(x)))}">${esc(String(label(x)))}</option>`).join('');
 
 
-/* 고른 몬스터·무기를 버튼에 반영합니다. 스타일 목록도 무기에 맞춰 다시 채웁니다. */
+/* 고른 몬스터·무기를 버튼에 반영합니다. 스타일·종류 목록도 고른 값에 맞춰 다시 채웁니다. */
 function rkFormLabels() {
   $('#rk-mon').innerHTML = rkPickHtml('monster', rkForm.monster, '몬스터 선택');
   $('#rk-wp').innerHTML = rkPickHtml('weapon', rkForm.weapon, '무기 선택');
   const styles = rkStyles(rkForm.weapon);
   $('#rk-style-f').hidden = !styles.length;
   $('#rk-style').innerHTML = '<option value="">선택 안 함</option>' + rkOpt(styles, s => s, s => s);
+
+  /* 고룡은 ★8 이 가장 높은 등급이고(그 아래는 ★6 이라 이 표에 없습니다) 차원변이도 없습니다.
+     목록에서 아예 빼서 올릴 수 없게 합니다 — 화면에서 감추기만 하면 잘못 고른 기록이 그대로 남습니다. */
+  const elder = (rkMon(rkForm.monster) || {}).group === 'elder';
+  rkPickOne('#rk-star', elder ? [RK_ELDER_STAR] : RK_STARS, s => s, s => '★' + s);
+  rkPickOne('#rk-var', Object.entries(RK_VARIANT).filter(([v]) => !elder || v === 'normal'),
+    v => v[0], v => v[1]);
+}
+
+/* 선택칸을 다시 채우되 고르고 있던 값이 아직 있으면 그대로 둡니다.
+   그냥 다시 그리면 몬스터를 바꿀 때마다 난이도가 첫 항목으로 되돌아갑니다. */
+function rkPickOne(sel, list, val, label) {
+  const keep = $(sel).value;
+  $(sel).innerHTML = rkOpt(list, val, label);
+  if (list.some(x => String(val(x)) === keep)) $(sel).value = keep;
 }
 
 function rkFormUI() {
-  const opt = rkOpt;
-  $('#rk-star').innerHTML = opt(RK_STARS, s => s, s => '★' + s);
-  $('#rk-var').innerHTML = opt(Object.entries(RK_VARIANT), v => v[0], v => v[1]);
-
+  rkFormLabels();                 // 난이도·종류 선택칸을 채웁니다
   // 대부분의 기록이 10성이라 기본값으로 둡니다. 잘못 올려도 지우려면 비밀번호가 필요합니다.
   $('#rk-star').value = '10';
-  rkFormLabels();
 
   $('#rk-reg-form').addEventListener('click', e => {
     const pick = e.target.closest('.rk-pick');
@@ -551,17 +633,19 @@ async function rkSubmit(e) {
     row.id = await r.json();
     row.created_at = new Date().toISOString();
     saveNick(nickname);          // 다음 등록창에 미리 채워 둡니다
-    // 시간순 자리에 그대로 끼웁니다. 다시 받아올 이유가 없습니다.
-    const at = rkRows.findIndex(x => x.time_sec > row.time_sec);
-    rkRows.splice(at < 0 ? rkRows.length : at, 0, row);
-    rkRender();
+    // 제자리에 끼워 넣습니다. 다시 받아올 이유가 없습니다. 정렬 규칙은 rkOrder 한 곳뿐이라
+    // 같은 시간일 때 «먼저 올린 쪽이 위»가 여기서도 저절로 지켜집니다.
+    rkRows.push(row);
+    rkRows.sort(rkOrder);
+    rkRefresh();
     $('#rk-reg').close();
     $('#rk-reg-form').reset();
     /* reset() 은 선택칸만 되돌립니다. 기본값과 모달로 고른 몬스터·무기는 직접 비웁니다.
-       (연달아 올릴 때 앞 기록의 몬스터가 남아 있으면 그대로 또 올라갑니다) */
-    $('#rk-star').value = '10';
+       (연달아 올릴 때 앞 기록의 몬스터가 남아 있으면 그대로 또 올라갑니다)
+       고룡을 올린 직후에는 난이도 목록이 ★8 뿐이므로, 목록을 되살린 «뒤에» 10성으로 돌립니다. */
     rkForm.monster = rkForm.weapon = null;
     rkFormLabels();
+    $('#rk-star').value = '10';
     $('#rk-nick').value = lastNick();               // reset() 이 지운 닉네임은 되살립니다
     $('#rk-nick-hint').hidden = true;
     $('#rk-preview').className = 'preview';
@@ -599,7 +683,7 @@ async function rkDelete(e) {
       return;
     }
     rkRows = rkRows.filter(x => String(x.id) !== String(rkPending));
-    rkRender();
+    rkRefresh();       // 1위가 지워지면 2위가 금관을 물려받습니다
     $('#rk-del').close();
     toast('삭제되었습니다');
   } catch (e2) {
@@ -611,6 +695,108 @@ async function rkDelete(e) {
   }
 }
 
+/* ── 랭킹 탭 ────────────────────────────────────────────────────────
+   리더보드와 같은 목록(rkRows)을 몬스터별로 접어 1·2·3위만 보여줍니다.
+
+   한 줄 = 몬스터 하나, 그 안에 일반 · 차원변이가 나란히 섭니다. 둘은 각각 다른 판
+   (rkKey = 몬스터 · 난이도 · 종류)이라 왕관도 따로 셉니다 — 나란히 두는 건 보기 편해서일 뿐
+   섞는 게 아닙니다. 난이도만 고르고 나면 남는 축이 몬스터뿐이라 모든 몬스터를
+   한 줄씩 세울 수 있습니다(기록이 없는 몬스터도 자리를 지킵니다). */
+let rnDrawn = false;
+const rnF = { star: 10 };                      // 대부분이 찾는 난이도를 기본값으로
+
+/* 고룡은 ★8 이 가장 높은 등급이라 난이도 칩을 타지 않습니다. ★10 을 골랐다고 고룡 줄이
+   통째로 비면 «아직 기록이 없다»로 잘못 읽힙니다. 등록도 ★8 만 받습니다(rkFormLabels). */
+const rnStar = m => (m.group === 'elder' ? RK_ELDER_STAR : rnF.star);
+const rnKey = (m, variant) => `${m.id}|${rnStar(m)}|${variant}`;
+
+function rnUI() {
+  $('#rn-filter').innerHTML = `
+    <p class="stone-label">난이도</p>
+    ${rkChips('star', RK_STARS.map(s => [s, '★' + s]), rnF.star)}`;
+
+  $('#rn-filter').addEventListener('click', e => {
+    const chip = e.target.closest('.mt-chip');
+    if (!chip) return;
+    rnF[chip.dataset.f] = chip.dataset.f === 'star' ? Number(chip.dataset.v || 0) : chip.dataset.v;
+    for (const b of $('#rn-filter').querySelectorAll(`.mt-chip[data-f="${chip.dataset.f}"]`)) {
+      b.classList.toggle('on', b === chip);
+    }
+    rnRender();
+  });
+
+  /* 크게 보기는 그 판 전체를 목록으로 받습니다 — 창 안의 이전/다음이 4위, 5위로 이어집니다. */
+  $('#rn-list').addEventListener('click', e => {
+    const b = e.target.closest('.rn-e');
+    if (b) rkOpenView(Number(b.dataset.i), rkGroup(rkRows).get(b.dataset.k) || []);
+  });
+}
+
+function rnRender() {
+  /* 줄마다 보는 난이도가 다를 수 있으므로(고룡은 늘 ★8) 전체를 묶어 두고 줄마다 꺼내 씁니다. */
+  const g = rkGroup(rkRows);
+  const mons = rkFailed ? [] : rkMons();         // 못 불러왔으면 빈 순위표를 그리지 않습니다
+  /* 고룡에는 차원변이가 없습니다. 빈 칸을 세워 두면 «없는 것»과 «아직 없는 것»이 같아 보이므로
+     아예 칸을 안 만듭니다 — 옛 기록이 남아 있을 때만 그 칸이 다시 나옵니다. */
+  const cols = m => Object.keys(RK_VARIANT)
+    .map(v => [v, g.get(rnKey(m, v)) || []])
+    .filter(([v, l]) => v === 'normal' || m.group !== 'elder' || l.length);
+
+  /* 기록이 있는 몬스터를 위로 올리고, 그 안에서는 게임(재료 탭) 순서 그대로 둡니다.
+     sort 는 안정 정렬이라 같은 편끼리는 원래 순서가 유지됩니다. */
+  const pick = list => list.map(m => [m, cols(m)]).sort(([, a], [, b]) => rnCount(b) - rnCount(a));
+  const normal = pick(mons.filter(m => m.group !== 'elder'));
+  const elders = pick(mons.filter(m => m.group === 'elder'));
+
+  $('#rn-list').innerHTML = normal.map(([m, c]) => rnRow(m, c)).join('');
+  $('#rn-elders').innerHTML = elders.map(([m, c]) => rnRow(m, c)).join('');
+  $('#rn-elders-h').hidden = !mons.length;
+  // 화면에 깔린 것만 셉니다 — 고룡이 다른 난이도를 보고 있어 rkRows 전체와는 다릅니다.
+  const all = [...normal, ...elders];
+  const n = all.reduce((s, [, c]) => s + c.reduce((t, [, l]) => t + l.length, 0), 0);
+  $('#rn-count').textContent = `${all.filter(([, c]) => rnCount(c)).length}종 기록 · 총 ${n}건`;
+
+  const state = $('#rn-state');
+  state.hidden = !rkFailed;
+  state.textContent = '기록을 불러오지 못했습니다. 새로고침해 주세요.';
+}
+
+/* 기록이 하나라도 있으면 1, 없으면 0. 정렬은 «있다/없다»로만 가릅니다 —
+   건수로 줄을 세우면 3건짜리가 1위 기록이 더 빠른 줄보다 위로 올라옵니다. */
+const rnCount = c => (c.some(([, l]) => l.length) ? 1 : 0);
+
+function rnRow(mon, cols) {
+  return `
+  <li class="rn-row${rnCount(cols) ? '' : ' empty'}">
+    <div class="rn-mon">
+      <img src="assets/monster/${esc(mon.icon)}.png" width="42" height="42" alt="" loading="lazy">
+      <b>${esc(mon.name)}</b>
+    </div>
+    ${cols.map(([v, list]) => rnCol(mon, v, list)).join('')}
+  </li>`;
+}
+
+/* 일반 · 차원변이 한 칸씩. 둘은 다른 판이라 왕관도 각자 1 · 2 · 3위입니다. */
+function rnCol(mon, variant, list) {
+  return `
+    <div class="rn-col">
+      <p class="rn-h">
+        <span class="chip${variant === 'dim' ? ' dim' : ''}">${RK_VARIANT[variant]}</span>
+        ${list.length ? `<span class="rn-n">${list.length}건</span>` : ''}
+      </p>
+      ${list.length ? `<ol class="rn-top">
+        ${list.slice(0, 3).map((x, i) => `
+          <li><button class="rn-e" type="button" data-k="${esc(rnKey(mon, variant))}" data-i="${i}"
+                      aria-label="${esc(mon.name)} ${RK_VARIANT[variant]} ${i + 1}위 ${esc(x.nickname)} ${rkTime(x.time_sec)} 영상 크게 보기">
+            ${rkCrown(i + 1)}
+            <span class="rn-nick">${esc(x.nickname)}</span>
+            <b class="rn-t">${rkTime(x.time_sec)}</b>
+            <span class="rn-wp">${esc(rkWeaponName(x.weapon))}${x.style ? ` ${esc(x.style)}` : ''}</span>
+          </button></li>`).join('')}
+      </ol>` : '<p class="rn-none">아직 기록이 없습니다</p>'}
+    </div>`;
+}
+
 /* ── 시작 ──────────────────────────────────────────────────────────── */
 /* app.js 의 showTab() 이 부릅니다. 첫 호출에서만 화면을 짓고 목록을 받아옵니다. */
 function drawRecord() {
@@ -620,5 +806,13 @@ function drawRecord() {
   rkListUI();
   rkModalUI();
   rkFormUI();
-  rkLoad();
+  rkReady();
+}
+
+function drawRank() {
+  if (rnDrawn) return;
+  rnDrawn = true;
+  rnUI();
+  // 리더보드를 먼저 열었으면 이미 받아온 목록으로 즉시, 아니면 다 받은 뒤에 그립니다.
+  rkReady().then(rnRender);
 }

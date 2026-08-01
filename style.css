@@ -142,6 +142,8 @@ h2.sec {
 h2.sec::before { content: ""; width: 4px; height: 20px; background: var(--amber); flex: none; }
 h2.sec::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
 h2.sec em { font-style: normal; color: var(--amber-hi); }
+/* 제목 옆 곁말. 그대로 두면 제목 크기(1.22rem)로 나와 제목이 둘로 보입니다. */
+h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(--muted); }
 
 .card-box {
   background: var(--surface);
@@ -1110,9 +1112,9 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 /* 필터 모달의 '전체 보기'는 아이콘이 없어 격자 높이가 안 맞습니다. 한 줄을 통째로 씁니다. */
 .bd-gi.rk-any { grid-column: 1 / -1; padding: 10px; }
 
-/* 필터 상자 바로 밑에 버튼이 붙어 있어 답답합니다. 아래(목록과의 거리 18px)와 같이 띄웁니다.
-   .bd-tools 는 빌드 탭도 쓰므로 리더보드 안에서만 겁니다. */
-#panel-record .bd-tools { margin-top: 18px; }
+/* 필터 상자 바로 밑에 버튼이 붙어 있어 답답합니다. 넉넉히 띄웁니다.
+   .bd-tools 는 빌드 탭도 쓰므로 리더보드·랭킹 안에서만 겁니다. */
+#panel-record .bd-tools, #panel-rank .bd-tools { margin-top: 28px; }
 
 /* 숏츠 갤러리. 카드가 세로(9:16)라 칸을 좁게 잡아야 한 화면에 여러 줄이 들어옵니다. */
 .rk-list {
@@ -1142,7 +1144,7 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   padding-left: 3px; transition: transform .15s;
 }
 .rk-play:hover .rk-pi { transform: scale(1.12); }
-.rk-src, .rk-no, .rk-t {
+.rk-src, .rk-no, .rk-t, .rk-bdg {
   position: absolute; padding: 2px 7px; border-radius: 3px;
   font-size: .68rem; font-weight: 700; letter-spacing: .04em;
   color: var(--bone); background: rgba(0,0,0,.62);
@@ -1150,6 +1152,27 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rk-src { right: 7px; top: 7px; }
 .rk-no { left: 7px; top: 7px; min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
 .rk-no.top { color: #241D16; background: var(--amber); }
+
+/* 왕관 — 그 판(몬스터 · 난이도 · 종류)의 1 · 2 · 3위. 금 · 은 · 동은 바탕색만 다릅니다.
+   리더보드 카드의 왼쪽 위(= .rk-no 자리)와 랭킹 탭이 같은 조각을 씁니다. */
+.rk-crown {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 7px 2px 5px; border-radius: 3px;
+  font-size: .68rem; font-weight: 800; letter-spacing: .02em;
+  color: #241D16; background: linear-gradient(135deg, #F7D98A, #DFA22E);
+  font-variant-numeric: tabular-nums;
+}
+.rk-crown svg { flex: none; }
+.rk-crown.c2 { background: linear-gradient(135deg, #EFF3F8, #B4BDC9); }
+.rk-crown.c3 { background: linear-gradient(135deg, #E3AA78, #AE6C3A); }
+/* 썸네일이 밝으면 은관이 배경에 묻힙니다. 얇은 테두리로 떼어 놓습니다. */
+.rk-play .rk-crown {
+  position: absolute; left: 7px; top: 7px; padding: 3px 6px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .45), 0 1px 6px rgba(0, 0, 0, .5);
+}
+/* 카드에서는 색이 곧 등수라 숫자가 겹칩니다. 왕관만 남깁니다
+   (title="1위" 는 그대로라 마우스를 올리거나 읽어주는 기기에서는 들립니다). */
+.rk-play .rk-crown b { display: none; }
 /* 시간은 유튜브의 재생시간 뱃지 자리에 둡니다 — 카드에서 가장 먼저 읽혀야 할 값입니다. */
 .rk-t {
   right: 7px; bottom: 7px; font-size: .92rem; font-weight: 800;
@@ -1175,7 +1198,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rk-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .rk-tags .chip.star { color: var(--amber-hi); }
 .rk-tags .chip.dim { color: #CBA6F7; background: rgba(160,120,230,.16); border-color: rgba(160,120,230,.45); }
-.rk-bd { justify-content: center; padding: 6px 10px; font-size: .78rem; }
+/* 빌드가 딸린 기록. 카드 아래에 «빌드 보기» 버튼을 두면 그 카드만 키가 커져 줄이
+   들쭉날쭉해집니다. 썸네일 왼쪽 아래에 표시만 하고, 여는 것은 크게 보기 창의
+   «빌드 보기» 가 맡습니다. */
+.rk-bdg { left: 7px; bottom: 7px; color: var(--amber-hi); background: rgba(0,0,0,.72); }
 
 /* 크게 보기 — 세로 영상이라 창도 세로로 세웁니다.
    창은 스크롤하지 않습니다. 제목·태그·아래줄은 고정하고, 영상칸만 늘고 줄어 화면에 맞춥니다.
@@ -1255,6 +1281,52 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   .rk-list { grid-template-columns: repeat(auto-fill, minmax(144px, 1fr)); gap: 9px; }
   .rk-info { padding: 8px 8px 10px; }
   .rk-pi { width: 42px; height: 42px; font-size: .9rem; }
+}
+
+/* ── 랭킹 ──────────────────────────────────────────
+   한 줄이 판 하나(몬스터 · 난이도 · 종류)입니다. 왼쪽에 몬스터, 오른쪽에 1 · 2 · 3위. */
+.rn-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.rn-row {
+  display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px;
+  align-items: start; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--line); clip-path: var(--bevel);
+}
+.rn-mon { display: flex; align-items: center; gap: 10px; min-width: 0; align-self: center; }
+.rn-mon > img { width: 42px; height: 42px; flex: none; object-fit: contain; }
+/* minmax(0,…) 과 같은 이유로 min-width:0 — 긴 몬스터 이름이 칸을 밀어냅니다. */
+.rn-mon > b { min-width: 0; font-size: .95rem; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 일반 · 차원변이 한 칸씩. 머리에 종류 칩을 달아 두 칸을 헷갈리지 않게 합니다. */
+.rn-col { min-width: 0; display: grid; align-content: start; gap: 6px; }
+.rn-h { display: flex; align-items: center; gap: 6px; margin: 0; }
+.rn-n { margin-left: auto; flex: none; font-size: .76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rn-h .chip.dim { color: #CBA6F7; background: rgba(160,120,230,.16); border-color: rgba(160,120,230,.45); }
+/* 기록이 없는 몬스터도 자리를 지킵니다. 한 단계 죽여 두면 있는 줄이 먼저 읽힙니다. */
+.rn-row.empty { opacity: .55; }
+.rn-none { margin: 0; font-size: .8rem; color: var(--muted); }
+
+.rn-top { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+/* 왕관 · 닉네임 · 시간이 한 줄, 무기는 그 아래 줄(닉네임 칸부터)입니다. */
+.rn-e {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+  gap: 2px 8px; width: 100%; text-align: left; font: inherit; cursor: pointer;
+  padding: 7px 10px; color: var(--bone); background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 4px;
+  transition: background .12s, border-color .12s;
+}
+.rn-e:hover { background: #2E251C; border-color: rgba(233,161,59,.45); }
+.rn-e:focus-visible { outline: 2px solid var(--amber); outline-offset: -1px; }
+.rn-nick { min-width: 0; font-size: .86rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rn-t { font-size: .92rem; font-weight: 800; color: var(--amber-hi); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.rn-wp { grid-column: 2 / -1; font-size: .74rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 태블릿 폭에서는 몬스터를 위로 올리고 일반 · 차원변이를 반씩 나눠 씁니다.
+   세 칸을 유지하면 순위 칸이 좁아 닉네임이 통째로 잘립니다. */
+@media (max-width: 900px) {
+  .rn-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .rn-mon { grid-column: 1 / -1; align-self: start; }
+}
+@media (max-width: 560px) {
+  .rn-row { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── 추천 빌드 ─────────────────────────────────────── */
