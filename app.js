@@ -26,6 +26,15 @@ const PW_MIN = 4;           // schema.sql 의 add_friend_code 검사와 동일�
 
 const $ = s => document.querySelector(s);
 
+/* 배경을 눌러 창 닫기. click 만 보면 안 됩니다 — 자동완성 목록처럼 누른 뒤 사라지는
+   요소가 있으면, 손을 뗀 자리가 배경이라 click 이 dialog 로 잡혀 안에서 시작한
+   클릭에도 창이 닫힙니다. 누르기 시작한 자리까지 배경이어야 닫습니다. */
+function closeOnBackdrop(dlg) {
+  let from = null;
+  dlg.addEventListener('pointerdown', e => { from = e.target; });
+  dlg.addEventListener('click', e => { if (e.target === dlg && from === dlg) dlg.close(); });
+}
+
 /* 앱 친구추가 딥링크. 코드는 항상 숫자 12자리로 검증한 뒤에만 넣습니다. */
 const addFriendUrl = code => 'mhnow:///ADDFRIEND?FRIEND_ID=' + code;
 
@@ -446,7 +455,7 @@ const fErr = $('#f-err');
 
 $('#open-reg').addEventListener('click', () => { fErr.hidden = true; reg.showModal(); $('#f-nick').focus(); });
 $('#reg-cancel').addEventListener('click', () => reg.close());
-reg.addEventListener('click', e => { if (e.target === reg) reg.close(); });   // 배경 클릭
+closeOnBackdrop(reg);   // 배경 클릭
 
 fCode.addEventListener('input', () => {
   const raw = digits(fCode.value);
@@ -521,7 +530,7 @@ function askPassword(mode, code) {
 }
 
 $('#del-cancel').addEventListener('click', () => del.close());
-del.addEventListener('click', e => { if (e.target === del) del.close(); });
+closeOnBackdrop(del);
 
 const fail = msg => { dErr.textContent = msg; dErr.hidden = false; };
 
@@ -707,7 +716,7 @@ $('#panel-smelt').addEventListener('click', e => {
 });
 
 $('#mon-close').addEventListener('click', () => monDlg.close());
-monDlg.addEventListener('click', e => { if (e.target === monDlg) monDlg.close(); });
+closeOnBackdrop(monDlg);
 
 /* ── 닉네임 자동완성 (추천빌드 · 리더보드 등록창 공용) ──────────────
    친구 코드에 등록해 둔 닉네임을 그대로 씁니다. 같은 사람이 탭마다 다른 이름을 쓰면

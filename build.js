@@ -1000,7 +1000,7 @@ $('#bd-clear').addEventListener('click', () => {
   bdSave(); bdRender(); bdDlg().close();
 });
 $('#bd-modal-close').addEventListener('click', () => bdDlg().close());
-bdDlg().addEventListener('click', e => { if (e.target === bdDlg()) bdDlg().close(); });
+closeOnBackdrop(bdDlg());
 
 $('#bd-add').addEventListener('click', () => {
   if (bdState.builds.length >= BD_MAX) return toast(`빌드는 ${BD_MAX}개까지입니다`);

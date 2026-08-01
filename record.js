@@ -314,7 +314,7 @@ function rkListUI() {
   $('#rk-v-prev').addEventListener('click', () => rkOpenView(rkAt - 1));
   $('#rk-v-next').addEventListener('click', () => rkOpenView(rkAt + 1));
   $('#rk-v-close').addEventListener('click', () => $('#rk-view').close());
-  $('#rk-view').addEventListener('click', e => { if (e.target === $('#rk-view')) $('#rk-view').close(); });
+  closeOnBackdrop($('#rk-view'));
   /* 화살표로도 넘깁니다. dialog 가 열려 있는 동안 키보드 초점이 안에 있습니다. */
   $('#rk-view').addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft') rkOpenView(rkAt - 1);
@@ -490,11 +490,11 @@ function rkFormUI() {
     $('#rk-nick').focus();
   });
   $('#rk-cancel').addEventListener('click', () => $('#rk-reg').close());
-  $('#rk-reg').addEventListener('click', e => { if (e.target === $('#rk-reg')) $('#rk-reg').close(); });
+  closeOnBackdrop($('#rk-reg'));
   $('#rk-reg-form').addEventListener('submit', rkSubmit);
 
   $('#rk-del-cancel').addEventListener('click', () => $('#rk-del').close());
-  $('#rk-del').addEventListener('click', e => { if (e.target === $('#rk-del')) $('#rk-del').close(); });
+  closeOnBackdrop($('#rk-del'));
   $('#rk-del-form').addEventListener('submit', rkDelete);
 }
 

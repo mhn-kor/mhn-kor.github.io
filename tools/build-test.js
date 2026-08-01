@@ -16,6 +16,7 @@ const ctx = {
   $: () => ({ hidden: true, addEventListener() {} }),
   document: { querySelector: () => null },
   nickAuto() {},                    // record.js 것. 화면이 없으니 빈 껍데기면 됩니다.
+  closeOnBackdrop() {},             // app.js 것. 위와 같은 이유로 껍데기입니다.
   localStorage: { getItem: () => null, setItem() {} },
 };
 vm.createContext(ctx);
