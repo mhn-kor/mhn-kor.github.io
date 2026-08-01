@@ -105,7 +105,7 @@ function rcCard(r, rank) {
     <div class="rc-act">
       <button class="rc-v up${mine === 1 ? ' on' : ''}" data-vote="${r.id}:1" title="좋아요">▲ <b>${r.up}</b></button>
       <button class="rc-v down${mine === -1 ? ' on' : ''}" data-vote="${r.id}:-1" title="싫어요">▼ <b>${r.down}</b></button>
-      <button class="rc-v cm" data-rc-view="${r.id}" title="댓글 보기">${RC_CM_ICON} <b>${r.comments || 0}</b></button>
+      <button class="rc-v cm" data-rc-cm="${r.id}" title="댓글 보기">${RC_CM_ICON} <b>${r.comments || 0}</b></button>
       <span class="rc-t score rc-score" title="추천도 — 오래될수록 낮아지고 좋아요·싫어요가 반영됩니다">추천도 <b>${r.score}</b></span>
       <button class="btn ghost" data-rc-view="${r.id}">미리보기</button>
       <button class="btn ghost" data-rc-use="${r.id}">가져오기</button>
@@ -125,7 +125,7 @@ function rcBrief(r) {
 }
 
 /* 미리보기 모달. 모바일에서는 장비 검색 모달과 같이 화면을 꽉 채웁니다. */
-function rcView(id) {
+function rcView(id, toComments) {
   const r = rcRows.find(x => x.id === id);
   if (!r || typeof bdPreviewHtml !== 'function') return;
   const b = bdParse(r.build, r.title);
@@ -135,8 +135,12 @@ function rcView(id) {
     `${rcWeaponName(r.weapon)} · ${r.nickname} · 추천도 ${r.score}`;
   $('#rc-view-gear').innerHTML = bdPreviewHtml(b);
   $('#rc-view-use').dataset.rcUse = id;
-  rcCmOpen(id);
+  /* 창을 먼저 띄워야 스크롤 위치를 잴 수 있고, 목록을 다 받은 뒤라야 «댓글» 머리가
+     제자리에 있습니다(불러오는 동안은 한 줄이라 자리가 어긋납니다). */
+  $('#rc-view-body').scrollTop = 0;
+  const drawn = rcCmOpen(id);
   $('#rc-view').showModal();
+  if (toComments) drawn.then(() => $('#rc-cm').scrollIntoView({ block: 'start' }));
 }
 
 /* ── 댓글 ─────────────────────────────────────────────────────────── */
@@ -324,6 +328,10 @@ $('#rc-list').addEventListener('click', e => {
   if (v) { const [id, val] = v.dataset.vote.split(':'); return rcVote(+id, +val); }
   const u = e.target.closest('[data-rc-use]');
   if (u) return rcUse(+u.dataset.rcUse);
+  /* 댓글 아이콘으로 열면 댓글이 보이는 자리에서 시작합니다. 장비부터 열리면
+     «댓글» 을 눌렀는데 또 내려야 합니다. */
+  const c = e.target.closest('[data-rc-cm]');
+  if (c) return rcView(+c.dataset.rcCm, true);
   const v2 = e.target.closest('[data-rc-view]');
   if (v2) return rcView(+v2.dataset.rcView);
   /* 장비 줄을 눌러도 열립니다 — 버튼을 못 찾는 사람이 없도록. */
