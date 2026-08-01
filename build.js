@@ -722,9 +722,12 @@ function bdOpen(title, bodyHtml, withSearch, opt = {}) {
   if (withSearch) {
     $('#bd-q').value = '';
     $('#bd-q').placeholder = opt.placeholder || '몬스터 · 장비 · 스킬 검색';
-    /* 스킬 자동완성은 부르는 쪽이 요청할 때만 붙입니다(일괄선택). */
-    if (opt.skills) {
-      $('#bd-sklist').innerHTML = bdArmorSkills().map(n => `<option value="${esc(n)}">`).join('');
+    /* 스킬 자동완성은 부르는 쪽이 요청할 때만 붙입니다(일괄선택).
+       배포 직후 10분은 옛 index.html 과 새 build.js 가 섞일 수 있어(위 캐시 주석)
+       datalist 가 없을 수 있습니다. 그때는 자동완성만 빠지고 검색은 그대로 됩니다. */
+    const dl = $('#bd-sklist');
+    if (opt.skills && dl) {
+      dl.innerHTML = bdArmorSkills().map(n => `<option value="${esc(n)}">`).join('');
       $('#bd-q').setAttribute('list', 'bd-sklist');
     } else $('#bd-q').removeAttribute('list');
   }
