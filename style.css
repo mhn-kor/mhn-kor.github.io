@@ -1303,9 +1303,16 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rc-v.up:hover, .rc-v.up.on { color: var(--jade); border-color: rgba(75,196,154,.5); background: rgba(75,196,154,.12); }
 .rc-v.down:hover, .rc-v.down.on { color: var(--red); border-color: rgba(224,90,80,.5); background: rgba(224,90,80,.12); }
 /* 태그와 같은 알약 모양을 씁니다. 숫자만 덩그러니 두면 그게 무슨 값인지 안 보입니다. */
-.rc-t.score { font-weight: 700; color: var(--amber); background: rgba(233,161,59,.14); }
+.rc-t.score {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-weight: 700; color: var(--amber); background: rgba(233,161,59,.14);
+}
+/* 별은 14px 짜리를 빌려 왔습니다. 알약이 작아 CSS 로 줄입니다(속성보다 CSS 가 셉니다). */
+.rc-t.score svg { width: 12px; height: 12px; flex: none; }
 .rc-t.score b { font-variant-numeric: tabular-nums; }
-.rc-score { margin-left: auto; }   /* 투표 버튼과 «가져오기» 사이를 벌립니다 */
+/* 왼쪽은 남이 매긴 것(좋아요·싫어요·댓글), 오른쪽은 내가 누르는 것(추천도·미리보기·가져오기).
+   셋을 한 덩어리로 묶어 두면 줄이 접혀도 같이 움직이고 오른쪽에 그대로 붙습니다. */
+.rc-do { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: none; }
 .rc-act .btn { flex: none; padding: 5px 11px; font-size: .78rem; }
 
 .rc-same { font-style: normal; font-size: .68rem; color: var(--jade); margin-left: 5px; }
@@ -1363,7 +1370,6 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 @media (max-width: 560px) {
   .rc-by, .rc-tags, .rc-act { margin-left: 0; }
   .rc-act { flex-wrap: wrap; }
-  .rc-score { margin-left: 0; }
 }
 
 /* 추천빌드 카드의 간략 장비 정보 */
@@ -1452,4 +1458,8 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   .rc-brief { margin-left: 0; }
   /* 좁은 화면에서 닉네임·비밀번호를 나란히 두면 둘 다 못 읽을 만큼 좁아집니다. */
   .rc-cm-who { grid-template-columns: 1fr; }
+  /* 액션 줄이 두 줄로 접히지 않게 글자를 걷고 그림만 남깁니다.
+     이름은 title·aria-label 로 남아 있어 스크린리더와 길게 누르기에는 그대로입니다. */
+  .rc-act .btn .lbl { display: none; }
+  .rc-act .btn { padding: 6px 9px; }
 }

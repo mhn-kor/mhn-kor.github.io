@@ -20,6 +20,13 @@ const RC_COLS = 'id,nickname,title,build,weapon,tier,scenes,party,easy_farm,up,d
 
 const RC_CM_ICON = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg>';
 
+/* 좁은 화면에서는 글자를 감추고 이 그림만 남깁니다(.rc-act .lbl).
+   별은 빌드 탭의 «추천 빌드로 등록» 과 같은 것을 씁니다 — BD_I.star. */
+const RC_I = {
+  eye: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg>',
+  use: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11m0 0 4.5-4.5M12 14l-4.5-4.5M4 20h16"/></svg>',
+};
+
 let rcRows = [];
 let rcMine = {};                 // { 빌드id: 1 | -1 }  내가 누른 것
 let rcFilter = { weapon: '', tier: '', scene: '', party: '', easy: false };
@@ -106,9 +113,12 @@ function rcCard(r, rank) {
       <button class="rc-v up${mine === 1 ? ' on' : ''}" data-vote="${r.id}:1" title="좋아요">▲ <b>${r.up}</b></button>
       <button class="rc-v down${mine === -1 ? ' on' : ''}" data-vote="${r.id}:-1" title="싫어요">▼ <b>${r.down}</b></button>
       <button class="rc-v cm" data-rc-cm="${r.id}" title="댓글 보기">${RC_CM_ICON} <b>${r.comments || 0}</b></button>
-      <span class="rc-t score rc-score" title="추천도 — 오래될수록 낮아지고 좋아요·싫어요가 반영됩니다">추천도 <b>${r.score}</b></span>
-      <button class="btn ghost" data-rc-view="${r.id}">미리보기</button>
-      <button class="btn ghost" data-rc-use="${r.id}">가져오기</button>
+      <span class="rc-do">
+        <span class="rc-t score" title="추천도 ${r.score} — 오래될수록 낮아지고 좋아요·싫어요가 반영됩니다"
+              aria-label="추천도 ${r.score}">${BD_I.star}<b>${r.score}</b></span>
+        <button class="btn ghost" data-rc-view="${r.id}" title="미리보기" aria-label="미리보기">${RC_I.eye}<span class="lbl">미리보기</span></button>
+        <button class="btn ghost" data-rc-use="${r.id}" title="내 빌드로 가져오기" aria-label="내 빌드로 가져오기">${RC_I.use}<span class="lbl">가져오기</span></button>
+      </span>
     </div>
   </article>`;
 }
