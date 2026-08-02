@@ -615,7 +615,7 @@ function rkAskDelete(id) {
   $('#rk-d-pw').value = '';
   $('#rk-d-err').hidden = true;
   $('#rk-del').showModal();
-  $('#rk-d-pw').focus();
+  focusIn($('#rk-d-pw'));
 }
 
 /* ── 등록 ──────────────────────────────────────────────────────────── */
@@ -691,7 +691,7 @@ function rkFormUI() {
     $('#rk-nick-hint').hidden = true;
     if (!$('#rk-nick').value) $('#rk-nick').value = lastNick();
     $('#rk-reg').showModal();
-    $('#rk-nick').focus();
+    focusIn($('#rk-nick'));
   });
   $('#rk-cancel').addEventListener('click', () => $('#rk-reg').close());
   $('#rk-reg-form').addEventListener('submit', rkSubmit);

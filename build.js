@@ -745,7 +745,7 @@ function bdOpen(title, bodyHtml, withSearch, opt = {}) {
     $('#bd-q').placeholder = opt.placeholder || '몬스터 · 장비 · 스킬 검색';
   }
   bdDlg().showModal();
-  if (withSearch) $('#bd-q').focus();
+  if (withSearch) focusIn($('#bd-q'));
 }
 
 /* 무기 종류 — 아이콘 격자 */

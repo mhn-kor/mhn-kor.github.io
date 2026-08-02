@@ -38,6 +38,26 @@ function closeOnBackdrop(dlg) {
    스크립트는 전부 dialog 마크업 뒤에서 로드되므로 여기서 한 번에 겁니다. */
 document.querySelectorAll('dialog').forEach(closeOnBackdrop);
 
+/* 모바일에서 창이 열리자마자 입력칸에 포커스가 가면 키보드가 올라와 창의 절반을
+   덮습니다. 목록에서 고르러 여는 창(장비 선택·빌드 고르기)은 칠 준비가 필요 없어
+   방해만 됩니다. 칸을 채워야 넘어가는 창(등록·삭제 비밀번호)만 그대로 두고,
+   나머지는 사용자가 칸을 눌렀을 때 키보드가 올라옵니다.
+
+   showModal 을 한 번 감싸는 것은 브라우저가 스스로 주는 포커스까지 막기 위해서입니다
+   — 명세상 창을 열면 안쪽 첫 요소에 포커스가 갑니다. «빌드 고르기» 는 그 첫 요소가
+   검색칸이라, .focus() 호출을 지우는 것만으로는 안 걸립니다. 창은 11개고 여는 자리는
+   그보다 많아, 부르는 쪽마다 막으면 새 창에서 또 빠뜨립니다. */
+const KEEP_FOCUS = new Set(['reg', 'rk-reg', 'rc-add', 'del', 'rk-del', 'rc-del']);   // 등록 · 삭제 비밀번호
+const noAutoFocus = dlg => matchMedia('(max-width: 640px)').matches && !KEEP_FOCUS.has(dlg && dlg.id);
+/* 창을 연 뒤 직접 포커스를 줄 때 씁니다. 어느 창인지는 요소가 들고 있습니다. */
+const focusIn = el => { if (!noAutoFocus(el.closest('dialog'))) el.focus(); };
+const dlgShowModal = HTMLDialogElement.prototype.showModal;
+HTMLDialogElement.prototype.showModal = function (...a) {
+  dlgShowModal.apply(this, a);
+  const el = document.activeElement;
+  if (noAutoFocus(this) && el && this.contains(el) && el.matches('input, textarea, select')) el.blur();
+};
+
 /* ── 목록을 조금씩 그리기 ──────────────────────────────────────────
    손안에 있는 배열에서 «화면에 얹는 양»만 나눕니다. 서버를 다시 부르지 않으므로
    왕관·명예의 전당처럼 전체를 봐야 맞는 계산과 «N건» 표시가 그대로 맞습니다.
@@ -487,7 +507,7 @@ const reg = $('#reg');
 const fCode = $('#f-code');
 const fErr = $('#f-err');
 
-$('#open-reg').addEventListener('click', () => { fErr.hidden = true; reg.showModal(); $('#f-nick').focus(); });
+$('#open-reg').addEventListener('click', () => { fErr.hidden = true; reg.showModal(); focusIn($('#f-nick')); });
 $('#reg-cancel').addEventListener('click', () => reg.close());
 
 fCode.addEventListener('input', () => {
@@ -562,7 +582,7 @@ function askPassword(mode, code) {
   $('#d-pw').value = '';
   dErr.hidden = true;
   del.showModal();
-  $('#d-pw').focus();
+  focusIn($('#d-pw'));
 }
 
 $('#del-cancel').addEventListener('click', () => del.close());
