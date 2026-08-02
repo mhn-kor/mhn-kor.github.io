@@ -313,12 +313,20 @@ function bdBulkFoot() {
 }
 
 /* ── 공유 ──────────────────────────────────────────────────────── */
-/* 링크 복사와 카카오톡 공유가 같은 URL 을 씁니다.
+/* 링크 복사와 카카오톡 공유가 같은 URL 을 씁니다. 내 빌드도 추천빌드도 넘기므로
+   목록의 번호가 아니라 빌드 객체를 받습니다.
    표류석은 `ds=부위|칸|색상|스킬;…` 로 담습니다. 구분자는 기존 형식이 쓰는
    ',' 와 '=' 를 피해 ';' 와 '|' 를 골랐습니다. 색상·스킬을 이름으로 적는 건
-   smelt-data.js 를 다시 만들어 순서가 바뀌어도 옛 링크가 살아 있어야 하기 때문입니다. */
-function bdShareParam(bi) {
-  const b = bdState.builds[bi];
+   smelt-data.js 를 다시 만들어 순서가 바뀌어도 옛 링크가 살아 있어야 하기 때문입니다.
+
+   한글은 %EC%88%98 처럼 세 배로 불어나므로 encodeURIComponent 로 통째로 감싸지 않고
+   쿼리에서 실제로 뜻이 달라지는 글자만 뺍니다(공백·% # & + ?). 장비 키·스킬명에는
+   이 글자들이 없어서(구분자도 마찬가지) 날것으로 두어도 되돌릴 수 있습니다.
+   길이가 1/3 로 줄어드는 게 중요한 이유는 bdKakao 주석에 적어 두었습니다.
+   옛 링크는 전부 인코딩되어 있어도 bdParse 의 decodeURIComponent 가 그대로 풉니다. */
+const bdEscape = p => p.replace(/[%#&+?\s]/g, encodeURIComponent);
+
+function bdShareParam(b) {
   const ds = [];
   for (const { k } of BD_PARTS()) {
     (b.ds[k] || []).slice(0, bdSlotCount(b, k)).forEach((d, i) => {
@@ -329,12 +337,12 @@ function bdShareParam(bi) {
   const p = [`w=${b.w || ''}`, `wt=${b.wt}`, b.st ? `st=${b.st}` : '', ds.length ? `ds=${ds.join(';')}` : '',
     cond.length ? `c=${cond.join(';')}` : '']
     .concat(BD_PARTS().map(({ k }) => `${k}=${b[k] || ''}`)).filter(Boolean).join(',');
-  return encodeURIComponent(p);
+  return bdEscape(p);
 }
 /* 링크 복사는 지금 보고 있는 주소를 씁니다(로컬에서 붙여넣어 확인할 수 있게).
    카카오·공유 시트로 나가는 링크는 받는 사람이 열 수 있어야 하므로 배포 절대 주소를 씁니다.
    배포 환경에서는 둘이 같은 값입니다. */
-const bdShareURL = bi => `${location.origin}${location.pathname}?build=${bdShareParam(bi)}#build`;
+const bdShareURL = b => `${location.origin}${location.pathname}?build=${bdShareParam(b)}#build`;
 
 const bdCopyLink = (url, msg = '링크를 복사했습니다') => navigator.clipboard.writeText(url)
   .then(() => toast(msg)).catch(() => toast('복사 실패'));
@@ -375,7 +383,7 @@ const BD_OG = (document.querySelector('meta[property="og:image"]') || {}).conten
    og:url 을 기준으로 잡으면 로컬에서 눌러도 카드 이미지가 제대로 나옵니다. */
 const BD_BASE = (((document.querySelector('meta[property="og:url"]') || {}).content) || '/').replace(/\/?$/, '/');
 const bdMonURL = key => BD_BASE + bdIcon(key);
-const bdShareAbs = bi => `${BD_BASE}?build=${bdShareParam(bi)}#build`;
+const bdShareAbs = b => `${BD_BASE}?build=${bdShareParam(b)}#build`;
 /* 카카오 카드는 한 줄에 들어가는 글자 수가 빡빡해서 공백을 전부 뺍니다.
    스킬명 안의 공백과 레벨 앞 공백까지 포함합니다(마비 내성 3 → 마비내성3).
    URL·이미지 인자에는 쓰지 않습니다. */
@@ -384,8 +392,7 @@ const bdTight = v => String(v).replace(/[\s\u3000]+/g, '');
 /* 콘솔에 등록한 리스트형 사용자 템플릿에 넘길 인자. 방어구 5부위를 한 줄씩 씁니다.
    줄마다 그 부위의 스킬과 표류석 스킬만 적고, 이미지는 그 방어구의 재료 몬스터입니다.
    SDK 기본 템플릿은 아이템이 3개까지라 5줄이 안 되므로 이 경로만 5줄을 낼 수 있습니다. */
-function bdKakaoArgs(bi) {
-  const b = bdState.builds[bi];
+function bdKakaoArgs(b) {
   const w = bdWeaponOf(b);
   const args = {
     /* 빌드명을 직접 지었으면 그 이름만 씁니다. 이름이 없어 «대검 빌드» 같은
@@ -395,8 +402,8 @@ function bdKakaoArgs(bi) {
          ${URL}                                    → 전체 주소 (단독으로 넣을 때)
          https://mhn-kor.github.io/qr/?build=${BUILD}#build  → 쿼리 값 자리에 넣을 때
        location 이 아니라 배포 절대 주소로 만듭니다. 로컬에서 눌러도 남이 열 수 있어야 합니다. */
-    URL: bdShareAbs(bi),
-    BUILD: bdShareParam(bi),
+    URL: bdShareAbs(b),
+    BUILD: bdShareParam(b),
   };
   BD_PARTS().forEach(({ k, n }, i) => {
     const set = bdSet(b[k]);
@@ -420,9 +427,8 @@ function bdKakaoArgs(bi) {
    아이템이 2~3개까지라 무기 / 방어구 / 표류석 세 줄로 묶습니다. 2줄도 안 되면 null → 피드형. 공식 SDK 가 아이템을
    2~3개로 제한하므로 방어구를 한 부위씩 넣을 수 없어, 무기 / 방어구 / 표류석
    세 줄로 묶고 방어구 줄에 5부위를 모두 적습니다. 2줄도 안 되면 null → 피드형. */
-function bdKakaoList(bi) {
-  const b = bdState.builds[bi];
-  const url = bdShareAbs(bi);
+function bdKakaoList(b) {
+  const url = bdShareAbs(b);
   const link = { mobileWebUrl: url, webUrl: url };
   const wt = BUILD.weaponTypes.find(t => t.k === b.wt);
   const rows = [];
@@ -471,15 +477,26 @@ function bdKakaoList(bi) {
   };
 }
 
-async function bdKakao(bi) {
-  const url = bdShareAbs(bi);
-  const { title, desc } = bdShareText(bdState.builds[bi]);
+/* 카카오 SDK 는 카톡 앱으로 바로 보낼 때(모바일·카톡 인앱 브라우저) 완성된 메시지가
+   1만 자를 넘으면 던지는데, 그 오류는 우리 try 밖에서 페이지를 통째로 카카오 오류
+   화면으로 옮겨 버립니다. 카드가 링크를 열아홉 번 되풀이해 담으므로 최종 크기는
+   링크 길이의 스무 배쯤이고, 그래서 «링크가 얼마나 짧은가» 가 곧 성패입니다.
+   여섯 부위를 다 갖춘 빌드(추천빌드에서 가져온 것이 늘 그렇습니다)는 옛 인코딩으로
+   700~850자였고 그대로 한도를 넘었습니다. bdEscape 로 200~300자가 되어 들어오지만,
+   표류석을 끝까지 채운 빌드는 아직 넘길 수 있어 여기서 한 번 더 막습니다.
+   ponytail: 스무 배는 콘솔 템플릿(KAKAO_TEMPLATE_ID)이 링크를 몇 줄에 다는지에 달렸습니다.
+   템플릿을 바꿔 줄이 늘면 이 값을 같이 내려야 합니다. */
+const BD_KAKAO_URL_MAX = 340;
+
+async function bdKakao(b) {
+  const url = bdShareAbs(b);
+  const { title, desc } = bdShareText(b);
   const link = { mobileWebUrl: url, webUrl: url };
-  if (await bdKakaoReady()) {
+  if (url.length <= BD_KAKAO_URL_MAX && await bdKakaoReady()) {
     try {
       const tid = parseInt(window.KAKAO_TEMPLATE_ID, 10);
-      if (tid) window.Kakao.Share.sendCustom({ templateId: tid, templateArgs: bdKakaoArgs(bi) });
-      else window.Kakao.Share.sendDefault(bdKakaoList(bi) || {
+      if (tid) window.Kakao.Share.sendCustom({ templateId: tid, templateArgs: bdKakaoArgs(b) });
+      else window.Kakao.Share.sendDefault(bdKakaoList(b) || {
         objectType: 'feed',
         content: { title, description: desc, imageUrl: BD_OG, link },
         buttons: [{ title: '빌드 보기', link }],
@@ -493,7 +510,7 @@ async function bdKakao(bi) {
   }
   /* 카카오 키도 공유 시트도 없는 환경(대개 PC). 링크를 붙여넣으면 카톡이
      og 태그로 카드를 만들어 주므로 그 방법을 알려 줍니다. */
-  bdCopyLink(bdShareURL(bi), '링크 복사됨 · 카카오톡에 붙여넣으세요');
+  bdCopyLink(bdShareURL(b), '링크 복사됨 · 카카오톡에 붙여넣으세요');
 }
 
 /* ── 렌더 ──────────────────────────────────────────────────────── */
@@ -893,9 +910,9 @@ $('#bd-cards').addEventListener('click', e => {
   const bulk = t.closest('[data-bulk]');
   if (bulk) return bdOpenBulk(+bulk.dataset.bulk);
   const lk = t.closest('[data-link]');
-  if (lk) return bdCopyLink(bdShareURL(+lk.dataset.link));
+  if (lk) return bdCopyLink(bdShareURL(bdState.builds[+lk.dataset.link]));
   const kk = t.closest('[data-kakao]');
-  if (kk) return bdKakao(+kk.dataset.kakao);
+  if (kk) return bdKakao(bdState.builds[+kk.dataset.kakao]);
 });
 
 $('#bd-cards').addEventListener('change', e => {
@@ -1091,7 +1108,7 @@ $('#rc-add-form').addEventListener('submit', async e => {
       method: 'POST',
       body: JSON.stringify({
         p_nickname: nick, p_title: (b.n || '').trim() || null,
-        p_build: bdShareParam(bdRecBi), p_weapon: b.wt,
+        p_build: bdShareParam(b), p_weapon: b.wt,
         p_tier: tier, p_scenes: scenes, p_party: party,
         p_easy_farm: $('#rc-easy').checked, p_password: pw,
       }),
@@ -1149,6 +1166,10 @@ function bdParse(param, title) {
 /* 추천빌드 탭에서 «가져오기» 를 누르면 부릅니다. 남의 빌드가 내 것을 덮으면 안 되므로
    덮어쓰지 않고 새 카드로 얹습니다. */
 function bdAdopt(param, title) {
+  /* 빌드 탭을 이번에 한 번도 안 열었으면 bdState 는 아직 저장값을 읽지 않은
+     «빈 빌드 하나» 입니다. 그 위에 얹고 저장하면 저장해 둔 내 빌드가 전부 지워집니다.
+     drawBuild() 가 첫 호출에서 저장값을 읽으므로 먼저 부릅니다(두 번째부터는 그리기만). */
+  drawBuild();
   const b = bdParse(param, title);
   /* 실패 이유는 여기서 다 알립니다. 호출부가 false 하나만 보고 «읽지 못했습니다» 로
      뭉뚱그리면, 개수가 꽉 찬 것뿐인데 빌드가 깨진 줄로 읽습니다. */

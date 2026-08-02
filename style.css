@@ -1274,7 +1274,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rk-vlinks { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .rk-vlinks .btn { justify-content: center; }
 /* .rk-vh button:hover 가 «클래스+요소»라 더 세므로, 창 안쪽도 함께 적어 이깁니다. */
-.rk-kakao:hover, .rk-vh .rk-kakao:hover {
+/* 추천빌드 카드에는 «댓글» 도 말풍선이라 그림만으로는 갈리지 않습니다.
+   카카오 노랑을 늘 입혀 «이건 카톡» 이 글자 없이 읽히게 합니다. */
+.btn.rc-kakao { color: #FEE500; }
+.rk-kakao:hover, .rk-vh .rk-kakao:hover, .rc-kakao:hover {
   color: #3C1E1E; background: #FEE500; border-color: #FEE500;
 }
 /* display:none 이면 자리까지 사라집니다. 자리는 남기고 보이지만 않게 합니다
@@ -1649,8 +1652,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 #rc-view-close:hover { color: var(--bone); background: rgba(255,255,255,.12); }
 .rc-view-sub { flex: none; margin: 0 20px 10px; font-size: .78rem; color: var(--muted); }
 #rc-view-body { flex: 1; min-height: 60px; overflow-y: auto; padding: 0 20px 4px; }
-.rc-view-foot { flex: none; margin: 0 20px; padding: 12px 0 16px; border-top: 1px solid var(--line); }
-.rc-view-foot .btn { width: 100%; padding: 10px; }
+.rc-view-foot { flex: none; display: flex; gap: 8px; margin: 0 20px; padding: 12px 0 16px; border-top: 1px solid var(--line); }
+/* 공유는 아이콘만이라 제 너비로 두고, 가져오기가 남는 자리를 다 씁니다. */
+.rc-view-foot .btn { padding: 10px; }
+.rc-view-foot #rc-view-use { flex: 1; }
 
 /* 댓글 */
 #rc-cm { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }

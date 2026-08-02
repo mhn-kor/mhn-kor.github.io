@@ -14,18 +14,22 @@ const ctx = {
   /* 화면이 없으므로 요소를 흉내만 냅니다. hidden 을 참으로 두면 build.js 가
      스스로 그리지 않아, 계산 함수만 꺼내 쓸 수 있습니다. */
   $: () => ({ hidden: true, addEventListener() {} }),
-  document: { querySelector: () => null },
+  /* 공유 링크 길이를 배포 주소 기준으로 재야 해서 og:url 만 진짜 값을 돌려줍니다. */
+  document: { querySelector: sel => (/og:url/.test(sel) ? { content: 'https://mhn-kor.github.io/qr/' } : null) },
   nickAuto() {},                    // record.js 것. 화면이 없으니 빈 껍데기면 됩니다.
   closeOnBackdrop() {},             // app.js 것. 위와 같은 이유로 껍데기입니다.
   localStorage: { getItem: () => null, setItem() {} },
 };
 vm.createContext(ctx);
-for (const f of ['build-data.js', 'build.js']) {
+/* 표류석은 smelt-data.js 에서 옵니다 — 공유 링크 길이의 대부분이 표류석입니다. */
+for (const f of ['smelt-data.js', 'build-data.js', 'build.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 }
 /* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
-const [BUILD, bdWSkills, bdTotals, bdNewBuild, bdBulkRows, bdArmorSkills] =
-  ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild', 'bdBulkRows', 'bdArmorSkills'].map(n => vm.runInContext(n, ctx));
+const [BUILD, bdWSkills, bdTotals, bdNewBuild, bdBulkRows, bdArmorSkills,
+  bdShareParam, bdShareAbs, bdParse, bdStones, BD_KAKAO_URL_MAX] =
+  ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild', 'bdBulkRows', 'bdArmorSkills',
+    'bdShareParam', 'bdShareAbs', 'bdParse', 'bdStones', 'BD_KAKAO_URL_MAX'].map(n => vm.runInContext(n, ctx));
 
 let fail = 0;
 const check = (label, fn) => {
@@ -91,6 +95,60 @@ check('일괄선택: 스킬은 이름 전체가 같아야 걸린다', () => {
   /* 자동완성으로 고른 전체 이름은 그대로 걸려야 합니다. */
   assert.ok(bdArmorSkills().includes('불속성 공격 강화'), '자동완성 목록에 스킬이 빠졌습니다');
   assert.ok(bdBulkRows('불속성 공격 강화').length, '전체 이름으로 검색해도 결과가 없습니다');
+});
+
+/* ── 공유 링크 ────────────────────────────────────────────────────
+   카카오톡 공유는 완성된 메시지가 1만 자를 넘으면 카카오 오류 페이지로 튕깁니다.
+   카드가 링크를 열아홉 번 담으므로 «링크 길이 × 스무 배» 가 곧 메시지 크기입니다.
+   여섯 부위를 다 갖춘 빌드가 그 한도를 넘겨서 공유가 깨졌던 적이 있습니다. */
+
+/* 여섯 부위 + 부위마다 표류석 하나 — 추천빌드에서 가져오는 빌드의 흔한 모습입니다. */
+function fullBuild() {
+  const b = bdNewBuild();
+  const wset = BUILD.sets.find(s => (s.weapons || []).some(w => w.wt === b.wt));
+  if (wset) b.w = wset.key;
+  for (const { k } of BUILD.parts) {
+    /* 링크가 가장 길어지는 쪽으로 고릅니다 — 키가 길고 표류 슬롯이 있는 방어구. */
+    const s = BUILD.sets.filter(x => x.pieces[k] && x.pieces[k].slot > 0)
+      .sort((x, y) => y.key.length - x.key.length)[0];
+    if (!s) continue;
+    b[k] = s.key;
+    const g = bdStones().slice().sort((x, y) =>
+      (y.group.length + y.skills[0].name.length) - (x.group.length + x.skills[0].name.length))[0];
+    b.ds[k] = [{ c: g.group, s: g.skills.map(x => x.name).sort((x, y) => y.length - x.length)[0] }];
+  }
+  return b;
+}
+
+check('공유 링크에 쿼리를 끊는 글자가 없다', () => {
+  const p = bdShareParam(fullBuild());
+  /* 이 글자들이 날것으로 들어가면 주소가 거기서 잘립니다(record.js 의 rkBuildParam 도
+     [^&#\s]+ 로 떼어 갑니다). 한글·구분자는 일부러 그대로 둡니다 — 길이가 세 배가 됩니다. */
+  assert.ok(!/[&#?\s]/.test(p), `공유 파라미터에 끊기는 글자가 있습니다: ${p}`);
+});
+
+check('여섯 부위 빌드의 공유 링크가 카카오 한도 안에 든다', () => {
+  const len = bdShareAbs(fullBuild()).length;
+  assert.ok(len <= BD_KAKAO_URL_MAX,
+    `여섯 부위 빌드 링크가 ${len}자입니다(한도 ${BD_KAKAO_URL_MAX}). 이대로면 모바일 카톡 공유가 오류 페이지로 튕깁니다`);
+});
+
+check('공유 링크를 다시 읽으면 같은 빌드가 된다', () => {
+  const b = fullBuild();
+  const back = bdParse(bdShareParam(b));
+  assert.ok(back, '방금 만든 공유 파라미터를 못 읽었습니다');
+  for (const k of ['w', 'wt', 'st', ...BUILD.parts.map(p => p.k)]) {
+    assert.strictEqual(back[k], b[k], `${k} 가 왕복에서 바뀌었습니다`);
+  }
+  /* deepStrictEqual 은 프로토타입까지 봅니다. bdParse 가 만든 객체는 vm 안쪽 것이라
+     바깥에서 만든 객체와 늘 다르게 나옵니다 — 값만 견주면 됩니다. */
+  assert.strictEqual(JSON.stringify(back.ds), JSON.stringify(b.ds), '표류석이 왕복에서 바뀌었습니다');
+});
+
+check('전부 인코딩된 옛 링크도 그대로 읽힌다', () => {
+  const now = bdShareParam(fullBuild());
+  const old = encodeURIComponent(decodeURIComponent(now));
+  assert.strictEqual(JSON.stringify(bdParse(old)), JSON.stringify(bdParse(now)), '옛 형식 링크가 깨졌습니다');
 });
 
 console.log(fail ? `실패 ${fail}건` : '모두 통과');

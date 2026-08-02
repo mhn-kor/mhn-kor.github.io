@@ -124,6 +124,7 @@ function rcCard(r, rank) {
         <span class="rc-t score" title="추천도 ${r.score} — 오래될수록 낮아지고 좋아요·싫어요가 반영됩니다"
               aria-label="추천도 ${r.score}">${BD_I.star}<b>${r.score}</b></span>
         <button class="btn ghost" data-rc-view="${r.id}" title="미리보기" aria-label="미리보기">${RC_I.eye}<span class="lbl">미리보기</span></button>
+        <button class="btn ghost rc-kakao" data-rc-kakao="${r.id}" title="카카오톡 공유" aria-label="카카오톡으로 공유">${BD_I.kakao}</button>
         <button class="btn ghost" data-rc-use="${r.id}" title="내 빌드로 가져오기" aria-label="내 빌드로 가져오기">${RC_I.use}<span class="lbl">가져오기</span></button>
       </span>
     </div>
@@ -285,6 +286,18 @@ async function rcVote(id, v) {
   }
 }
 
+/* ── 공유 ─────────────────────────────────────────────────────────── */
+/* 카드는 남의 빌드라 내 목록(bdState.builds)에 없습니다. 빌드 탭의 공유는 이제
+   번호가 아니라 빌드 객체를 받으므로, 문자열만 풀어 그대로 넘기면 됩니다.
+   카드 내용·카톡 템플릿·링크 형식이 «가져오기» 한 뒤 공유한 것과 똑같아집니다. */
+function rcShare(id) {
+  const row = rcRows.find(x => x.id === id);
+  if (!row || typeof bdKakao !== 'function') return;
+  const b = bdParse(row.build, row.title);
+  if (!b) return toast('빌드를 읽지 못했습니다');
+  bdKakao(b);
+}
+
 /* ── 가져오기 ─────────────────────────────────────────────────────── */
 /* 빌드 탭에 새 카드로 얹고 그 탭으로 넘깁니다. 남의 빌드가 내 것을 덮으면 안 되므로
    덮어쓰지 않고 항상 새 카드로 만듭니다. */
@@ -350,6 +363,8 @@ $('#rc-list').addEventListener('click', e => {
   if (d) return rcAskDelete(+d.closest('[data-rc]').dataset.rc);
   const v = e.target.closest('[data-vote]');
   if (v) { const [id, val] = v.dataset.vote.split(':'); return rcVote(+id, +val); }
+  const kk = e.target.closest('[data-rc-kakao]');
+  if (kk) return rcShare(+kk.dataset.rcKakao);
   const u = e.target.closest('[data-rc-use]');
   if (u) return rcUse(+u.dataset.rcUse);
   /* 댓글 아이콘으로 열면 댓글이 보이는 자리에서 시작합니다. 장비부터 열리면
@@ -364,6 +379,9 @@ $('#rc-list').addEventListener('click', e => {
 });
 
 $('#rc-view-close').addEventListener('click', () => $('#rc-view').close());
+$('#rc-view-kakao').innerHTML = BD_I.kakao;
+/* 공유는 창을 닫지 않습니다 — 보던 자리에서 카톡 창만 뜨는 게 자연스럽습니다. */
+$('#rc-view-kakao').addEventListener('click', () => rcShare(+$('#rc-view-use').dataset.rcUse));
 $('#rc-view-use').addEventListener('click', e => {
   $('#rc-view').close();
   rcUse(+e.currentTarget.dataset.rcUse);
@@ -496,7 +514,7 @@ $('#rc-pick-q').addEventListener('input', e => rcPickFill(e.target.value));
 $('#rc-pick-cancel').addEventListener('click', () => $('#rc-pickdlg').close());
 $('#rc-pick-list').addEventListener('click', e => {
   const my = e.target.closest('[data-my-pick]');
-  if (my) return rcPickApply(bdShareParam(+my.dataset.myPick));
+  if (my) return rcPickApply(bdShareParam(bdState.builds[+my.dataset.myPick]));
   const b = e.target.closest('[data-rc-pick]');
   if (!b) return;
   const row = rcRows.find(x => x.id === +b.dataset.rcPick);
