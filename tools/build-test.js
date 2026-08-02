@@ -151,5 +151,29 @@ check('전부 인코딩된 옛 링크도 그대로 읽힌다', () => {
   assert.strictEqual(JSON.stringify(bdParse(old)), JSON.stringify(bdParse(now)), '옛 형식 링크가 깨졌습니다');
 });
 
+/* 이 검사는 $ 를 바꿔치기하므로 맨 마지막에 둡니다. */
+check('스킬 표시를 끄면 같은 목록이 아이콘 격자가 된다', () => {
+  const out = {};
+  ctx.esc = String;                 // app.js 것. 여기서는 그대로 돌려주면 됩니다.
+  ctx.$ = sel => ({
+    hidden: true, value: '', addEventListener() {}, setAttribute() {}, classList: { toggle() {} },
+    set innerHTML(v) { out[sel] = v; },
+    set textContent(v) { out[sel + '/text'] = v; },
+  });
+  vm.runInContext('bdState = { builds: [bdNewBuild()], detail: false }; bdPick = { kind: "gear", bi: 0, target: "helm" };', ctx);
+  const fill = on => {
+    vm.runInContext(`bdGearSk = ${on}; bdFillGear("")`, ctx);
+    return out['#bd-modal-body'];
+  };
+  const on = fill(true), off = fill(false);
+  const items = h => (h.match(/data-v="/g) || []).length;
+  assert.ok(items(on) > 10, '목록이 비었습니다');
+  assert.strictEqual(items(on), items(off), '스킬을 끄면 고를 수 있는 방어구 수가 달라집니다');
+  assert.ok(on.includes('bd-ls') && !on.includes('bd-list grid'), '스킬 켬이 지금까지의 목록이 아닙니다');
+  assert.ok(off.includes('bd-list grid') && !off.includes('bd-ls'), '스킬 끔이 아이콘 격자가 아닙니다');
+  /* 격자는 소재 구분 없이 통으로 봅니다 — 머리글이 줄을 끊으면 한 화면에 덜 들어갑니다. */
+  assert.ok(on.includes('bd-gh') && !off.includes('bd-gh'), '격자에 소재 머리글이 남아 있습니다');
+});
+
 console.log(fail ? `실패 ${fail}건` : '모두 통과');
 process.exit(fail ? 1 : 0);

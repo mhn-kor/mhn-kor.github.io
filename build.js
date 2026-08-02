@@ -737,6 +737,7 @@ function bdOpen(title, bodyHtml, withSearch, opt = {}) {
   $('#bd-modal-body').innerHTML = bodyHtml;
   $('#bd-srow').hidden = !withSearch;
   $('#bd-clear').hidden = !opt.clear;
+  $('#bd-gsk').hidden = !opt.sk;      // 스킬 표시는 장비 선택에서만 씁니다
   $('#bd-bulk-foot').hidden = true;
   $('#bd-bulk-foot').innerHTML = '';
   if (withSearch) {
@@ -772,6 +773,16 @@ function bdOpenStyle(bi) {
 }
 
 /* 장비 (무기 소재 / 방어구 세트) */
+/* 스킬을 켜면 지금까지처럼 한 줄에 한 세트씩, 끄면 몬스터 아이콘만 격자로 깝니다.
+   85줄을 손가락으로 넘기는 것보다 아이콘을 훑는 편이 빨라 모바일은 끈 채로 시작합니다.
+   자리가 넉넉한 PC 는 켠 채로 시작하고, 버튼은 양쪽 모두에 있습니다. */
+let bdGearSk = !globalThis.matchMedia?.('(max-width: 640px)').matches;
+function bdSkBtn() {
+  const el = $('#bd-gsk');
+  el.classList.toggle('on', bdGearSk);
+  el.setAttribute('aria-pressed', String(bdGearSk));
+}
+
 function bdOpenGear(bi, target) {
   bdPick = { kind: 'gear', bi, target };
   const b = bdState.builds[bi];
@@ -780,7 +791,8 @@ function bdOpenGear(bi, target) {
   const head = isW
     ? `<img src="assets/part/${esc(b.wt)}.png" width="24" height="24" alt="">무기 · ${esc(type.n)}`
     : `<img src="assets/part/${esc(target)}.png" width="24" height="24" alt="">${esc(BD_PARTS().find(p => p.k === target).n)}`;
-  bdOpen(head, '', true);
+  bdOpen(head, '', true, { sk: true });
+  bdSkBtn();
   bdFillGear('');
 }
 
@@ -801,20 +813,32 @@ function bdFillGear(q) {
   });
 
   /* 그룹이 바뀌는 자리에 머리글을 끼웁니다. 목록이 85줄이라 어디서 이벤트·기타
-     소재가 시작되는지 보이지 않으면 찾기 어렵습니다. */
+     소재가 시작되는지 보이지 않으면 찾기 어렵습니다.
+     아이콘 격자에는 넣지 않습니다 — 머리글이 줄을 끊으면 한 화면에 들어가는 수가
+     줄어, 아이콘만 훑겠다는 목적과 어긋납니다. */
   const GNAME = ['몬스터 소재', '이벤트 소재', '기본 소재'];
   let lastG = -1;
 
   $('#bd-modal-body').innerHTML =
-    `<ul class="bd-list">
-      <li><button class="bd-lr clear" data-v="">선택 해제</button></li>
+    `<div class="bd-list${bdGearSk ? '' : ' grid'}">
+      <button class="bd-lr clear" data-v="">선택 해제</button>
       ${rows.map(s => {
-        const head = s.g !== lastG ? `<li class="bd-gh">${esc(GNAME[s.g] || '기타')}</li>` : '';
+        const head = bdGearSk && s.g !== lastG ? `<p class="bd-gh">${esc(GNAME[s.g] || '기타')}</p>` : '';
         lastG = s.g;
-        return head + bdGearRow(s, b, target, isW, chosen);
+        return head + (bdGearSk ? bdGearRow : bdGearCell)(s, b, target, isW, chosen);
       }).join('')}
-    </ul>`;
+    </div>`;
   $('#bd-modal-count').textContent = `${rows.length}종`;
+}
+
+/* 스킬 끔 — 몬스터 아이콘만 깔고 나머지는 title 로 미룹니다. 한 줄에 몇 개가
+   들어갈지는 CSS 가 화면 너비를 보고 정합니다(auto-fill). */
+function bdGearCell(s, b, target, isW, chosen) {
+  const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
+  const sk = (isW ? bdWSkills(s, item) : item.skills).map(x => `${x.s} ${x.lv}`).join(', ');
+  const tip = [s.name, item.name, sk, !isW && item.slot ? `표류석 ${item.slot}칸` : ''].filter(Boolean).join(' · ');
+  return `<button class="bd-lr cell${s.key === chosen ? ' on' : ''}" data-v="${esc(s.key)}"
+    title="${esc(tip)}" aria-label="${esc(s.name)}">${bdMon(s.key)}</button>`;
 }
 
 function bdGearRow(s, b, target, isW, chosen) {
@@ -834,7 +858,7 @@ function bdGearRow(s, b, target, isW, chosen) {
         const slots = !isW && item.slot
           ? `<span class="bd-rs" title="표류석 슬롯 ${item.slot}칸">${'<i></i>'.repeat(item.slot)}</span>`
           : '';
-        return `<li><button class="bd-lr gear${s.key === chosen ? ' on' : ''}" data-v="${esc(s.key)}">
+        return `<button class="bd-lr gear${s.key === chosen ? ' on' : ''}" data-v="${esc(s.key)}">
           ${bdMon(s.key)}
           <span class="bd-lt">
             <b>${esc(s.name)}</b>
@@ -842,7 +866,7 @@ function bdGearRow(s, b, target, isW, chosen) {
             <span class="bd-ls">${sk.map(x => `<em>${esc(x.s)}<b>${x.lv}</b></em>`).join('')}</span>
           </span>
           ${slots}
-        </button></li>`;
+        </button>`;
   })());
 }
 
@@ -1012,6 +1036,12 @@ $('#bd-bulk-foot').addEventListener('click', e => {
     bdSave(); bdRender(); bdDlg().close();
     toast('방어구를 적용했습니다');
   }
+});
+
+$('#bd-gsk').addEventListener('click', () => {
+  bdGearSk = !bdGearSk;
+  bdSkBtn();
+  bdFillGear($('#bd-q').value.trim());
 });
 
 $('#bd-clear').addEventListener('click', () => {
