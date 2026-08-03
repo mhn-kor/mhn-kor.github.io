@@ -1,0 +1,62 @@
+# 매일 DB 를 통째로 덤프해서 «워크플로 아티팩트» 로 30일 보관합니다.
+#
+# 저장소에 커밋하지 않는 이유:
+#   1. 여기는 공개 저장소입니다. 덤프 안에는 마스터 비밀번호와 이용자 비밀번호의
+#      bcrypt 해시가 들어 있습니다. 커밋하는 순간 누구나 시도 횟수 제한 없이
+#      오프라인에서 해시를 두들길 수 있습니다.
+#   2. git 이력은 지워지지 않습니다. 커밋으로는 «30일 보관» 자체가 불가능합니다.
+#      아티팩트의 retention-days 는 30일이 지나면 GitHub 가 정말로 지웁니다.
+#   3. 매일 수 MB 씩 쌓이면 clone 이 계속 무거워집니다.
+#
+# 공개 저장소는 아티팩트도 누구나 내려받을 수 있으므로 암호화해서 올립니다.
+#
+# 필요한 시크릿 (Settings → Secrets and variables → Actions):
+#   SUPABASE_DB_URL    Supabase → Project Settings → Database →
+#                      «Session pooler» 의 URI. «Direct connection» 은 IPv6 전용이라
+#                      IPv4 뿐인 GitHub 러너에서 연결되지 않습니다. 포트는 5432 여야
+#                      합니다(6543 은 트랜잭션 모드라 pg_dump 가 못 씁니다).
+#   BACKUP_PASSPHRASE  덤프를 풀 때 쓸 암호. 길고 무작위로. 잃어버리면 백업도 끝입니다.
+#                      GitHub 밖에도 따로 적어 두세요.
+#
+# 받는 곳: 저장소 → Actions 탭 → «DB 백업» → 실행 하나 클릭 → 맨 아래 Artifacts.
+# GitHub 가 아티팩트를 zip 으로 한 번 더 감싸므로 «.gpg.zip» 으로 내려옵니다.
+#
+# 복구:
+#   unzip mhn-20260803.sql.gz.gpg.zip
+#   gpg -d mhn-20260803.sql.gz.gpg | gunzip | psql "$SUPABASE_DB_URL"
+
+name: DB 백업
+
+on:
+  schedule:
+    - cron: '7 15 * * *'      # 매일 00:07 KST (cron 은 UTC 기준입니다)
+  workflow_dispatch:           # 손으로도 돌려 보기 — 복구 연습은 해 봐야 백업입니다
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 덤프 · 압축 · 암호화
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -eo pipefail
+          # 러너에 깔린 pg_dump 는 버전이 서버보다 낮을 수 있습니다. 이미지로 고정합니다.
+          docker run --rm -e DB_URL postgres:17-alpine \
+            sh -c 'pg_dump --schema=public --no-owner "$DB_URL"' > dump.sql
+          # 연결은 됐는데 내용이 빈 덤프를 성공으로 올리지 않기 위한 최소 확인.
+          grep -q 'CREATE TABLE public.friend_codes' dump.sql
+          grep -q 'CREATE TABLE public.records' dump.sql
+          # GITHUB_ENV 는 다음 스텝부터 반영되므로 이 스텝에서는 지역 변수를 씁니다.
+          NAME="mhn-$(date -u -d '9 hours' +%Y%m%d).sql.gz.gpg"
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          gzip -9 dump.sql
+          gpg --batch --symmetric --cipher-algo AES256 \
+              --passphrase "$PASSPHRASE" -o "$NAME" dump.sql.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.NAME }}
+          path: ${{ env.NAME }}
+          retention-days: 30

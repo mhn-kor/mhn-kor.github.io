@@ -99,7 +99,8 @@ const RK_SRC = {
     thumb: id => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
     /* nocookie 도메인은 재생 전까지 추적 쿠키를 심지 않습니다. */
     embed: id => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`,
-    mark: '',
+    /* 유튜브는 썸네일이 있어 카드에는 안 쓰이지만, 등록창 레이블의 로고 줄이 이걸 씁니다. */
+    mark: '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M21.6 7.2a2.8 2.8 0 0 0-2-2C17.9 4.8 12 4.8 12 4.8s-5.9 0-7.6.4a2.8 2.8 0 0 0-2 2C2 8.9 2 12 2 12s0 3.1.4 4.8a2.8 2.8 0 0 0 2 2c1.7.4 7.6.4 7.6.4s5.9 0 7.6-.4a2.8 2.8 0 0 0 2-2c.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8zM10 15.2V8.8l6 3.2-6 3.2z"/></svg>',
   },
   x: {
     name: 'X', kor: 'X',
@@ -115,21 +116,21 @@ const RK_SRC = {
     embed: id => `https://www.tiktok.com/embed/v2/${id}`,
     mark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>',
   },
-  /* 치지직·네이버TV 는 로고가 글자체(워드마크)라 한 줄 path 로 옮길 수 없습니다.
-     어설프게 흉내 낸 그림보다 이름 그대로가 알아보기 낫습니다 — mark 는 그냥 HTML 입니다. */
+  /* 치지직 로고는 번개 모양 «Z», 네이버는 «N» 입니다. 둘 다 직선 다각형이라 그대로 옮겼습니다
+     (실제 로고 파일을 받아 보고 좌표를 땄습니다). */
   cz: {
     name: '치지직', kor: '치지직',
     canon: id => `https://chzzk.naver.com/clips/${id}`,
     thumb: () => '',
     embed: id => `https://chzzk.naver.com/embed/clip/${id}`,
-    mark: '<b>치지직</b>',
+    mark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.7 2H17L15 5H21.3L13 16.7H21V22H2.7L11.3 10H4Z"/></svg>',
   },
   nv: {
     name: '네이버TV', kor: '네이버TV',
     canon: id => `https://tv.naver.com/v/${id}`,
     thumb: () => '',
     embed: id => `https://tv.naver.com/embed/${id}`,
-    mark: '<b>네이버TV</b>',
+    mark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 3h5.6l4.8 7.1V3H20v18h-5.6L9.6 13.9V21H4z"/></svg>',
   },
   /* 인스타 임베드는 영상칸을 «폭 × 1.25» 로만 잡고(9:16 릴스도 4:5 로 자릅니다), 위아래
      껍데기(프로필줄 · «더 보기» 줄)가 폭과 무관하게 208px 을 먹습니다. 직접 재어 확인했습니다.
@@ -742,6 +743,13 @@ function rkFormUI() {
   rkFormLabels();                 // 난이도·종류 선택칸을 채웁니다
   // 대부분의 기록이 10성이라 기본값으로 둡니다. 잘못 올려도 지우려면 비밀번호가 필요합니다.
   $('#rk-star').value = String(RK_STAR_DEFAULT);
+
+  /* «어디를 받는지» 는 표에서 그립니다 — 갈래를 늘리면 여기도 저절로 따라옵니다.
+     이름을 다 적으면 좁은 화면에서 두 줄로 넘어가므로 로고만 세웁니다.
+     로고는 장식이라 읽어주는 기기에는 이름을 글로 줍니다(마우스에는 title 로). */
+  const srcs = Object.values(RK_SRC);
+  $('#rk-url-srcs').innerHTML = srcs.map(s => `<span title="${esc(s.kor)}">${s.mark}</span>`).join('');
+  $('#rk-url-srcs').setAttribute('aria-label', srcs.map(s => s.kor).join(' · '));
 
   $('#rk-reg-form').addEventListener('click', e => {
     const pick = e.target.closest('.rk-pick');

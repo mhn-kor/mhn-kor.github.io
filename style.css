@@ -1227,10 +1227,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
    가운데 재생 단추가 그 위에 얹히므로 옅게 둡니다. */
 .rk-logo { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.11); }
 .rk-logo svg { width: 44%; height: auto; }
-/* 치지직·네이버TV 는 로고가 워드마크라 이름 그대로 깝니다(record.js 의 RK_SRC 주석).
-   가운데 재생 단추(44px)보다 확실히 넓어야 합니다 — 그보다 좁으면 통째로 가려져
-   카드가 빈 검은 칸으로 보입니다(21px 로 뒀다가 실제로 그랬습니다). */
-.rk-logo b { font-size: 30px; font-weight: 800; letter-spacing: -.04em; white-space: nowrap; }
+/* 등록창의 «받는 곳» 줄. 이름을 다 적으면 좁은 화면에서 두 줄로 넘어가 로고만 세웁니다.
+   레이블 글자와 같은 색을 쓰므로 currentColor 인 SVG 를 그대로 얹으면 됩니다. */
+.rk-srcs { display: inline-flex; align-items: center; gap: 7px; vertical-align: -2px; }
+.rk-srcs svg { width: 14px; height: 14px; display: block; }
 
 /* 크게 보기 — 세로 영상이라 창도 세로로 세웁니다.
    창은 스크롤하지 않습니다. 제목·태그·아래줄은 고정하고, 영상칸만 늘고 줄어 화면에 맞춥니다.
