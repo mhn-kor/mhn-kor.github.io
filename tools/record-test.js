@@ -4,11 +4,11 @@
    (스키마 CHECK 가 막아 등록이 통째로 실패) 순위가 어긋납니다.
    record.js 의 rkVid / rkCanon / rkParse / rkTime 을 고쳤다면 반드시 돌려보세요. */
 const path = require('path');
-const { rkVid, rkCanon, rkEmbed, rkTime, rkParse, rkBuildParam,
+const { rkVid, rkCanon, rkEmbed, rkThumb, rkShortLink, RK_SRC, rkTime, rkParse, rkBuildParam,
   rkOrder, rkKey, rkGroup, rkTopMap } = require(path.join(__dirname, '..', 'record.js'));
 
 // supabase/schema.sql 의 video_url CHECK 와 같은 식입니다. 여기가 통과하면 DB 도 통과합니다.
-const CHECK = /^https:\/\/(www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|x\.com\/i\/status\/[0-9]{5,25})$/;
+const CHECK = /^https:\/\/(www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|x\.com\/i\/status\/[0-9]{5,25}|www\.tiktok\.com\/@i\/video\/[0-9]{5,25})$/;
 
 let fail = 0;
 const ok = (what, got, want) => {
@@ -42,6 +42,18 @@ for (const url of [
   ok(`X: ${url}`, rkVid(url), { kind: 'x', id: '1780000000000000000' });
 }
 
+/* 틱톡. @아이디 자리는 뭐가 오든 숫자 id 만 뽑습니다 — 임베드도 정규 주소도 그것만 씁니다. */
+const TT = '6718335390845095173';
+for (const url of [
+  `https://www.tiktok.com/@hunter/video/${TT}`,
+  `https://www.tiktok.com/@hunter/video/${TT}?is_from_webapp=1&sender_device=pc`,
+  `https://m.tiktok.com/@hunter.mh/video/${TT}`,
+  `https://www.tiktok.com/@i/video/${TT}`,                        // 우리가 저장하는 형태를 되읽기
+  `  https://www.tiktok.com/@hunter/video/${TT}  `,
+]) {
+  ok(`틱톡: ${url.trim()}`, rkVid(url), { kind: 'tt', id: TT });
+}
+
 for (const bad of [
   '', '  ', null, undefined, 'youtube.com/shorts/' + YT,          // 스킴 없음 → URL 파싱 실패
   'https://www.youtube.com/watch?v=short',                        // 11자가 아님
@@ -50,9 +62,23 @@ for (const bad of [
   'https://example.com/x.com/i/status/1780000000000000000',       // 호스트를 경로에 숨긴 것
   'javascript:alert(1)//youtu.be/' + YT,
   'https://x.com/hunter/status/12',                               // 너무 짧은 id
+  `https://vm.tiktok.com/ZMabcdefg/`,                             // 짧은 링크 — 도착지를 알 수 없음
+  `https://vt.tiktok.com/ZSabcdefg/`,
+  `https://www.tiktok.com/video/${TT}`,                           // @아이디가 없으면 틱톡도 404 로 보냅니다
+  'https://www.tiktok.com/@hunter/photo/6718335390845095173',     // 사진 글은 영상이 아님
+  `https://example.com/www.tiktok.com/@i/video/${TT}`,
 ]) {
   ok(`거부: ${String(bad).slice(0, 46)}`, rkVid(bad), null);
 }
+
+/* 짧은 링크는 «못 받는 주소» 가 아니라 «이렇게 바꿔 오세요» 로 안내해야 합니다. */
+ok('짧은 링크로 알아봄', [
+  rkShortLink('https://vm.tiktok.com/ZMabcdefg/'),
+  rkShortLink('https://vt.tiktok.com/ZSabcdefg/'),
+  rkShortLink(`https://www.tiktok.com/@hunter/video/${TT}`),
+  rkShortLink('https://youtu.be/' + YT),
+  rkShortLink(''),
+], [true, true, false, false, false]);
 
 /* 정규화 — 같은 영상은 어떤 주소로 넣어도 한 형태가 되어야 unique 가 듣습니다. */
 ok('숏츠·일반·단축이 한 주소로', [
@@ -62,12 +88,27 @@ ok('숏츠·일반·단축이 한 주소로', [
 ], Array(3).fill(`https://www.youtube.com/watch?v=${YT}`));
 ok('X 는 i/status 로', rkCanon(rkVid('https://twitter.com/hunter/status/1780000000000000000')),
   'https://x.com/i/status/1780000000000000000');
+/* 같은 영상을 다른 계정 주소로 올려도 한 형태여야 unique 가 듣습니다. @i 는 틱톡이 원래
+   주인에게 넘겨주는 공식 경로입니다(실제로 열어 확인). */
+ok('틱톡은 @i/video 로', [
+  rkCanon(rkVid(`https://www.tiktok.com/@hunter/video/${TT}?is_from_webapp=1`)),
+  rkCanon(rkVid(`https://m.tiktok.com/@another/video/${TT}`)),
+], Array(2).fill(`https://www.tiktok.com/@i/video/${TT}`));
 
-for (const u of [`https://youtu.be/${YT}`, 'https://twitter.com/h/status/1780000000000000000']) {
+for (const u of [`https://youtu.be/${YT}`, 'https://twitter.com/h/status/1780000000000000000',
+  `https://www.tiktok.com/@hunter/video/${TT}`]) {
   if (!CHECK.test(rkCanon(rkVid(u)))) { fail++; console.error(`✗ 스키마 CHECK 불통과: ${u}`); }
 }
 
 ok('임베드는 nocookie', rkEmbed({ kind: 'yt', id: YT }).startsWith('https://www.youtube-nocookie.com/embed/'), true);
+ok('틱톡 임베드', rkEmbed({ kind: 'tt', id: TT }), `https://www.tiktok.com/embed/v2/${TT}`);
+
+/* 갈래마다 카드가 그릴 것이 있어야 합니다 — 썸네일이 없으면 로고를 깝니다.
+   둘 다 없는 갈래를 넣으면 카드가 빈 검은 칸이 됩니다. */
+for (const [k, s] of Object.entries(RK_SRC)) {
+  ok(`${k}: 썸네일이든 로고든 하나는 있음`, !!(s.thumb('x') || s.mark), true);
+  ok(`${k}: 이름이 있음`, !!(s.name && s.kor), true);
+}
 
 /* ── 시간 (초 단위 정수만. 소수점도 분:초도 받지 않습니다) ────── */
 ok('45', rkParse('45'), 45);

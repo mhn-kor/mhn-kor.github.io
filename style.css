@@ -1222,10 +1222,11 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
    «빌드 보기» 가 맡습니다. */
 .rk-bdg { left: 7px; bottom: 7px; color: var(--amber-hi); background: rgba(0,0,0,.72); }
 
-/* X 는 공개 썸네일을 주지 않습니다(record.js 주석). 빈 검은 칸 대신 X 마크를 크게 깔아
-   «X 영상» 임을 보여 줍니다. 가운데 재생 단추가 그 위에 얹히므로 옅게 둡니다. */
-.rk-xbg { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.11); }
-.rk-xbg svg { width: 44%; height: auto; }
+/* X 도 틱톡도 공개 썸네일을 주지 않습니다(record.js 의 RK_SRC 주석). 빈 검은 칸 대신
+   그 서비스 로고를 크게 깔아 어디 영상인지 보여 줍니다.
+   가운데 재생 단추가 그 위에 얹히므로 옅게 둡니다. */
+.rk-logo { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.11); }
+.rk-logo svg { width: 44%; height: auto; }
 
 /* 크게 보기 — 세로 영상이라 창도 세로로 세웁니다.
    창은 스크롤하지 않습니다. 제목·태그·아래줄은 고정하고, 영상칸만 늘고 줄어 화면에 맞춥니다.
@@ -1265,6 +1266,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 /* 세로 영상은 높이에 맞춰 폭이 따라오게 합니다. align-self:center 라야 폭이 내용(9:16)에서
    나옵니다 — 기본값(stretch)이면 창 폭까지 늘어나 비율이 깨집니다. */
 .rk-v-body.yt { align-self: center; aspect-ratio: 9 / 16; max-width: 100%; }
+/* 틱톡 임베드는 비율이 고정이 아닙니다 — 영상 아래에 계정·«Watch now» 줄이 붙고, 폭이 325px
+   (틱톡이 정한 최소 폭)보다 좁아지면 그 줄이 잘립니다. 그래서 비율 대신 폭을 못 박고
+   높이는 창이 주는 만큼 다 씁니다. 좁은 화면에서는 max-width 가 먼저 듣습니다. */
+.rk-v-body.tt { align-self: center; width: 325px; max-width: 100%; }
 /* X 임베드는 트윗 글·버튼까지 들어가 비율이 제각각입니다. 다 그린 뒤 알려주는 높이를
    record.js 가 iframe 에 그대로 얹으므로(inline style), 여기서는 그게 창보다 클 때
    잘리지 않고 스크롤되게만 해 둡니다. */

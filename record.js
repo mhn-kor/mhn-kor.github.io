@@ -23,7 +23,9 @@ const RK_ELDER_STAR = 8;
 const RK_ELDER_F = 'elder';
 
 /* ── 영상 URL ──────────────────────────────────────────────────────
-   유튜브(숏츠·일반)와 X 만 받습니다. 지원하지 않는 주소는 null 이라 등록에서 막힙니다. */
+   유튜브(숏츠·일반) · X · 틱톡만 받습니다. 지원하지 않는 주소는 null 이라 등록에서 막힙니다.
+   한 곳을 늘리려면 세 군데를 같이 고쳐야 합니다 — 여기 호스트 한 갈래, 아래 RK_SRC 한 칸,
+   supabase/schema.sql 의 video_url CHECK 한 갈래. 셋이 어긋나면 «등록만 하면 실패»가 됩니다. */
 function rkVid(raw) {
   let u;
   try { u = new URL(String(raw || '').trim()); } catch (e) { return null; }
@@ -41,28 +43,66 @@ function rkVid(raw) {
     const m = u.pathname.match(/\/status(?:es)?\/(\d{5,25})/);
     return m ? { kind: 'x', id: m[1] } : null;
   }
+  /* 틱톡은 /@아이디/video/<숫자>. 아이디 자리는 뭐가 오든 상관없습니다 — 임베드도 정규 주소도
+     숫자 id 하나만 쓰기 때문입니다(@i 로 넣으면 틱톡이 원래 주인에게 넘겨줍니다).
+     vm·vt 짧은 링크는 여기 안 걸립니다 — 아래 rkShortLink 를 보세요. */
+  if (host === 'tiktok.com') {
+    const m = u.pathname.match(/^\/@[^/]+\/video\/(\d{5,25})/);
+    return m ? { kind: 'tt', id: m[1] } : null;
+  }
   return null;
 }
 
-/* 저장은 항상 이 두 형태로만. 같은 영상을 숏츠 주소와 일반 주소로 각각 올리는 것을
-   DB 의 unique 하나로 막을 수 있고, 스키마의 CHECK 가 곧 화이트리스트가 됩니다.
-   x.com/i/status/<id> 는 X 가 원래 글로 넘겨주는 공식 경로입니다. */
-const rkCanon = v => (v.kind === 'yt'
-  ? `https://www.youtube.com/watch?v=${v.id}`
-  : `https://x.com/i/status/${v.id}`);
+/* 틱톡 앱의 «공유 → 링크 복사»는 vm.tiktok.com/ZMxxxx 같은 짧은 링크를 줍니다. 도착지는
+   브라우저에서 알아낼 수 없습니다(리다이렉트를 따라가려면 fetch 인데 CORS 로 막힙니다).
+   그냥 «못 받는 주소»로 두면 tiktok.com 이 보이는데 왜 안 되는지 알 수 없으므로
+   등록창에서 이것만 따로 짚어 줍니다. */
+const rkShortLink = raw => /^https?:\/\/(vm|vt)\.tiktok\.com\//i.test(String(raw || '').trim());
+/* 등록창 미리보기와 제출 오류가 같이 씁니다. 오류 쪽은 textContent 라 태그 없는 맨 글이어야 합니다. */
+const RK_TT_SHORT = '틱톡 짧은 링크(vm.tiktok.com)는 받을 수 없습니다. 영상을 열어 주소창의 tiktok.com/@아이디/video/… 주소를 붙여넣어 주세요.';
+/* 등록창 미리보기의 기본 안내. 붙여넣기 전과 등록을 마친 뒤 같은 글이 서야 합니다.
+   index.html 의 #rk-preview 안에도 같은 글이 처음부터 박혀 있습니다(스크립트 전에 보이는 몫). */
+const RK_URL_HELP = '유튜브(숏츠 포함) · X · 틱톡 영상 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.';
 
-/* X 는 공개 썸네일이 없습니다 — 미리보기 이미지는 임베드 안에서만 나오고, 트윗 정보를
-   주는 syndication 엔드포인트는 브라우저에서 CORS 로 막힙니다(직접 확인).
-   빈 검은 칸으로 두면 고장 난 것처럼 보이므로 X 마크를 깔아 둡니다. */
-const rkThumb = v => (v.kind === 'yt' ? `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` : '');
-const RK_X_MARK = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7 8.1L23.3 22h-6.5l-5-6.6L6 22H2.9l7.5-8.6L2 2h6.6l4.6 6.1zm-1.1 18.1h1.7L7.4 3.8H5.6z"/></svg>';
+/* 저장은 갈래마다 canon 한 형태로만. 같은 영상을 숏츠 주소와 일반 주소로 각각 올리는 것을
+   DB 의 unique 하나로 막을 수 있고, 스키마의 CHECK 가 곧 화이트리스트가 됩니다.
+   x.com/i/status/<id> 와 tiktok.com/@i/video/<id> 는 두 서비스가 «누가 올렸는지 몰라도»
+   원래 글로 넘겨주는 공식 경로입니다(둘 다 실제로 열어 확인했습니다).
+
+   thumb 가 빈 문자열이면 카드에 mark(로고)를 깝니다.
+   X 도 틱톡도 쓸 수 있는 썸네일 주소가 없습니다 — X 의 syndication 은 CORS 로 막히고,
+   틱톡 oEmbed 는 CORS 는 열려 있지만 주소에 만료 서명이 붙어 담아 둘 수가 없습니다(직접 확인).
+   빈 검은 칸은 고장 난 것처럼 보이므로 로고를 깔아 둡니다. */
+const RK_SRC = {
+  yt: {
+    name: 'YouTube', kor: '유튜브',
+    canon: id => `https://www.youtube.com/watch?v=${id}`,
+    thumb: id => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+    /* nocookie 도메인은 재생 전까지 추적 쿠키를 심지 않습니다. */
+    embed: id => `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`,
+    mark: '',
+  },
+  x: {
+    name: 'X', kor: 'X',
+    canon: id => `https://x.com/i/status/${id}`,
+    thumb: () => '',
+    embed: id => `https://platform.twitter.com/embed/Tweet.html?id=${id}&theme=dark`,
+    mark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7 8.1L23.3 22h-6.5l-5-6.6L6 22H2.9l7.5-8.6L2 2h6.6l4.6 6.1zm-1.1 18.1h1.7L7.4 3.8H5.6z"/></svg>',
+  },
+  tt: {
+    name: 'TikTok', kor: '틱톡',
+    canon: id => `https://www.tiktok.com/@i/video/${id}`,
+    thumb: () => '',
+    embed: id => `https://www.tiktok.com/embed/v2/${id}`,
+    mark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>',
+  },
+};
 
 /* 재생을 누른 뒤에야 iframe 을 끼웁니다. 목록에 처음부터 iframe 을 깔면
-   한 화면에 유튜브 플레이어가 여러 개 올라와 스크롤이 버벅입니다.
-   nocookie 도메인은 재생 전까지 추적 쿠키를 심지 않습니다. */
-const rkEmbed = v => (v.kind === 'yt'
-  ? `https://www.youtube-nocookie.com/embed/${v.id}?autoplay=1&rel=0&playsinline=1`
-  : `https://platform.twitter.com/embed/Tweet.html?id=${v.id}&theme=dark`);
+   한 화면에 플레이어가 여러 개 올라와 스크롤이 버벅입니다. */
+const rkCanon = v => RK_SRC[v.kind].canon(v.id);
+const rkThumb = v => RK_SRC[v.kind].thumb(v.id);
+const rkEmbed = v => RK_SRC[v.kind].embed(v.id);
 
 /* ── 시간 ─────────────────────────────────────────────────────────
    초 단위 정수만 씁니다. 게임이 초로 보여주고 사람도 그렇게 적습니다.
@@ -121,7 +161,8 @@ function rkTopMap(rows) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { rkVid, rkCanon, rkEmbed, rkTime, rkParse, rkBuildParam, rkOrder, rkKey, rkGroup, rkTopMap };
+  module.exports = { rkVid, rkCanon, rkEmbed, rkThumb, rkShortLink, RK_SRC,
+    rkTime, rkParse, rkBuildParam, rkOrder, rkKey, rkGroup, rkTopMap };
 }
 
 /* 금 · 은 · 동 왕관. 리더보드 카드 왼쪽 위와 랭킹 탭이 같이 씁니다.
@@ -290,15 +331,15 @@ function rkItem(r, i, rank) {
      왕관은 필터와 무관한 «진짜» 순위라 무엇을 걸러 보든 같은 카드에 같은 왕관이 붙습니다. */
   const badges = `
     ${rkCrown(rkTop.get(r.id)) || (rank ? `<span class="rk-no${rank <= 3 ? ' top' : ''}">${rank}</span>` : '')}
-    <span class="rk-src">${v ? (v.kind === 'yt' ? 'YouTube' : 'X') : '영상'}</span>
+    <span class="rk-src">${v ? RK_SRC[v.kind].name : '영상'}</span>
     ${r.build ? '<span class="rk-bdg" title="빌드가 함께 등록된 기록입니다">빌드 있음</span>' : ''}
     <span class="rk-t">${rkTime(r.time_sec)}</span>`;
   return `
   <li class="rk-item" data-id="${r.id}">
     ${v ? `<button class="rk-play" type="button" data-i="${i}" aria-label="${esc(r.nickname)} 영상 크게 보기">
-      ${v.kind === 'yt'
+      ${rkThumb(v)
         ? `<img src="${esc(rkThumb(v))}" alt="" loading="lazy" onerror="this.hidden=true">`
-        : `<span class="rk-xbg" aria-hidden="true">${RK_X_MARK}</span>`}
+        : `<span class="rk-logo" aria-hidden="true">${RK_SRC[v.kind].mark}</span>`}
       <span class="rk-pi" aria-hidden="true">▶</span>${badges}
     </button>` : `<div class="rk-play none">${badges}<p class="rk-noembed">영상을 표시할 수 없습니다</p></div>`}
     <div class="rk-info">
@@ -592,7 +633,7 @@ function rkOpenView(i, list) {
     ${rkKindChip(r)}
     <span class="chip">${esc(rkWeaponName(r.weapon))}${r.style ? ` <b>${esc(r.style)}</b>` : ''}</span>`;
 
-  /* X 임베드는 제 높이를 알려주지 않아 CSS 로 고정합니다. 유튜브만 세로 비율입니다. */
+  /* X 임베드는 제 높이를 알려주지 않아 CSS 로 고정합니다. 유튜브·틱톡만 세로 비율입니다. */
   const body = $('#rk-v-body');
   body.className = 'rk-v-body' + (v ? ' ' + v.kind : '');
   body.innerHTML = v
@@ -674,13 +715,14 @@ function rkFormUI() {
   /* URL 을 붙여넣는 즉시 무엇으로 인식했는지 보여줍니다. 등록 후에야 틀린 걸
      알게 되면 다시 채워야 하니, 여기서 미리 알려줍니다. */
   $('#rk-url').addEventListener('input', () => {
-    const v = rkVid($('#rk-url').value);
+    const raw = $('#rk-url').value;
+    const v = rkVid(raw);
     const box = $('#rk-preview');
     box.className = 'preview' + (v ? ' ok' : '');
     box.innerHTML = v
-      ? `${v.kind === 'yt' ? `<img src="${esc(rkThumb(v))}" alt="" onerror="this.hidden=true">` : ''}
-         <p><b>${v.kind === 'yt' ? '유튜브' : 'X'}</b> 영상으로 인식했습니다. 목록에서 눌러 재생할 수 있습니다.</p>`
-      : '<p>유튜브(숏츠 포함) 또는 X 영상 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.</p>';
+      ? `${rkThumb(v) ? `<img src="${esc(rkThumb(v))}" alt="" onerror="this.hidden=true">` : ''}
+         <p><b>${RK_SRC[v.kind].kor}</b> 영상으로 인식했습니다. 목록에서 눌러 재생할 수 있습니다.</p>`
+      : `<p>${rkShortLink(raw) ? RK_TT_SHORT : RK_URL_HELP}</p>`;
   });
 
   /* 닉네임 자동완성. 추천빌드 등록창과 같은 것을 씁니다 — app.js 의 nickAuto(). */
@@ -715,7 +757,7 @@ async function rkSubmit(e) {
     : !rkForm.monster ? '몬스터를 골라주세요.'
     : !rkForm.weapon ? '무기를 골라주세요.'
     : time_sec == null ? '토벌 시간은 초 단위 정수로 적어주세요. 예) 45'
-    : !vid ? '유튜브 또는 X 영상 주소만 등록할 수 있습니다.'
+    : !vid ? (rkShortLink($('#rk-url').value) ? RK_TT_SHORT : '유튜브 · X · 틱톡 영상 주소만 등록할 수 있습니다.')
     : buildRaw && !build ? '빌드 링크는 빌드 탭의 공유 링크(?build=…)를 붙여넣어 주세요.'
     : password.length < PW_MIN ? `삭제용 비밀번호는 ${PW_MIN}자 이상 입력해 주세요.`
     : null;
@@ -769,7 +811,7 @@ async function rkSubmit(e) {
     $('#rk-nick').value = lastNick();               // reset() 이 지운 닉네임은 되살립니다
     $('#rk-nick-hint').hidden = true;
     $('#rk-preview').className = 'preview';
-    $('#rk-preview').innerHTML = '<p>유튜브 숏츠 또는 X 영상 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.</p>';
+    $('#rk-preview').innerHTML = `<p>${RK_URL_HELP}</p>`;
     toast('기록이 등록되었습니다!');
   } catch (e3) {
     err.textContent = e3.message === 'DUP'

@@ -148,7 +148,10 @@ grant execute on function public.bump_friend_code(text, text)      to anon;
 -- 기록의 근거는 영상 하나뿐입니다. 그래서 URL 에 unique 를 걸어 같은 영상이
 -- 여러 번 올라오는 것을 막습니다. 클라이언트가 URL 을 아래 두 형태 중 하나로
 -- 정규화해서 보내므로(record.js 의 rkCanon), 검사식이 곧 화이트리스트입니다.
---   https://www.youtube.com/watch?v=<11자>   |   https://x.com/i/status/<숫자>
+--   https://www.youtube.com/watch?v=<11자>
+--   https://x.com/i/status/<숫자>
+--   https://www.tiktok.com/@i/video/<숫자>
+-- 한 곳을 늘릴 때는 record.js 의 rkVid · RK_SRC 와 여기를 «같이» 고쳐야 합니다.
 create table if not exists public.records (
   id         bigint generated always as identity primary key,
   nickname   text        not null check (char_length(btrim(nickname)) between 1 and 20),
@@ -161,7 +164,7 @@ create table if not exists public.records (
   -- 토벌 시간은 초 단위 정수입니다. 게임이 초 단위로 보여주고 사람도 그렇게 적습니다.
   time_sec   integer     not null check (time_sec between 1 and 3600),
   video_url  text        not null unique
-             check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25})$'),
+             check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25}|www\.tiktok\.com/@i/video/[0-9]{5,25})$'),
   -- 추천 빌드와 이어지는 자리. 빌드 탭 공유 링크의 ?build= 뒤쪽을 그대로 담아 두면
   -- 링크 하나로 그 빌드를 되살릴 수 있습니다 (build.js 의 bdShareParam).
   -- 길이는 recommended_builds.build 와 같은 이유로 큽니다.
@@ -175,6 +178,13 @@ create table if not exists public.records (
 alter table public.records drop constraint if exists records_build_check;
 alter table public.records
   add constraint records_build_check check (char_length(build) <= 8000);
+
+-- 영상 화이트리스트도 같은 이유로 다시 겁니다 — 이미 만들어진 DB 는 유튜브·X 만 알고 있어서
+-- 틱톡 주소가 오면 등록이 통째로 실패합니다. 옛 행은 전부 이 식을 이미 통과합니다(갈래만 늘었습니다).
+alter table public.records drop constraint if exists records_video_url_check;
+alter table public.records
+  add constraint records_video_url_check
+  check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25}|www\.tiktok\.com/@i/video/[0-9]{5,25})$');
 
 -- 처음 판은 1/100초(time_cs)로 담았습니다. 실제로는 초 단위로만 올리므로 컬럼을 옮깁니다.
 -- 이미 옮겼거나 새로 만든 DB 에서는 아무 일도 하지 않습니다(이 파일은 여러 번 실행해도 안전합니다).
