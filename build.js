@@ -16,6 +16,18 @@ const BD_PARTS = () => BUILD.parts;
    같은 정보를 두 곳에 두면 게임 업데이트 때 한쪽만 낡습니다. */
 const bdStones = () => (typeof SMELT === 'undefined' ? [] : SMELT.groups);
 
+/* 표류석으로만 붙는 스킬은 build-data.js 의 maxLv 와 skill-desc.js 양쪽에서 빠져 있습니다 —
+   생성기가 «빌드에 실제로 쓰이는 스킬» 을 장비와 무기에서만 추리기 때문입니다(12종).
+   그런 스킬도 레벨별 설명은 표류연성 데이터에 이미 있으므로 여기서 빌려 씁니다.
+   레벨 칸은 표류연성 쪽이 문자열이라 숫자로 맞춥니다 — SKILLDESC 와 같은 모양이어야
+   찾는 쪽(bdSkillDesc)이 한 벌로 돕니다. */
+const bdStoneLevels = name => {
+  for (const g of bdStones()) for (const s of g.skills) {
+    if (s.name === name && s.levels) return s.levels.map(([lv, d]) => [Number(lv), d]);
+  }
+  return null;
+};
+
 const bdNewBuild = () => ({
   n: '', w: null, wt: 'shield-sword', st: 0,
   helm: null, mail: null, gloves: null, belt: null, greaves: null,
@@ -104,7 +116,7 @@ const BD_BASE_HP = 100;
 /* 스킬 설명은 레벨별로 값이 달라, 합산된 레벨의 문장을 씁니다.
    상한을 넘겨 찍혔으면 표에 있는 마지막 레벨로 자릅니다. */
 function bdSkillDesc(name, lv) {
-  const rows = (typeof SKILLDESC !== 'undefined' && SKILLDESC[name]) || null;
+  const rows = (typeof SKILLDESC !== 'undefined' && SKILLDESC[name]) || bdStoneLevels(name);
   if (!rows || !rows.length) return null;
   const cap = Math.min(lv, rows[rows.length - 1][0]);
   const hit = rows.find(r => r[0] === cap);
@@ -701,7 +713,7 @@ function bdCalc(b) {
    상한을 넘으면 초과분은 낭비이므로 빨갛게 표시합니다. 상한을 모르는 스킬
    (이벤트 스킬 등)은 칸을 나누지 않고 현재 값만 채웁니다. */
 function bdTotalRow(name, lv) {
-  const max = (BUILD.maxLv || {})[name] || 0;
+  const max = (BUILD.maxLv || {})[name] || (bdStoneLevels(name) || []).length;
   const over = max > 0 && lv > max;
   const cells = max > 0 ? max : lv;
   const seg = Array.from({ length: cells }, (_, i) =>

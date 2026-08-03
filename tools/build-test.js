@@ -16,25 +16,51 @@ const ctx = {
   $: () => ({ hidden: true, addEventListener() {} }),
   /* 공유 링크 길이를 배포 주소 기준으로 재야 해서 og:url 만 진짜 값을 돌려줍니다. */
   document: { querySelector: sel => (/og:url/.test(sel) ? { content: 'https://mhn-kor.github.io/' } : null) },
+  /* app.js 것. 그리는 함수(bdTotalRow 등)를 부르려면 있어야 합니다 — 여기서는 표시가 아니라
+     «무엇이 들어갔는가» 만 보므로 최소한만 바꿉니다. */
+  esc: s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
   nickAuto() {},                    // record.js 것. 화면이 없으니 빈 껍데기면 됩니다.
   closeOnBackdrop() {},             // app.js 것. 위와 같은 이유로 껍데기입니다.
   localStorage: { getItem: () => null, setItem() {} },
 };
 vm.createContext(ctx);
-/* 표류석은 smelt-data.js 에서 옵니다 — 공유 링크 길이의 대부분이 표류석입니다. */
-for (const f of ['smelt-data.js', 'build-data.js', 'build.js']) {
+/* 표류석은 smelt-data.js 에서 옵니다 — 공유 링크 길이의 대부분이 표류석입니다.
+   skill-desc.js 도 실어야 브라우저와 같은 조건이 됩니다. 빼면 SKILLDESC 가 없어서
+   bdSkillDesc 가 늘 표류연성 쪽으로 떨어지고, 진짜로 빠진 스킬이 무엇인지 가려집니다. */
+for (const f of ['smelt-data.js', 'skill-desc.js', 'build-data.js', 'build.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 }
 /* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
 const [BUILD, bdWSkills, bdTotals, bdNewBuild, bdBulkRows, bdArmorSkills,
-  bdShareParam, bdShareAbs, bdParse, bdStones, BD_KAKAO_URL_MAX] =
+  bdShareParam, bdShareAbs, bdParse, bdStones, bdStoneLevels, bdSkillDesc, bdTotalRow, BD_KAKAO_URL_MAX] =
   ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild', 'bdBulkRows', 'bdArmorSkills',
-    'bdShareParam', 'bdShareAbs', 'bdParse', 'bdStones', 'BD_KAKAO_URL_MAX'].map(n => vm.runInContext(n, ctx));
+    'bdShareParam', 'bdShareAbs', 'bdParse', 'bdStones', 'bdStoneLevels', 'bdSkillDesc', 'bdTotalRow',
+    'BD_KAKAO_URL_MAX'].map(n => vm.runInContext(n, ctx));
 
 let fail = 0;
 const check = (label, fn) => {
   try { fn(); } catch (e) { fail++; console.log('✗ ' + label + '\n  ' + e.message); }
 };
+
+/* 표류석으로만 붙는 스킬은 build-data.js 의 maxLv 와 skill-desc.js 양쪽에서 빠집니다 —
+   생성기가 «빌드에 쓰이는 스킬» 을 장비·무기에서만 추리기 때문입니다. build.js 가
+   bdStoneLevels 로 표류연성 데이터에서 메워 주는데, 그게 끊기면 막대가 칸 하나로 그려지고
+   상세 수치 줄이 사라집니다 — 화면을 봐야만 알 수 있으므로 여기서 잡습니다. */
+check('표류석 스킬은 모두 상한과 설명을 얻는다', () => {
+  const names = [...new Set(bdStones().flatMap(g => g.skills.map(s => s.name)))];
+  assert.ok(names.length > 50, `표류석 스킬이 ${names.length}종뿐입니다`);
+  /* 헬퍼가 아니라 «그리는 함수» 를 부릅니다 — bdTotalRow 에서 폴백을 빼면 여기서 걸려야 합니다.
+     막대 칸 수는 style 의 --n 에 그대로 실립니다. */
+  const cells = name => Number((bdTotalRow(name, 1).match(/--n:(\d+)/) || [])[1] || 0);
+  const flat = [], noDesc = [];
+  for (const n of names) {
+    const lv = (bdStoneLevels(n) || []).length;
+    if (lv > 1 && cells(n) !== lv) flat.push(`${n}(${cells(n)}칸, ${lv}단계)`);
+    if (!bdSkillDesc(n, 1)) noDesc.push(n);
+  }
+  assert.strictEqual(flat.join(', '), '', `막대 칸이 단계 수와 다른 표류석 스킬: ${flat.join(', ')}`);
+  assert.strictEqual(noDesc.join(', '), '', `설명을 못 얻는 표류석 스킬: ${noDesc.join(', ')}`);
+});
 
 check('자리표시자가 데이터에 남아 있지 않다', () => {
   assert.ok(!JSON.stringify(BUILD).includes('무기 종류에 따라'), '«무기 종류에 따라 다름» 이 남아 있습니다');
