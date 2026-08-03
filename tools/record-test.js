@@ -8,7 +8,7 @@ const { rkVid, rkCanon, rkEmbed, rkThumb, rkShortLink, RK_SRC, rkTime, rkParse, 
   rkOrder, rkKey, rkGroup, rkTopMap } = require(path.join(__dirname, '..', 'record.js'));
 
 // supabase/schema.sql 의 video_url CHECK 와 같은 식입니다. 여기가 통과하면 DB 도 통과합니다.
-const CHECK = /^https:\/\/(www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|x\.com\/i\/status\/[0-9]{5,25}|www\.tiktok\.com\/@i\/video\/[0-9]{5,25})$/;
+const CHECK = /^https:\/\/(www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|x\.com\/i\/status\/[0-9]{5,25}|www\.tiktok\.com\/@i\/video\/[0-9]{5,25}|chzzk\.naver\.com\/clips\/[A-Za-z0-9_-]{6,24}|tv\.naver\.com\/v\/[0-9]{5,12})$/;
 
 let fail = 0;
 const ok = (what, got, want) => {
@@ -54,6 +54,26 @@ for (const url of [
   ok(`틱톡: ${url.trim()}`, rkVid(url), { kind: 'tt', id: TT });
 }
 
+/* 치지직은 클립만. 다시보기(/video/<번호>)는 임베드 경로가 없어 받지 않습니다. */
+const CZ = '0FmRh2nyDE';
+for (const url of [
+  `https://chzzk.naver.com/clips/${CZ}`,
+  `https://chzzk.naver.com/clips/${CZ}?from=list`,
+  `https://chzzk.naver.com/embed/clip/${CZ}`,                      // 임베드 주소를 그대로 붙여넣어도
+]) {
+  ok(`치지직: ${url}`, rkVid(url), { kind: 'cz', id: CZ });
+}
+
+const NV = '103637538';
+for (const url of [
+  `https://tv.naver.com/v/${NV}`,
+  `https://m.tv.naver.com/v/${NV}`,
+  `https://tv.naver.com/embed/${NV}`,
+  `https://tv.naver.com/v/${NV}?openList=1`,
+]) {
+  ok(`네이버TV: ${url}`, rkVid(url), { kind: 'nv', id: NV });
+}
+
 for (const bad of [
   '', '  ', null, undefined, 'youtube.com/shorts/' + YT,          // 스킴 없음 → URL 파싱 실패
   'https://www.youtube.com/watch?v=short',                        // 11자가 아님
@@ -67,6 +87,12 @@ for (const bad of [
   `https://www.tiktok.com/video/${TT}`,                           // @아이디가 없으면 틱톡도 404 로 보냅니다
   'https://www.tiktok.com/@hunter/photo/6718335390845095173',     // 사진 글은 영상이 아님
   `https://example.com/www.tiktok.com/@i/video/${TT}`,
+  'https://chzzk.naver.com/video/14509130',                       // 치지직 다시보기 — 임베드 경로가 없음
+  'https://chzzk.naver.com/live/1d4f0a072b1e29aadba9877a0f8353c9', // 생방송도 기록의 근거가 못 됩니다
+  'https://chzzk.naver.com/clips/짧',                              // 영숫자 아님
+  'https://tv.naver.com/h',                                        // 클립 허브 — 영상 하나를 가리키지 않음
+  'https://tv.naver.com/v/abc',
+  'https://tv.kakao.com/v/450000000',                             // 카카오TV 는 서비스가 종료됐습니다
 ]) {
   ok(`거부: ${String(bad).slice(0, 46)}`, rkVid(bad), null);
 }
@@ -95,13 +121,28 @@ ok('틱톡은 @i/video 로', [
   rkCanon(rkVid(`https://m.tiktok.com/@another/video/${TT}`)),
 ], Array(2).fill(`https://www.tiktok.com/@i/video/${TT}`));
 
+/* 임베드 주소를 붙여넣어도 목록 주소와 같은 한 형태로 모입니다. */
+ok('치지직은 clips 로', [
+  rkCanon(rkVid(`https://chzzk.naver.com/embed/clip/${CZ}`)),
+  rkCanon(rkVid(`https://chzzk.naver.com/clips/${CZ}?from=list`)),
+], Array(2).fill(`https://chzzk.naver.com/clips/${CZ}`));
+ok('네이버TV 는 v 로', [
+  rkCanon(rkVid(`https://tv.naver.com/embed/${NV}`)),
+  rkCanon(rkVid(`https://m.tv.naver.com/v/${NV}`)),
+], Array(2).fill(`https://tv.naver.com/v/${NV}`));
+
+/* 갈래마다 «정규화한 주소가 DB CHECK 를 지나가는가» 를 봅니다. 여기가 새 갈래를 넣을 때
+   가장 먼저 깨지는 곳입니다 — 통과 못 하면 등록만 실패합니다. */
 for (const u of [`https://youtu.be/${YT}`, 'https://twitter.com/h/status/1780000000000000000',
-  `https://www.tiktok.com/@hunter/video/${TT}`]) {
+  `https://www.tiktok.com/@hunter/video/${TT}`, `https://chzzk.naver.com/clips/${CZ}`,
+  `https://tv.naver.com/v/${NV}`]) {
   if (!CHECK.test(rkCanon(rkVid(u)))) { fail++; console.error(`✗ 스키마 CHECK 불통과: ${u}`); }
 }
 
 ok('임베드는 nocookie', rkEmbed({ kind: 'yt', id: YT }).startsWith('https://www.youtube-nocookie.com/embed/'), true);
 ok('틱톡 임베드', rkEmbed({ kind: 'tt', id: TT }), `https://www.tiktok.com/embed/v2/${TT}`);
+ok('치지직 임베드', rkEmbed({ kind: 'cz', id: CZ }), `https://chzzk.naver.com/embed/clip/${CZ}`);
+ok('네이버TV 임베드', rkEmbed({ kind: 'nv', id: NV }), `https://tv.naver.com/embed/${NV}`);
 
 /* 갈래마다 카드가 그릴 것이 있어야 합니다 — 썸네일이 없으면 로고를 깝니다.
    둘 다 없는 갈래를 넣으면 카드가 빈 검은 칸이 됩니다. */

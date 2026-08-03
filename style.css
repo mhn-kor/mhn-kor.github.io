@@ -1227,6 +1227,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
    가운데 재생 단추가 그 위에 얹히므로 옅게 둡니다. */
 .rk-logo { position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.11); }
 .rk-logo svg { width: 44%; height: auto; }
+/* 치지직·네이버TV 는 로고가 워드마크라 이름 그대로 깝니다(record.js 의 RK_SRC 주석).
+   가운데 재생 단추(44px)보다 확실히 넓어야 합니다 — 그보다 좁으면 통째로 가려져
+   카드가 빈 검은 칸으로 보입니다(21px 로 뒀다가 실제로 그랬습니다). */
+.rk-logo b { font-size: 30px; font-weight: 800; letter-spacing: -.04em; white-space: nowrap; }
 
 /* 크게 보기 — 세로 영상이라 창도 세로로 세웁니다.
    창은 스크롤하지 않습니다. 제목·태그·아래줄은 고정하고, 영상칸만 늘고 줄어 화면에 맞춥니다.
@@ -1270,6 +1274,11 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
    (틱톡이 정한 최소 폭)보다 좁아지면 그 줄이 잘립니다. 그래서 비율 대신 폭을 못 박고
    높이는 창이 주는 만큼 다 씁니다. 좁은 화면에서는 max-width 가 먼저 듣습니다. */
 .rk-v-body.tt { align-self: center; width: 325px; max-width: 100%; }
+/* 치지직 클립·네이버TV 는 위에 제목줄이 붙고 그 아래가 영상입니다. 클립은 세로일 때도
+   가로일 때도 있고 네이버TV 는 대개 가로라 딱 맞는 비율이 없습니다 — 어느 쪽이든 잘리지
+   않고 남는 검은 자리가 가장 적은 4:3 으로 두었습니다(실제로 재어 보고 고른 값입니다).
+   flex:none 이라야 aspect-ratio 가 높이를 정합니다. 기본값 flex:1 이면 세로로 늘어납니다. */
+.rk-v-body.cz, .rk-v-body.nv { flex: none; aspect-ratio: 4 / 3; margin-block: auto; }
 /* X 임베드는 트윗 글·버튼까지 들어가 비율이 제각각입니다. 다 그린 뒤 알려주는 높이를
    record.js 가 iframe 에 그대로 얹으므로(inline style), 여기서는 그게 창보다 클 때
    잘리지 않고 스크롤되게만 해 둡니다. */

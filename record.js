@@ -50,6 +50,16 @@ function rkVid(raw) {
     const m = u.pathname.match(/^\/@[^/]+\/video\/(\d{5,25})/);
     return m ? { kind: 'tt', id: m[1] } : null;
   }
+  /* 치지직은 «클립»만 됩니다. 다시보기(/video/<번호>)는 임베드 경로가 아예 없어서
+     iframe 에 넣으면 치지직 첫 화면이 뜹니다(직접 확인). 받아 봐야 검은 칸이라 안 받습니다. */
+  if (host === 'chzzk.naver.com') {
+    const m = u.pathname.match(/^\/(?:clips|embed\/clip)\/([A-Za-z0-9_-]{6,24})/);
+    return m ? { kind: 'cz', id: m[1] } : null;
+  }
+  if (host === 'tv.naver.com') {
+    const m = u.pathname.match(/^\/(?:v|embed)\/(\d{5,12})/);
+    return m ? { kind: 'nv', id: m[1] } : null;
+  }
   return null;
 }
 
@@ -62,7 +72,7 @@ const rkShortLink = raw => /^https?:\/\/(vm|vt)\.tiktok\.com\//i.test(String(raw
 const RK_TT_SHORT = '틱톡 짧은 링크(vm.tiktok.com)는 받을 수 없습니다. 영상을 열어 주소창의 tiktok.com/@아이디/video/… 주소를 붙여넣어 주세요.';
 /* 등록창 미리보기의 기본 안내. 붙여넣기 전과 등록을 마친 뒤 같은 글이 서야 합니다.
    index.html 의 #rk-preview 안에도 같은 글이 처음부터 박혀 있습니다(스크립트 전에 보이는 몫). */
-const RK_URL_HELP = '유튜브(숏츠 포함) · X · 틱톡 영상 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.';
+const RK_URL_HELP = '유튜브(숏츠 포함) · X · 틱톡 · 치지직 클립 · 네이버TV 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.';
 
 /* 저장은 갈래마다 canon 한 형태로만. 같은 영상을 숏츠 주소와 일반 주소로 각각 올리는 것을
    DB 의 unique 하나로 막을 수 있고, 스키마의 CHECK 가 곧 화이트리스트가 됩니다.
@@ -95,6 +105,22 @@ const RK_SRC = {
     thumb: () => '',
     embed: id => `https://www.tiktok.com/embed/v2/${id}`,
     mark: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>',
+  },
+  /* 치지직·네이버TV 는 로고가 글자체(워드마크)라 한 줄 path 로 옮길 수 없습니다.
+     어설프게 흉내 낸 그림보다 이름 그대로가 알아보기 낫습니다 — mark 는 그냥 HTML 입니다. */
+  cz: {
+    name: '치지직', kor: '치지직',
+    canon: id => `https://chzzk.naver.com/clips/${id}`,
+    thumb: () => '',
+    embed: id => `https://chzzk.naver.com/embed/clip/${id}`,
+    mark: '<b>치지직</b>',
+  },
+  nv: {
+    name: '네이버TV', kor: '네이버TV',
+    canon: id => `https://tv.naver.com/v/${id}`,
+    thumb: () => '',
+    embed: id => `https://tv.naver.com/embed/${id}`,
+    mark: '<b>네이버TV</b>',
   },
 };
 
@@ -757,7 +783,7 @@ async function rkSubmit(e) {
     : !rkForm.monster ? '몬스터를 골라주세요.'
     : !rkForm.weapon ? '무기를 골라주세요.'
     : time_sec == null ? '토벌 시간은 초 단위 정수로 적어주세요. 예) 45'
-    : !vid ? (rkShortLink($('#rk-url').value) ? RK_TT_SHORT : '유튜브 · X · 틱톡 영상 주소만 등록할 수 있습니다.')
+    : !vid ? (rkShortLink($('#rk-url').value) ? RK_TT_SHORT : RK_URL_HELP)
     : buildRaw && !build ? '빌드 링크는 빌드 탭의 공유 링크(?build=…)를 붙여넣어 주세요.'
     : password.length < PW_MIN ? `삭제용 비밀번호는 ${PW_MIN}자 이상 입력해 주세요.`
     : null;
