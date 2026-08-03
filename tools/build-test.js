@@ -15,7 +15,7 @@ const ctx = {
      스스로 그리지 않아, 계산 함수만 꺼내 쓸 수 있습니다. */
   $: () => ({ hidden: true, addEventListener() {} }),
   /* 공유 링크 길이를 배포 주소 기준으로 재야 해서 og:url 만 진짜 값을 돌려줍니다. */
-  document: { querySelector: sel => (/og:url/.test(sel) ? { content: 'https://mhn-kor.github.io/qr/' } : null) },
+  document: { querySelector: sel => (/og:url/.test(sel) ? { content: 'https://mhn-kor.github.io/' } : null) },
   nickAuto() {},                    // record.js 것. 화면이 없으니 빈 껍데기면 됩니다.
   closeOnBackdrop() {},             // app.js 것. 위와 같은 이유로 껍데기입니다.
   localStorage: { getItem: () => null, setItem() {} },

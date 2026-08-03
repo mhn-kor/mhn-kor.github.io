@@ -400,7 +400,7 @@ function bdKakaoArgs(b) {
     HEADER: bdTight((b.n || '').trim() || [bdShareText(b).title, w ? w.name : ''].filter(Boolean).join('·')),
     /* 링크 칸에 쓰는 두 형태를 모두 보냅니다. 어느 쪽을 템플릿에 넣었든 맞습니다.
          ${URL}                                    → 전체 주소 (단독으로 넣을 때)
-         https://mhn-kor.github.io/qr/?build=${BUILD}#build  → 쿼리 값 자리에 넣을 때
+         https://mhn-kor.github.io/?build=${BUILD}#build  → 쿼리 값 자리에 넣을 때
        location 이 아니라 배포 절대 주소로 만듭니다. 로컬에서 눌러도 남이 열 수 있어야 합니다. */
     URL: bdShareAbs(b),
     BUILD: bdShareParam(b),

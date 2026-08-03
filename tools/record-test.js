@@ -126,9 +126,9 @@ ok('1 → 1초', rkTime(1), '1초');
 
 /* ── 빌드 링크 ──────────────────────────────────────────────── */
 ok('공유 링크에서 파라미터만',
-  rkBuildParam('https://mhn-kor.github.io/qr/?build=w%3Dnarg%2Cwt%3Dbow#build'), 'w%3Dnarg%2Cwt%3Dbow');
+  rkBuildParam('https://mhn-kor.github.io/?build=w%3Dnarg%2Cwt%3Dbow#build'), 'w%3Dnarg%2Cwt%3Dbow');
 ok('로컬 주소도', rkBuildParam('http://localhost:8080/?build=w%3Dnarg#build'), 'w%3Dnarg');
-ok('빌드가 아닌 링크', rkBuildParam('https://mhn-kor.github.io/qr/#build'), null);
+ok('빌드가 아닌 링크', rkBuildParam('https://mhn-kor.github.io/#build'), null);
 ok('빈 값', rkBuildParam(''), null);
 
 /* ── 순위 (랭킹 탭 · 리더보드 왕관) ──────────────────────────────

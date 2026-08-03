@@ -1,11 +1,8 @@
-# 크롤러는 robots.txt 를 도메인 루트에서만 읽습니다. 이 파일은
-# https://mhn-kor.github.io/qr/robots.txt 로 올라가므로 지금은 무시됩니다.
-# 실제로 먹히게 하려면 둘 중 하나가 필요합니다.
-#   1) mhn-kor.github.io 저장소를 만들어 그 루트에 같은 내용을 둔다
-#   2) 커스텀 도메인을 붙인다 (그러면 이 파일이 곧 루트가 됩니다)
-# 그 전까지는 사이트맵을 서치콘솔·네이버 서치어드바이저에 직접 제출하면 됩니다.
+# 크롤러는 robots.txt 를 도메인 루트에서만 읽습니다. 이 저장소가 곧
+# mhn-kor.github.io 이므로 이 파일이 그 루트입니다 — 저장소 이름을 바꾸거나
+# 사이트를 하위 경로로 옮기면 이 파일은 그날로 무시됩니다.
 
 User-agent: *
 Allow: /
 
-Sitemap: https://mhn-kor.github.io/qr/sitemap.xml
+Sitemap: https://mhn-kor.github.io/sitemap.xml
