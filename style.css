@@ -1269,16 +1269,16 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rk-v-body iframe { display: block; width: 100%; height: 100%; border: 0; }
 /* 세로 영상은 높이에 맞춰 폭이 따라오게 합니다. align-self:center 라야 폭이 내용(9:16)에서
    나옵니다 — 기본값(stretch)이면 창 폭까지 늘어나 비율이 깨집니다. */
-.rk-v-body.yt { align-self: center; aspect-ratio: 9 / 16; max-width: 100%; }
+/* 유튜브 숏츠 · 치지직 클립 · 네이버TV — 여기 올라오는 영상은 전부 세로입니다.
+   몬헌나우가 세로 화면 게임이라 가로 토벌 영상이 나올 수가 없습니다.
+   임베드는 셋 다 <video> 가 iframe 을 그대로 채우고 object-fit:contain 으로 그립니다
+   (조상 어디에도 고정 비율이 없는 것을 직접 확인했습니다). 그래서 «상자 비율이 곧 영상 크기»
+   입니다 — 9:16 을 주면 세로 영상이 꽉 차고, 상자가 납작할수록 그만큼 작아집니다. */
+.rk-v-body.yt, .rk-v-body.cz, .rk-v-body.nv { align-self: center; aspect-ratio: 9 / 16; max-width: 100%; }
 /* 틱톡 임베드는 비율이 고정이 아닙니다 — 영상 아래에 계정·«Watch now» 줄이 붙고, 폭이 325px
    (틱톡이 정한 최소 폭)보다 좁아지면 그 줄이 잘립니다. 그래서 비율 대신 폭을 못 박고
    높이는 창이 주는 만큼 다 씁니다. 좁은 화면에서는 max-width 가 먼저 듣습니다. */
 .rk-v-body.tt { align-self: center; width: 325px; max-width: 100%; }
-/* 치지직 클립·네이버TV 는 위에 제목줄이 붙고 그 아래가 영상입니다. 클립은 세로일 때도
-   가로일 때도 있고 네이버TV 는 대개 가로라 딱 맞는 비율이 없습니다 — 어느 쪽이든 잘리지
-   않고 남는 검은 자리가 가장 적은 4:3 으로 두었습니다(실제로 재어 보고 고른 값입니다).
-   flex:none 이라야 aspect-ratio 가 높이를 정합니다. 기본값 flex:1 이면 세로로 늘어납니다. */
-.rk-v-body.cz, .rk-v-body.nv { flex: none; aspect-ratio: 4 / 3; margin-block: auto; }
 /* X 임베드는 트윗 글·버튼까지 들어가 비율이 제각각입니다. 다 그린 뒤 알려주는 높이를
    record.js 가 iframe 에 그대로 얹으므로(inline style), 여기서는 그게 창보다 클 때
    잘리지 않고 스크롤되게만 해 둡니다. */
