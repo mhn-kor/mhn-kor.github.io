@@ -9,11 +9,17 @@ const fs = require('fs'), vm = require('vm'), path = require('path');
 const assert = require('assert');
 
 const root = path.join(__dirname, '..');
+
+/* 화면이 없으므로 요소를 흉내만 냅니다. 선택자마다 «같은» 껍데기를 돌려줘야
+   bdOpen 이 써 넣은 제목·본문을 되읽어 검사할 수 있습니다. */
+const els = {};
+const $stub = sel => (els[sel] = els[sel]
+  || { hidden: true, dataset: {}, addEventListener() {}, showModal() {}, close() {} });
+
 const ctx = {
   console,
-  /* 화면이 없으므로 요소를 흉내만 냅니다. hidden 을 참으로 두면 build.js 가
-     스스로 그리지 않아, 계산 함수만 꺼내 쓸 수 있습니다. */
-  $: () => ({ hidden: true, addEventListener() {} }),
+  /* hidden 을 참으로 두면 build.js 가 스스로 그리지 않아 계산 함수만 꺼내 쓸 수 있습니다. */
+  $: $stub,
   /* 공유 링크 길이를 배포 주소 기준으로 재야 해서 og:url 만 진짜 값을 돌려줍니다. */
   document: { querySelector: sel => (/og:url/.test(sel) ? { content: 'https://mhn-kor.github.io/' } : null) },
   /* app.js 것. 그리는 함수(bdTotalRow 등)를 부르려면 있어야 합니다 — 여기서는 표시가 아니라
@@ -32,9 +38,9 @@ for (const f of ['smelt-data.js', 'skill-desc.js', 'build-data.js', 'build.js'])
 }
 /* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
 const [BUILD, bdWSkills, bdTotals, bdNewBuild, bdBulkRows, bdArmorSkills,
-  bdShareParam, bdShareAbs, bdParse, bdStones, bdStoneLevels, bdSkillDesc, bdTotalRow, BD_KAKAO_URL_MAX] =
+  bdShareParam, bdShareAbs, bdParse, bdStones, bdStoneLevels, bdSkillDesc, bdTotalRow, bdOpenSkill, BD_KAKAO_URL_MAX] =
   ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild', 'bdBulkRows', 'bdArmorSkills',
-    'bdShareParam', 'bdShareAbs', 'bdParse', 'bdStones', 'bdStoneLevels', 'bdSkillDesc', 'bdTotalRow',
+    'bdShareParam', 'bdShareAbs', 'bdParse', 'bdStones', 'bdStoneLevels', 'bdSkillDesc', 'bdTotalRow', 'bdOpenSkill',
     'BD_KAKAO_URL_MAX'].map(n => vm.runInContext(n, ctx));
 
 let fail = 0;
@@ -60,6 +66,38 @@ check('표류석 스킬은 모두 상한과 설명을 얻는다', () => {
   }
   assert.strictEqual(flat.join(', '), '', `막대 칸이 단계 수와 다른 표류석 스킬: ${flat.join(', ')}`);
   assert.strictEqual(noDesc.join(', '), '', `설명을 못 얻는 표류석 스킬: ${noDesc.join(', ')}`);
+});
+
+/* 합계에서 스킬을 누르면 뜨는 창. 표는 표류연성 탭과 같지만 굵게 서는 줄이 «MAX» 가 아니라
+   «지금 이 빌드의 레벨» 이어야 합니다 — 강조가 엉뚱한 줄로 가도 화면은 멀쩡해 보입니다. */
+check('스킬 창은 지금 레벨을 짚는다', () => {
+  const body = () => $stub('#bd-modal-body').innerHTML || '';
+  const onRow = () => (body().match(/<tr class="on"><td>(\d+)<\/td>/) || [])[1];
+  /* 머리글 행은 <th> 라 안 걸립니다 — 레벨 줄만 셉니다. */
+  const lvRows = () => (body().match(/<tr[^>]*><td>/g) || []).length;
+
+  bdOpenSkill('몸통 강화', 2);
+  assert.strictEqual(onRow(), '2', '2레벨로 낀 스킬인데 다른 줄이 굵습니다');
+  assert.strictEqual(lvRows(), 3, '몸통 강화는 3단계여야 합니다');
+  assert.ok($stub('#bd-modal-title').innerHTML.includes('Lv2'), '제목에 지금 레벨이 없습니다');
+  assert.ok($stub('#bd-srow').hidden, '스킬 창에는 검색줄이 필요 없습니다');
+
+  /* 표류석으로만 붙는 스킬도 같은 창이 떠야 합니다(설명을 표류연성 데이터에서 빌려 옵니다). */
+  bdOpenSkill('더블임팩트', 1);
+  assert.strictEqual(onRow(), '1', '표류석 스킬의 강조 줄이 다릅니다');
+  assert.strictEqual(lvRows(), 5, '더블임팩트는 5단계여야 합니다');
+
+  /* 상한을 넘겨 낀 빌드는 표에 없는 레벨입니다 — 마지막 줄을 짚습니다. */
+  bdOpenSkill('몸통 강화', 9);
+  assert.strictEqual(onRow(), '3', '상한을 넘겼는데 강조가 사라졌습니다');
+  assert.ok($stub('#bd-modal-title').innerHTML.includes('/3'), '넘긴 것을 제목이 알려주지 않습니다');
+});
+
+check('설명이 없는 스킬은 누를 수 없다', () => {
+  /* 눌러 봐야 빈 창이라 단추로 만들지 않습니다. 반대로 설명이 있으면 반드시 단추여야 합니다. */
+  const some = [...new Set(bdStones().flatMap(g => g.skills.map(s => s.name)))].slice(0, 5);
+  for (const n of some) assert.ok(bdTotalRow(n, 1).includes('data-sk='), `${n} 을 누를 수 없습니다`);
+  assert.ok(!bdTotalRow('있을 리 없는 스킬', 1).includes('data-sk='), '설명 없는 스킬이 단추가 됐습니다');
 });
 
 check('자리표시자가 데이터에 남아 있지 않다', () => {

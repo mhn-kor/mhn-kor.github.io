@@ -440,6 +440,17 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 .lv tbody tr:last-child td { color: var(--bone); }
 .lv tbody tr:last-child td:first-child { color: var(--amber-hi); }
 
+/* 빌드 탭에서 연 스킬 창. 같은 표지만 굵게 서는 줄이 «MAX» 가 아니라 «지금 내 레벨» 이라,
+   위 :last-child 강조를 되돌리고 .on 줄에 옮겨 답니다. 표류연성 탭은 그대로 MAX 를 세웁니다. */
+.lv.bd-lvcur { margin: 0; border-left-color: var(--amber); }
+.lv.bd-lvcur tbody tr:last-child td { color: var(--muted); }
+.lv.bd-lvcur tbody tr:last-child td:first-child { color: var(--muted); }
+.lv.bd-lvcur tbody tr.on td { color: var(--bone); background: rgba(245,197,107,.08); }
+.lv.bd-lvcur tbody tr.on td:first-child { color: var(--amber-hi); }
+/* 창 제목 옆에 지금 레벨. 상한을 넘겨 낀 빌드는 «/최대» 를 같이 답니다. */
+.bd-lvnow { margin-left: 8px; font-style: normal; font-size: .78rem; color: var(--amber-hi); }
+.bd-lvnow em { font-style: normal; opacity: .75; }
+
 .mons { display: flex; flex-wrap: wrap; gap: 5px; }
 .mons img {
   width: 34px; height: 34px; border-radius: 7px;
@@ -584,6 +595,16 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 }
 .bd-tr:nth-child(odd) { box-shadow: inset -1px 0 0 rgba(255,255,255,.045); }
 .bd-tr > span { font-size: .8rem; }
+/* 스킬 이름은 눌러서 레벨별 설명을 여는 단추입니다. 줄이 빽빽해 밑줄을 늘 깔면 시끄러우므로
+   가리키거나 포커스가 왔을 때만 보여 줍니다(설명이 없는 스킬은 그냥 span 이라 안 눌립니다). */
+.bd-tr > .bd-skn {
+  font: inherit; font-size: .8rem; color: inherit; text-align: left;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  text-decoration: underline dotted transparent; text-underline-offset: 3px;
+}
+.bd-tr > .bd-skn:hover, .bd-tr > .bd-skn:focus-visible {
+  color: var(--amber-hi); text-decoration-color: currentColor;
+}
 .bd-tr > b { font-size: .84rem; color: var(--amber-hi); font-variant-numeric: tabular-nums; }
 /* 칸을 스킬 상한 수만큼 나눕니다. 몇 레벨이 남았는지 한눈에 보입니다. */
 .bd-bar { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 2px; }
@@ -718,6 +739,16 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 }
 #bd-modal-count { flex: none; font-size: .76rem; color: var(--muted); }
 #bd-modal-body { padding: 0 20px; overflow-y: auto; flex: 1; min-height: 60px; }
+
+/* 스킬 설명 창(bdOpenSkill)만 다릅니다. 고를 것이 없고 표 하나만 읽는 창이라,
+   목록 창처럼 모바일에서 화면을 꽉 채우면 표 몇 줄이 허공에 뜬 채 답답해 보입니다.
+   내용만큼만 서게 두고 아래에 여백을 둡니다 — 길면 그때 max-height 가 잡아 스크롤합니다. */
+/* height 는 반드시 fit-content 입니다. dialog:modal 은 UA 가 위아래를 0 으로 붙여 두어서
+   auto 로 두면 내용과 무관하게 max-height 까지 늘어납니다(표 아래가 450px 텅 빕니다). */
+#bd-modal[data-view="skill"] {
+  width: min(100% - 28px, 460px); height: fit-content; max-height: min(84vh, 700px);
+}
+#bd-modal[data-view="skill"] #bd-modal-body { padding-bottom: 18px; }
 
 /* 무기 종류 격자 */
 .bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; padding-bottom: 4px; }

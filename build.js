@@ -115,9 +115,17 @@ const BD_BASE_HP = 100;
 
 /* 스킬 설명은 레벨별로 값이 달라, 합산된 레벨의 문장을 씁니다.
    상한을 넘겨 찍혔으면 표에 있는 마지막 레벨로 자릅니다. */
-function bdSkillDesc(name, lv) {
+/* 한 스킬의 레벨별 설명 전부. 공식 스킬 페이지(SKILLDESC)가 원본이고, 거기 없으면
+   표류연성 데이터에서 빌려 옵니다(위 bdStoneLevels 주석). 한 줄만 필요한 곳과
+   표로 다 보여 주는 곳이 같은 것을 봐야 해서 여기 한 벌만 둡니다. */
+function bdSkillLevels(name) {
   const rows = (typeof SKILLDESC !== 'undefined' && SKILLDESC[name]) || bdStoneLevels(name);
-  if (!rows || !rows.length) return null;
+  return rows && rows.length ? rows : null;
+}
+
+function bdSkillDesc(name, lv) {
+  const rows = bdSkillLevels(name);
+  if (!rows) return null;
   const cap = Math.min(lv, rows[rows.length - 1][0]);
   const hit = rows.find(r => r[0] === cap);
   return hit ? hit[1] : null;
@@ -759,15 +767,21 @@ function bdCalc(b) {
    상한을 넘으면 초과분은 낭비이므로 빨갛게 표시합니다. 상한을 모르는 스킬
    (이벤트 스킬 등)은 칸을 나누지 않고 현재 값만 채웁니다. */
 function bdTotalRow(name, lv) {
-  const max = (BUILD.maxLv || {})[name] || (bdStoneLevels(name) || []).length;
+  const rows = bdSkillLevels(name);
+  const max = (BUILD.maxLv || {})[name] || (rows || []).length;
   const over = max > 0 && lv > max;
   const cells = max > 0 ? max : lv;
   const seg = Array.from({ length: cells }, (_, i) =>
     `<i class="${i < Math.min(lv, cells) ? 'on' : ''}"></i>`).join('');
   /* 상세 수치를 켜면 그 레벨에서 실제로 무슨 일이 일어나는지 한 줄 붙입니다. */
   const desc = bdState.detail ? bdSkillDesc(name, lv) : null;
+  /* 설명이 있는 스킬만 누를 수 있습니다 — 없는 것을 눌러 봐야 빈 창입니다.
+     이름을 진짜 button 으로 두면 키보드 이동과 포커스 표시가 저절로 따라옵니다. */
   return `<div class="bd-tr${over ? ' over' : ''}">
-    <span>${esc(name)}</span>
+    ${rows
+      ? `<button type="button" class="bd-skn" data-sk="${esc(name)}" data-sklv="${lv}"
+                 title="레벨별 설명 보기">${esc(name)}</button>`
+      : `<span>${esc(name)}</span>`}
     <b>${lv}${over ? `<em>/${max}</em>` : ''}</b>
     <span class="bd-bar" style="--n:${cells}">${seg}</span>
     ${desc ? `<p class="bd-td">${esc(desc)}</p>` : ''}
@@ -791,6 +805,8 @@ const bdDlg = () => $('#bd-modal');
    부른 뒤 owner 를 'record' 로 덮어씁니다. */
 function bdOpen(title, bodyHtml, withSearch, opt = {}) {
   bdDlg().dataset.owner = 'build';
+  /* 창의 «성격». 목록을 고르는 창과 읽기만 하는 창은 크기가 달라야 합니다(style.css). */
+  bdDlg().dataset.view = opt.view || '';
   $('#bd-modal-title').innerHTML = title;
   $('#bd-modal-body').innerHTML = bodyHtml;
   $('#bd-srow').hidden = !withSearch;
@@ -804,6 +820,25 @@ function bdOpen(title, bodyHtml, withSearch, opt = {}) {
   }
   bdDlg().showModal();
   if (withSearch) focusIn($('#bd-q'));
+}
+
+/* 합계에서 스킬 이름을 누르면 레벨별 설명을 통째로 보여 줍니다.
+   표류연성 탭의 표와 같은 것이되(.lv 를 그대로 씁니다), 굵게 서는 줄이 «MAX» 가 아니라
+   «지금 이 빌드의 레벨» 입니다 — 다음 한 칸이 얼마나 오르는지 보러 탭을 건너가지 않아도 됩니다.
+   상한을 넘겨 낀 경우(over)에는 표에 없는 레벨이라 마지막 줄을 짚습니다. */
+function bdOpenSkill(name, lv) {
+  const rows = bdSkillLevels(name);
+  if (!rows) return;
+  bdPick = { kind: 'skill' };          // 모달 본문 핸들러가 옛 선택을 붙들지 않게 비웁니다
+  const max = rows[rows.length - 1][0];
+  const cur = Math.min(lv, max);
+  const body = rows.length === 1
+    ? `<p class="one">${esc(rows[0][1])}</p>`
+    : `<table><thead><tr><th>Lv</th><th>효과</th></tr></thead><tbody>${rows.map(([n, d]) =>
+        /* 레벨은 bdSkillLevels 가 숫자로 맞춰 줍니다 — esc 는 문자열만 받습니다. */
+        `<tr${n === cur ? ' class="on"' : ''}><td>${n}</td><td>${esc(d)}</td></tr>`).join('')}</tbody></table>`;
+  bdOpen(`${esc(name)}<i class="bd-lvnow">Lv${lv}${lv > max ? ` <em>/${max}</em>` : ''}</i>`,
+    `<div class="lv bd-lvcur">${body}</div>`, false, { view: 'skill' });
 }
 
 /* 무기 종류 — 아이콘 격자 */
@@ -995,6 +1030,15 @@ $('#bd-cards').addEventListener('click', e => {
   if (lk) return bdCopyLink(bdShareURL(bdState.builds[+lk.dataset.link]));
   const kk = t.closest('[data-kakao]');
   if (kk) return bdKakao(bdState.builds[+kk.dataset.kakao]);
+  const sk = t.closest('[data-sk]');
+  if (sk) return bdOpenSkill(sk.dataset.sk, +sk.dataset.sklv);
+});
+
+/* 추천빌드 미리보기도 같은 합계 줄(bdTotalRow)을 씁니다 — 그 안에서도 눌리게 합니다.
+   미리보기는 제 dialog 안에 있어 스킬 창이 그 위에 겹쳐 열립니다. */
+$('#rc-view-gear')?.addEventListener('click', e => {
+  const sk = e.target.closest('[data-sk]');
+  if (sk) bdOpenSkill(sk.dataset.sk, +sk.dataset.sklv);
 });
 
 $('#bd-cards').addEventListener('change', e => {
