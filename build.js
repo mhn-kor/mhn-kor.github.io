@@ -230,10 +230,29 @@ function bdCondList(b) {
 let bdBulk = null;
 let bdBulkFold = false;   // 합산 스킬 접힘 여부
 
+/* 걸어 둔 스킬 뱃지 [{ s: 이름, c: 색 }]. 색은 뱃지 · 부위 칸 숫자 · 합산 칩이
+   같은 것을 씁니다 — 어느 스킬 때문에 걸린 칸인지 색만 보고 알게 하려는 것입니다.
+   빼도 남은 뱃지의 색이 흔들리지 않도록 «안 쓰는 색» 중에서 고릅니다. */
+const BD_SKC = ['#E9A13B', '#4BC49A', '#5FA8E6', '#E4705E', '#B98BE0', '#C9D24B'];
+let bdBulkSk = [];
+
+function bdBulkAddSk(name) {
+  if (!bdBulkSk.some(x => x.s === name)) {
+    const c = BD_SKC.find(v => !bdBulkSk.some(x => x.c === v)) || BD_SKC[bdBulkSk.length % BD_SKC.length];
+    bdBulkSk.push({ s: name, c });
+  }
+  /* 자동완성이 넣어 준 이름은 지웁니다 — 뱃지가 대신 걸렸고, 검색칸은 다음 스킬
+     (또는 몬스터 이름)을 받을 자리로 비어 있어야 합니다. */
+  $('#bd-q').value = '';
+  $('#bd-q').focus();
+  bdFillBulk('');
+}
+
 function bdOpenBulk(bi) {
   const b = bdState.builds[bi];
   bdPick = { kind: 'bulk', bi };
   bdBulk = {};
+  bdBulkSk = [];
   for (const { k } of BD_PARTS()) bdBulk[k] = b[k] || null;
   bdOpen('방어구 일괄선택', '', true, { placeholder: '몬스터 · 방어구 · 스킬 검색' });
   bdFillBulk('');
@@ -249,18 +268,30 @@ function bdBulkSets() {
    어느 부위가 걸린 건지 눌러 봐야 압니다. 몬스터·방어구 이름은 부분 일치지만
    스킬명은 전체가 같아야 합니다(«공격» 에 «불속성 공격 강화» 가 끼지 않도록).
    대신 스킬 전체 이름은 검색칸 자동완성으로 채웁니다. */
+/* 뱃지가 여러 개면 «전부 가진 부위» 로 좁히지 않습니다 — 스킬은 부위마다 나뉘어
+   붙어서 그렇게 하면 거의 항상 빈 목록이 됩니다. 하나라도 가지면 남기되(OR),
+   겹친 개수를 세어 많이 겹친 세트를 위로 올리고 칸에는 색깔 숫자를 답니다.
+   그래서 «둘 다 가진 부위» 는 좁히지 않아도 맨 위에서 두 색으로 눈에 띕니다. */
 function bdBulkRows(q) {
   const norm = t => String(t).toLowerCase().replace(/[\s　]+/g, '');
   const needle = norm(q);
-  return bdBulkSets().map(s => ({
-    s,
-    hit: BD_PARTS().filter(p => {
+  const sk = bdBulkSk || [];
+  return bdBulkSets().map(s => {
+    const m = {};                       // 부위 → [{ c: 색, lv: 그 부위가 주는 레벨 }]
+    const hit = BD_PARTS().filter(p => {
       const pc = s.pieces[p.k];
       if (!pc) return false;
-      return !needle || norm(s.name + pc.name).includes(needle)
-        || pc.skills.some(x => norm(x.s) === needle);
-    }).map(p => p.k),
-  })).filter(r => r.hit.length);
+      if (needle && !(norm(s.name + pc.name).includes(needle)
+        || pc.skills.some(x => norm(x.s) === needle))) return false;
+      if (!sk.length) return true;
+      m[p.k] = sk.map(x => ({ c: x.c, lv: (pc.skills.find(y => y.s === x.s) || {}).lv }))
+        .filter(x => x.lv != null);
+      return m[p.k].length > 0;
+    }).map(p => p.k);
+    /* 세트가 덮는 스킬 가짓수. 부위가 나뉘어 있어도 «이 세트로 둘 다 된다» 가 보입니다. */
+    const n = new Set(hit.flatMap(k => (m[k] || []).map(x => x.c))).size;
+    return { s, hit, m, n };
+  }).filter(r => r.hit.length).sort((a, b) => b.n - a.n);
 }
 
 /* 자동완성에 띄울 방어구 스킬 이름. 목록은 바뀌지 않으니 한 번만 모읍니다. */
@@ -277,21 +308,31 @@ function bdArmorSkills() {
 function bdFillBulk(q) {
   const parts = BD_PARTS();
   const rows = bdBulkRows(q);
+  const nsk = bdBulkSk.length;
 
-  $('#bd-modal-body').innerHTML = rows.length ? `<ul class="bd-blist">${rows.map(({ s, hit }) => `
+  /* 뱃지 줄은 목록과 같이 흐르되 위에 붙어 있습니다 — 스크롤을 내려도 지금 무슨
+     색이 무슨 스킬인지 보여야 아래 칸의 숫자를 읽을 수 있습니다. */
+  const badges = nsk ? `<div class="bd-bsk">${bdBulkSk.map((x, i) =>
+    `<button class="bd-skb" style="--c:${x.c}" data-bulk-sk="${i}" title="빼기">${esc(x.s)}<i aria-hidden="true">×</i></button>`).join('')
+    }${nsk > 1 ? '<button class="bd-skb clr" data-bulk-sk="all">스킬 전부 빼기</button>' : ''}</div>` : '';
+
+  $('#bd-modal-body').innerHTML = badges + (rows.length ? `<ul class="bd-blist">${rows.map(({ s, hit, m, n }) => `
     <li class="bd-brow">
       ${bdMon(s.key)}
       <span class="bd-bn">${esc(s.name)}</span>
+      ${nsk > 1 ? `<span class="bd-bc${n === nsk ? ' full' : ''}" title="이 세트가 덮는 스킬 ${n}종">${n}/${nsk}</span>` : ''}
       <span class="bd-bp">${parts.map(p => {
         const pc = s.pieces[p.k];
         if (!pc || !hit.includes(p.k)) return '<i class="bd-bx"></i>';
         const on = bdBulk[p.k] === s.key;
-        return `<button class="bd-bb${on ? ' on' : ''}" data-bulk-pick="${esc(s.key)}:${p.k}"
+        const lv = m[p.k] || [];
+        return `<button class="bd-bb${on ? ' on' : ''}${lv.length ? ' lv' : ''}${lv.length > 1 ? ' multi' : ''}" data-bulk-pick="${esc(s.key)}:${p.k}"
           title="${esc(pc.name)} · ${pc.skills.map(x => x.s + ' ' + x.lv).join(', ')}${pc.slot ? ' · 표류석 ' + pc.slot + '칸' : ''}">
           <img src="assets/part/${p.k}.png" width="18" height="18" alt="${esc(p.n)}">
+          ${lv.length ? `<i class="bd-bl">${lv.map(x => `<em style="--c:${x.c}">${x.lv}</em>`).join('')}</i>` : ''}
         </button>`;
       }).join('')}</span>
-    </li>`).join('')}</ul>` : '<p class="bd-empty">일치하는 방어구가 없습니다.</p>';
+    </li>`).join('')}</ul>` : `<p class="bd-empty">${nsk ? '고른 스킬이 붙은 방어구가 없습니다.' : '일치하는 방어구가 없습니다.'}</p>`);
   $('#bd-modal-count').textContent = `${rows.length}세트`;
   bdBulkFoot();
 }
@@ -315,7 +356,12 @@ function bdBulkFoot() {
       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </button>
     <div class="bd-bsum"${bdBulkFold ? ' hidden' : ''}>${list.length
-      ? list.map(([nm, lv]) => `<span class="chip">${esc(nm)}<b>${lv}</b></span>`).join('')
+      ? list.map(([nm, lv]) => {
+        /* 걸어 둔 스킬은 합산에서도 뱃지와 같은 색으로 찍습니다 — 지금 고른 부위가
+           찾던 스킬을 몇 레벨까지 채웠는지 한눈에 보라고 둔 것입니다. */
+        const c = bdBulkSk.find(x => x.s === nm);
+        return `<span class="chip${c ? ' sel' : ''}"${c ? ` style="--c:${c.c}"` : ''}>${esc(nm)}<b>${lv}</b></span>`;
+      }).join('')
       : '<span class="bd-empty">부위를 고르면 스킬이 합산됩니다.</span>'}</div>
     <div class="bd-bact">
       <button class="btn ghost" data-bulk-clear="1">전부 비우기</button>
@@ -979,6 +1025,13 @@ $('#bd-modal-body').addEventListener('click', e => {
     if (!(bdSet(b.w) || {}).weapons?.some(w => w.t === b.wt)) b.w = null;
     bdSave(); bdRender(); return bdDlg().close();
   }
+  /* 일괄선택: 스킬 뱃지 빼기. */
+  const rm = e.target.closest('[data-bulk-sk]');
+  if (rm) {
+    const v = rm.dataset.bulkSk;
+    bdBulkSk = v === 'all' ? [] : bdBulkSk.filter((_, i) => i !== +v);
+    return bdFillBulk($('#bd-q').value.trim());
+  }
   /* 일괄선택: 부위 칸을 누르면 그 세트로 바뀝니다(같은 걸 다시 누르면 해제). */
   const bp = e.target.closest('[data-bulk-pick]');
   if (bp) {
@@ -1013,7 +1066,8 @@ $('#bd-q').addEventListener('input', e => {
 });
 
 /* 스킬 이름 자동완성. 검색은 전체 일치라 이름을 다 쳐야 하므로, 치는 동안 후보를 띄웁니다.
-   후보는 부분 일치로 찾습니다(«공격» → 불속성 공격 강화…). 골라야 검색이 걸립니다.
+   후보는 부분 일치로 찾습니다(«공격» → 불속성 공격 강화…). 고르면 뱃지로 걸립니다.
+   이미 건 스킬은 후보에서 빼서, 같은 걸 두 번 고르는 헛손질을 없앱니다.
    목록은 app.js 의 nickAuto 를 그대로 씁니다 — datalist 는 너비도 위치도 브라우저가
    정해 버려 입력칸과 어긋나고, 바로 뜨지도 않습니다(app.js 주석 참고).
    #bd-q 는 다른 모달과 리더보드도 같이 쓰므로 일괄선택일 때만 후보를 냅니다. */
@@ -1022,9 +1076,11 @@ nickAuto('#bd-q', '#bd-q-list', null, {
     if (bdDlg().dataset.owner !== 'build' || bdPick?.kind !== 'bulk') return [];
     const norm = t => String(t).toLowerCase().replace(/[\s　]+/g, '');
     const needle = norm(q);
-    return bdArmorSkills().filter(s => norm(s).includes(needle)).slice(0, 12);
+    return bdArmorSkills()
+      .filter(s => norm(s).includes(needle) && !bdBulkSk.some(x => x.s === s))
+      .slice(0, 12);
   },
-  pick: v => bdFillBulk(v),
+  pick: v => bdBulkAddSk(v),
 });
 /* 합산·적용 줄은 #bd-modal-body 바깥의 footer 라 따로 받습니다. */
 $('#bd-bulk-foot').addEventListener('click', e => {

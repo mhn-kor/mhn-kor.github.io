@@ -516,6 +516,12 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
   background: rgba(233,161,59,.1); border: 1px solid rgba(233,161,59,.2); color: var(--bone);
 }
 .chip b { color: var(--amber-hi); font-variant-numeric: tabular-nums; }
+/* 일괄선택에서 걸어 둔 스킬 — 뱃지와 같은 색으로 합산 줄에서도 찾기 쉽게 합니다. */
+.chip.sel {
+  color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent);
+  border-color: color-mix(in srgb, var(--c) 45%, transparent);
+}
+.chip.sel b { color: var(--c); }
 
 .bd-style {
   margin-left: auto; flex: none; align-self: center;
@@ -772,6 +778,27 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 }
 .bd-bulk:hover { background: rgba(233,161,59,.16); border-style: solid; }
 
+/* 일괄선택 스킬 뱃지 — 여러 개를 겹쳐 걸 수 있습니다. 색이 아래 부위 칸의 숫자,
+   합산 칩과 짝을 이루므로 --c 하나로 세 곳을 같이 물들입니다.
+   목록과 같이 흐르되 위에 붙여, 스크롤을 내려도 색-스킬 짝이 보이게 합니다. */
+.bd-bsk {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin: 0 -20px 8px; padding: 2px 20px 8px;
+  background: var(--surface); border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.bd-skb {
+  --c: var(--amber);
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px 3px 10px;
+  font: inherit; font-size: .74rem; font-weight: 600; cursor: pointer; color: var(--c);
+  background: color-mix(in srgb, var(--c) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); border-radius: 999px;
+}
+.bd-skb:hover { background: color-mix(in srgb, var(--c) 28%, transparent); }
+.bd-skb i { font-style: normal; font-size: .92rem; line-height: 1; opacity: .75; }
+.bd-skb.clr { color: var(--muted); background: none; border-color: var(--line); border-style: dashed; }
+.bd-skb.clr:hover { color: var(--bone); background: rgba(255,255,255,.06); }
+
 /* 일괄선택 목록: 아이콘 · 이름 · 부위 다섯 칸. */
 .bd-blist { list-style: none; margin: 0; padding: 0; }
 .bd-brow {
@@ -791,6 +818,27 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 .bd-bb.on img { opacity: 1; }
 /* 그 부위가 없는 세트는 빈 자리로 두어 칸이 어긋나지 않게 합니다. */
 .bd-bx { width: 28px; height: 28px; display: block; }
+
+/* 걸린 스킬의 레벨. 뱃지와 같은 색이라 어느 스킬 때문에 걸린 칸인지 바로 압니다.
+   숫자가 붙으면 칸이 세로로 길어지고, 여러 색이면 그만큼 옆으로 늘어납니다. */
+.bd-bb.lv { width: auto; min-width: 28px; height: auto; padding: 3px 3px 2px; gap: 1px; }
+.bd-bb.lv img { opacity: .8; }
+.bd-bl { display: flex; gap: 2px; }
+.bd-bl em {
+  font-style: normal; font-size: .58rem; font-weight: 800; line-height: 1.55;
+  min-width: 12px; text-align: center; border-radius: 3px;
+  color: #14110E; background: var(--c);
+}
+/* 한 부위가 고른 스킬을 둘 이상 가진 경우 — 색이 둘이라 이미 눈에 띄지만,
+   테두리를 밝혀 목록을 훑을 때 먼저 잡히게 합니다. */
+.bd-bb.multi { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.09); }
+/* 이 세트가 덮는 스킬 가짓수. 부위가 나뉘어 있어도 «이 세트면 둘 다» 가 보입니다. */
+.bd-bc {
+  flex: none; padding: 0 6px; font-size: .66rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--muted);
+  background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 999px;
+}
+.bd-bc.full { color: #14110E; background: var(--amber); border-color: var(--amber); }
 
 /* 모달 아래 고정 영역: 합산 스킬 + 적용. */
 /* 목록이 아무리 길어도 아래 버튼 줄은 늘 보이도록 고정합니다. */

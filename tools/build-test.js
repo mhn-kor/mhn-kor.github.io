@@ -123,6 +123,40 @@ check('일괄선택: 스킬은 이름 전체가 같아야 걸린다', () => {
   assert.ok(bdBulkRows('불속성 공격 강화').length, '전체 이름으로 검색해도 결과가 없습니다');
 });
 
+/* 스킬 뱃지 여러 개 — OR 로 남기고, 겹친 개수가 많은 세트가 위로 옵니다.
+   AND 로 좁히면 스킬이 부위마다 나뉘어 붙는 탓에 거의 늘 빈 목록이 됩니다. */
+check('일괄선택: 스킬 뱃지 둘이면 OR 로 남고 많이 겹친 세트가 앞에 온다', () => {
+  const setSk = list => vm.runInContext(`bdBulkSk = ${JSON.stringify(list)}`, ctx);
+  const two = [{ s: '록온', c: '#E9A13B' }, { s: '반동 경감', c: '#4BC49A' }];
+  setSk(two);
+  const rows = bdBulkRows('');
+  try {
+    assert.ok(rows.length, '뱃지 두 개로 걸리는 방어구가 없습니다');
+    let both = 0;
+    for (const r of rows) {
+      for (const k of r.hit) {
+        const names = r.s.pieces[k].skills.map(x => x.s);
+        assert.ok(two.some(x => names.includes(x.s)), `${r.s.key}/${k}: 뱃지와 무관한 부위가 남았습니다`);
+        /* 칸에 찍는 숫자는 그 부위가 실제로 주는 레벨이어야 합니다. */
+        for (const { c, lv } of r.m[k]) {
+          const want = r.s.pieces[k].skills.find(x => x.s === two.find(y => y.c === c).s);
+          assert.strictEqual(lv, want.lv, `${r.s.key}/${k}: 레벨 숫자가 다릅니다`);
+        }
+      }
+      if (r.n === 2) both++;
+    }
+    assert.ok(both, '두 스킬을 다 덮는 세트가 하나도 없습니다(정렬을 확인하세요)');
+    for (let i = 1; i < rows.length; i++) {
+      assert.ok(rows[i - 1].n >= rows[i].n, '많이 겹친 세트가 뒤로 밀렸습니다');
+    }
+    /* 이름 검색은 뱃지와 AND 로 걸립니다 — 뱃지로 좁힌 뒤 이름으로 또 좁히는 흐름입니다. */
+    const named = bdBulkRows(rows[0].s.name);
+    assert.ok(named.every(r => r.s.name.includes(rows[0].s.name)), '이름 검색이 뱃지를 무시했습니다');
+  } finally {
+    setSk([]);                       // 뒤 검사가 뱃지에 물들지 않게 되돌립니다
+  }
+});
+
 /* ── 공유 링크 ────────────────────────────────────────────────────
    카카오톡 공유는 완성된 메시지가 1만 자를 넘으면 카카오 오류 페이지로 튕깁니다.
    카드가 링크를 열아홉 번 담으므로 «링크 길이 × 스무 배» 가 곧 메시지 크기입니다.
