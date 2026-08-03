@@ -377,7 +377,9 @@ function rkItem(r, i, rank) {
      왕관은 필터와 무관한 «진짜» 순위라 무엇을 걸러 보든 같은 카드에 같은 왕관이 붙습니다. */
   const badges = `
     ${rkCrown(rkTop.get(r.id)) || (rank ? `<span class="rk-no${rank <= 3 ? ' top' : ''}">${rank}</span>` : '')}
-    <span class="rk-src">${v ? RK_SRC[v.kind].name : '영상'}</span>
+    ${/* 갈래는 글자 대신 로고로 답니다. 그림만 남으면 읽어주는 기기가 건너뛰므로 이름을 role·aria 로 줍니다. */
+      v ? `<span class="rk-src" role="img" aria-label="${esc(RK_SRC[v.kind].kor)}" title="${esc(RK_SRC[v.kind].kor)}">${RK_SRC[v.kind].mark}</span>`
+        : '<span class="rk-src">영상</span>'}
     ${r.build ? '<span class="rk-bdg" title="빌드가 함께 등록된 기록입니다">빌드 있음</span>' : ''}
     <span class="rk-t">${rkTime(r.time_sec)}</span>`;
   return `

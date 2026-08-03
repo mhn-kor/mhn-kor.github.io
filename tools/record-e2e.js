@@ -70,13 +70,15 @@ const dialogClosed = (page, sel, timeout = 15000) =>
         시드 순서는 시간순이라 무엇이 맨 위인지 모릅니다. 갈래별로 찾아 봅니다. */
   const seeded = await page.evaluate(() => {
     const by = name => [...document.querySelectorAll('#rk-list .rk-item')]
-      .find(li => li.querySelector('.rk-src').textContent === name);
-    const yt = by('YouTube'), x = by('X');
+      .find(li => li.querySelector('.rk-src').getAttribute('aria-label') === name);
+    const yt = by('유튜브'), x = by('X');
     return {
       ytThumb: yt && (yt.querySelector('.rk-play img') || {}).src || '',
       xLogo: x ? !!x.querySelector('.rk-logo svg') : null,
+      ytBadge: yt ? !!yt.querySelector('.rk-src svg') : null,
     };
   });
+  ok('시드 유튜브 카드: 갈래 배지가 로고', seeded.ytBadge, true);
   ok('시드 유튜브 카드: 썸네일이 붙음', seeded.ytThumb.startsWith('https://i.ytimg.com/vi/'), true);
   ok('시드 X 카드: 로고가 깔림', seeded.xLogo, true);
 
@@ -147,14 +149,16 @@ const dialogClosed = (page, sel, timeout = 15000) =>
       const li = document.querySelector(`#rk-list .rk-item[data-id="${id}"]`);
       return li && {
         nick: li.querySelector('.rk-nick span').textContent,
-        src: li.querySelector('.rk-src').textContent,
+        /* 배지는 로고 그림입니다 — 갈래 이름은 aria-label 로만 남습니다(읽어주는 기기용). */
+        src: li.querySelector('.rk-src').getAttribute('aria-label'),
+        srcLogo: !!li.querySelector('.rk-src svg'),
         time: li.querySelector('.rk-t').textContent,
         logo: !!li.querySelector('.rk-logo'),
         img: !!li.querySelector('.rk-play img'),
       };
     }, stored.id);
     ok('내 카드가 목록에 있음', !!mine, true);
-    ok(`이름표가 ${s.name}`, mine && mine.src, s.name);
+    ok(`갈래 배지가 «${s.kor}» 로고`, mine && [mine.src, mine.srcLogo], [s.kor, true]);
     ok('닉네임·시간이 그대로', mine && [mine.nick, mine.time], ['E2E헌터', '42초']);
     ok('썸네일 대신 로고를 깖', mine && [mine.logo, mine.img], [true, false]);
 

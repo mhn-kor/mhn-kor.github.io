@@ -1168,6 +1168,10 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   color: var(--bone); background: rgba(0,0,0,.62);
 }
 .rk-src { right: 7px; top: 7px; }
+/* 갈래 배지는 글자가 아니라 로고입니다(record.js 의 RK_SRC.mark). 배지 크기가 글자에 맞춰져
+   있으므로 그림일 때만 다시 잡습니다 — 영상 갈래를 못 알아본 카드는 «영상» 이라는 글이 섭니다. */
+.rk-src:has(svg) { padding: 4px; line-height: 0; }
+.rk-src svg { width: 13px; height: 13px; display: block; }
 .rk-no { left: 7px; top: 7px; min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
 .rk-no.top { color: #241D16; background: var(--amber); }
 
