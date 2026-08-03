@@ -64,10 +64,12 @@ for (const url of [
   ok(`치지직: ${url}`, rkVid(url), { kind: 'cz', id: CZ });
 }
 
+/* 네이버TV 는 세로 숏폼이 /h/, 가로가 /v/ 인데 번호 공간은 하나입니다. */
 const NV = '103637538';
 for (const url of [
   `https://tv.naver.com/v/${NV}`,
-  `https://m.tv.naver.com/v/${NV}`,
+  `https://tv.naver.com/h/${NV}`,                                  // 숏폼 주소
+  `https://m.tv.naver.com/h/${NV}`,
   `https://tv.naver.com/embed/${NV}`,
   `https://tv.naver.com/v/${NV}?openList=1`,
 ]) {
@@ -90,7 +92,8 @@ for (const bad of [
   'https://chzzk.naver.com/video/14509130',                       // 치지직 다시보기 — 임베드 경로가 없음
   'https://chzzk.naver.com/live/1d4f0a072b1e29aadba9877a0f8353c9', // 생방송도 기록의 근거가 못 됩니다
   'https://chzzk.naver.com/clips/짧',                              // 영숫자 아님
-  'https://tv.naver.com/h',                                        // 클립 허브 — 영상 하나를 가리키지 않음
+  'https://tv.naver.com/h',                                        // 번호가 없으면 영상 하나를 가리키지 않음
+  'https://tv.naver.com/h/abc',
   'https://tv.naver.com/v/abc',
   'https://tv.kakao.com/v/450000000',                             // 카카오TV 는 서비스가 종료됐습니다
 ]) {
@@ -126,10 +129,12 @@ ok('치지직은 clips 로', [
   rkCanon(rkVid(`https://chzzk.naver.com/embed/clip/${CZ}`)),
   rkCanon(rkVid(`https://chzzk.naver.com/clips/${CZ}?from=list`)),
 ], Array(2).fill(`https://chzzk.naver.com/clips/${CZ}`));
+/* 숏폼(/h/)과 가로(/v/)가 같은 번호이므로 한 형태로 모아야 unique 가 듣습니다. */
 ok('네이버TV 는 v 로', [
   rkCanon(rkVid(`https://tv.naver.com/embed/${NV}`)),
   rkCanon(rkVid(`https://m.tv.naver.com/v/${NV}`)),
-], Array(2).fill(`https://tv.naver.com/v/${NV}`));
+  rkCanon(rkVid(`https://tv.naver.com/h/${NV}`)),
+], Array(3).fill(`https://tv.naver.com/v/${NV}`));
 
 /* 갈래마다 «정규화한 주소가 DB CHECK 를 지나가는가» 를 봅니다. 여기가 새 갈래를 넣을 때
    가장 먼저 깨지는 곳입니다 — 통과 못 하면 등록만 실패합니다. */

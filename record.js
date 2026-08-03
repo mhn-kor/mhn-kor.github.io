@@ -56,8 +56,11 @@ function rkVid(raw) {
     const m = u.pathname.match(/^\/(?:clips|embed\/clip)\/([A-Za-z0-9_-]{6,24})/);
     return m ? { kind: 'cz', id: m[1] } : null;
   }
+  /* 네이버TV 는 세로 숏폼이 /h/<번호>, 가로가 /v/<번호> 인데 번호 공간은 하나입니다.
+     저장은 /v/ 로 모읍니다 — 같은 영상이 두 주소로 각각 올라오는 것을 unique 로 막아야 하고,
+     /v/ 는 세로 숏폼도 그대로 재생합니다(반대로 /h/ 는 가로 영상을 /v/ 로 되돌립니다). */
   if (host === 'tv.naver.com') {
-    const m = u.pathname.match(/^\/(?:v|embed)\/(\d{5,12})/);
+    const m = u.pathname.match(/^\/(?:v|h|embed)\/(\d{5,12})/);
     return m ? { kind: 'nv', id: m[1] } : null;
   }
   return null;

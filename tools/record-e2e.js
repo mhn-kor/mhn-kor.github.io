@@ -36,7 +36,7 @@ const SOURCES = [
     canon: `https://chzzk.naver.com/clips/e2e${N}`,
     embed: `https://chzzk.naver.com/embed/clip/e2e${N}` },
   { kind: 'nv', name: '네이버TV', kor: '네이버TV',
-    paste: `https://m.tv.naver.com/v/${N.slice(0, 9)}?openList=1`,
+    paste: `https://tv.naver.com/h/${N.slice(0, 9)}`,              // 숏폼 주소로 붙여넣어도 /v/ 로 모여야 합니다
     canon: `https://tv.naver.com/v/${N.slice(0, 9)}`,
     embed: `https://tv.naver.com/embed/${N.slice(0, 9)}` },
 ];
