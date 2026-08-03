@@ -153,6 +153,7 @@ grant execute on function public.bump_friend_code(text, text)      to anon;
 --   https://www.tiktok.com/@i/video/<숫자>
 --   https://chzzk.naver.com/clips/<영숫자>        (치지직은 클립만. 다시보기는 임베드가 없습니다)
 --   https://tv.naver.com/v/<숫자>
+--   https://www.instagram.com/reel/<코드>/
 -- 한 곳을 늘릴 때는 record.js 의 rkVid · RK_SRC 와 여기를 «같이» 고쳐야 합니다.
 create table if not exists public.records (
   id         bigint generated always as identity primary key,
@@ -166,7 +167,7 @@ create table if not exists public.records (
   -- 토벌 시간은 초 단위 정수입니다. 게임이 초 단위로 보여주고 사람도 그렇게 적습니다.
   time_sec   integer     not null check (time_sec between 1 and 3600),
   video_url  text        not null unique
-             check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25}|www\.tiktok\.com/@i/video/[0-9]{5,25}|chzzk\.naver\.com/clips/[A-Za-z0-9_-]{6,24}|tv\.naver\.com/v/[0-9]{5,12})$'),
+             check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25}|www\.tiktok\.com/@i/video/[0-9]{5,25}|chzzk\.naver\.com/clips/[A-Za-z0-9_-]{6,24}|tv\.naver\.com/v/[0-9]{5,12}|www\.instagram\.com/reel/[A-Za-z0-9_-]{5,24}/)$'),
   -- 추천 빌드와 이어지는 자리. 빌드 탭 공유 링크의 ?build= 뒤쪽을 그대로 담아 두면
   -- 링크 하나로 그 빌드를 되살릴 수 있습니다 (build.js 의 bdShareParam).
   -- 길이는 recommended_builds.build 와 같은 이유로 큽니다.
@@ -186,7 +187,7 @@ alter table public.records
 alter table public.records drop constraint if exists records_video_url_check;
 alter table public.records
   add constraint records_video_url_check
-  check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25}|www\.tiktok\.com/@i/video/[0-9]{5,25}|chzzk\.naver\.com/clips/[A-Za-z0-9_-]{6,24}|tv\.naver\.com/v/[0-9]{5,12})$');
+  check (video_url ~ '^https://(www\.youtube\.com/watch\?v=[A-Za-z0-9_-]{11}|x\.com/i/status/[0-9]{5,25}|www\.tiktok\.com/@i/video/[0-9]{5,25}|chzzk\.naver\.com/clips/[A-Za-z0-9_-]{6,24}|tv\.naver\.com/v/[0-9]{5,12}|www\.instagram\.com/reel/[A-Za-z0-9_-]{5,24}/)$');
 
 -- 처음 판은 1/100초(time_cs)로 담았습니다. 실제로는 초 단위로만 올리므로 컬럼을 옮깁니다.
 -- 이미 옮겼거나 새로 만든 DB 에서는 아무 일도 하지 않습니다(이 파일은 여러 번 실행해도 안전합니다).

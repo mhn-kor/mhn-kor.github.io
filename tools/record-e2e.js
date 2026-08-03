@@ -35,6 +35,10 @@ const SOURCES = [
     paste: `https://chzzk.naver.com/clips/e2e${N}?from=list`,
     canon: `https://chzzk.naver.com/clips/e2e${N}`,
     embed: `https://chzzk.naver.com/embed/clip/e2e${N}` },
+  { kind: 'ig', name: '인스타', kor: '인스타 릴스',
+    paste: `https://www.instagram.com/p/e2e${N}/?igsh=MXQwZmZ1bTk5`,   // 일반 글 주소로 넣어도 reel 로 모여야 합니다
+    canon: `https://www.instagram.com/reel/e2e${N}/`,
+    embed: `https://www.instagram.com/reel/e2e${N}/embed` },
   { kind: 'nv', name: '네이버TV', kor: '네이버TV',
     paste: `https://tv.naver.com/h/${N.slice(0, 9)}`,              // 숏폼 주소로 붙여넣어도 /v/ 로 모여야 합니다
     canon: `https://tv.naver.com/v/${N.slice(0, 9)}`,

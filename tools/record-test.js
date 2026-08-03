@@ -8,7 +8,7 @@ const { rkVid, rkCanon, rkEmbed, rkThumb, rkShortLink, RK_SRC, rkTime, rkParse, 
   rkOrder, rkKey, rkGroup, rkTopMap } = require(path.join(__dirname, '..', 'record.js'));
 
 // supabase/schema.sql 의 video_url CHECK 와 같은 식입니다. 여기가 통과하면 DB 도 통과합니다.
-const CHECK = /^https:\/\/(www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|x\.com\/i\/status\/[0-9]{5,25}|www\.tiktok\.com\/@i\/video\/[0-9]{5,25}|chzzk\.naver\.com\/clips\/[A-Za-z0-9_-]{6,24}|tv\.naver\.com\/v\/[0-9]{5,12})$/;
+const CHECK = /^https:\/\/(www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|x\.com\/i\/status\/[0-9]{5,25}|www\.tiktok\.com\/@i\/video\/[0-9]{5,25}|chzzk\.naver\.com\/clips\/[A-Za-z0-9_-]{6,24}|tv\.naver\.com\/v\/[0-9]{5,12}|www\.instagram\.com\/reel\/[A-Za-z0-9_-]{5,24}\/)$/;
 
 let fail = 0;
 const ok = (what, got, want) => {
@@ -76,6 +76,18 @@ for (const url of [
   ok(`네이버TV: ${url}`, rkVid(url), { kind: 'nv', id: NV });
 }
 
+/* 인스타는 릴스도 일반 글도 같은 코드입니다 — /reel/ · /reels/ · /p/ 가 다 같은 글. */
+const IG = 'DbYmqpplO_N';
+for (const url of [
+  `https://www.instagram.com/reel/${IG}/`,
+  `https://www.instagram.com/reels/${IG}/`,
+  `https://www.instagram.com/p/${IG}/`,
+  `https://instagram.com/reel/${IG}`,                              // 끝 슬래시 없이
+  `https://www.instagram.com/reel/${IG}/?igsh=MXQwZmZ1bTk5&utm_source=ig_web_copy_link`,
+]) {
+  ok(`인스타: ${url}`, rkVid(url), { kind: 'ig', id: IG });
+}
+
 for (const bad of [
   '', '  ', null, undefined, 'youtube.com/shorts/' + YT,          // 스킴 없음 → URL 파싱 실패
   'https://www.youtube.com/watch?v=short',                        // 11자가 아님
@@ -96,6 +108,9 @@ for (const bad of [
   'https://tv.naver.com/h/abc',
   'https://tv.naver.com/v/abc',
   'https://tv.kakao.com/v/450000000',                             // 카카오TV 는 서비스가 종료됐습니다
+  'https://www.instagram.com/nasa/',                              // 계정 페이지는 영상 하나가 아님
+  'https://www.instagram.com/stories/nasa/123456789/',            // 스토리는 24시간 뒤 사라집니다
+  'https://www.instagram.com/reel/짧',
 ]) {
   ok(`거부: ${String(bad).slice(0, 46)}`, rkVid(bad), null);
 }
@@ -138,9 +153,15 @@ ok('네이버TV 는 v 로', [
 
 /* 갈래마다 «정규화한 주소가 DB CHECK 를 지나가는가» 를 봅니다. 여기가 새 갈래를 넣을 때
    가장 먼저 깨지는 곳입니다 — 통과 못 하면 등록만 실패합니다. */
+/* 릴스도 일반 글도 한 형태로 모아야 unique 가 듣습니다 — 같은 코드니까요. */
+ok('인스타는 reel 로', [
+  rkCanon(rkVid(`https://www.instagram.com/p/${IG}/`)),
+  rkCanon(rkVid(`https://www.instagram.com/reels/${IG}/`)),
+], Array(2).fill(`https://www.instagram.com/reel/${IG}/`));
+
 for (const u of [`https://youtu.be/${YT}`, 'https://twitter.com/h/status/1780000000000000000',
   `https://www.tiktok.com/@hunter/video/${TT}`, `https://chzzk.naver.com/clips/${CZ}`,
-  `https://tv.naver.com/v/${NV}`]) {
+  `https://tv.naver.com/v/${NV}`, `https://www.instagram.com/reel/${IG}/`]) {
   if (!CHECK.test(rkCanon(rkVid(u)))) { fail++; console.error(`✗ 스키마 CHECK 불통과: ${u}`); }
 }
 
@@ -148,6 +169,7 @@ ok('임베드는 nocookie', rkEmbed({ kind: 'yt', id: YT }).startsWith('https://
 ok('틱톡 임베드', rkEmbed({ kind: 'tt', id: TT }), `https://www.tiktok.com/embed/v2/${TT}`);
 ok('치지직 임베드', rkEmbed({ kind: 'cz', id: CZ }), `https://chzzk.naver.com/embed/clip/${CZ}`);
 ok('네이버TV 임베드', rkEmbed({ kind: 'nv', id: NV }), `https://tv.naver.com/embed/${NV}`);
+ok('인스타 임베드', rkEmbed({ kind: 'ig', id: IG }), `https://www.instagram.com/reel/${IG}/embed`);
 
 /* 갈래마다 카드가 그릴 것이 있어야 합니다 — 썸네일이 없으면 로고를 깝니다.
    둘 다 없는 갈래를 넣으면 카드가 빈 검은 칸이 됩니다. */

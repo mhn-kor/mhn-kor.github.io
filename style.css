@@ -1289,6 +1289,14 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 .rk-v-body.x { background: none; overflow-y: auto; scrollbar-gutter: stable; }
 .rk-v-body.x iframe { height: auto; }
 
+/* 인스타만 9:16 이 아닙니다. 임베드가 영상칸을 «폭 × 1.25» 로 잡고(9:16 릴스도 4:5 로
+   자릅니다) 그 위에 프로필줄 55px 을 얹습니다 — 재어 보고 얻은 값입니다.
+   그래서 상자를 세로로 길게 줄수록 폭이 좁아져 영상까지 같이 작아집니다.
+   «55 + 폭 × 1.25 = 높이» 가 되는 7:10 이 영상이 가장 크면서 잘리지 않는 지점입니다
+   (9:16 으로 두면 영상칸이 266×333 → 여기서는 330×413 입니다).
+   아래쪽 «더 보기»·아이콘 줄은 상자 밖으로 밀려 잘립니다 — 없어도 되는 부분입니다. */
+.rk-v-body.ig { align-self: center; aspect-ratio: 7 / 10; max-width: 100%; background: none; }
+
 /* 아래줄: 이동 한 줄 + 링크 한 줄. 줄바꿈에 맡기면 좁은 화면에서 버튼이 흩어집니다. */
 .rk-vf {
   flex: none; display: grid; grid-template-columns: auto 1fr auto;

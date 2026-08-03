@@ -63,6 +63,12 @@ function rkVid(raw) {
     const m = u.pathname.match(/^\/(?:v|h|embed)\/(\d{5,12})/);
     return m ? { kind: 'nv', id: m[1] } : null;
   }
+  /* 인스타는 릴스도 일반 글도 같은 코드를 씁니다 — /reel/ · /reels/ · /p/ 가 다 같은 글입니다.
+     공유 링크에 붙는 ?igsh=… 는 경로가 아니라 쿼리라 저절로 떨어집니다. */
+  if (host === 'instagram.com') {
+    const m = u.pathname.match(/^\/(?:reels?|p)\/([A-Za-z0-9_-]{5,24})/);
+    return m ? { kind: 'ig', id: m[1] } : null;
+  }
   return null;
 }
 
@@ -75,7 +81,7 @@ const rkShortLink = raw => /^https?:\/\/(vm|vt)\.tiktok\.com\//i.test(String(raw
 const RK_TT_SHORT = '틱톡 짧은 링크(vm.tiktok.com)는 받을 수 없습니다. 영상을 열어 주소창의 tiktok.com/@아이디/video/… 주소를 붙여넣어 주세요.';
 /* 등록창 미리보기의 기본 안내. 붙여넣기 전과 등록을 마친 뒤 같은 글이 서야 합니다.
    index.html 의 #rk-preview 안에도 같은 글이 처음부터 박혀 있습니다(스크립트 전에 보이는 몫). */
-const RK_URL_HELP = '유튜브(숏츠 포함) · X · 틱톡 · 치지직 클립 · 네이버TV 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.';
+const RK_URL_HELP = '유튜브(숏츠 포함) · X · 틱톡 · 인스타 릴스 · 치지직 클립 · 네이버TV 주소를 붙여넣어 주세요. 주소만 넣으면 영상이 붙습니다.';
 
 /* 저장은 갈래마다 canon 한 형태로만. 같은 영상을 숏츠 주소와 일반 주소로 각각 올리는 것을
    DB 의 unique 하나로 막을 수 있고, 스키마의 CHECK 가 곧 화이트리스트가 됩니다.
@@ -124,6 +130,16 @@ const RK_SRC = {
     thumb: () => '',
     embed: id => `https://tv.naver.com/embed/${id}`,
     mark: '<b>네이버TV</b>',
+  },
+  /* 인스타 임베드는 영상칸을 «폭 × 1.25» 로만 잡고(9:16 릴스도 4:5 로 자릅니다), 위아래
+     껍데기(프로필줄 · «더 보기» 줄)가 폭과 무관하게 208px 을 먹습니다. 직접 재어 확인했습니다.
+     그래서 세로 상자를 주면 오히려 손해라 style.css 에서 폭을 가득 씁니다. */
+  ig: {
+    name: '인스타', kor: '인스타 릴스',
+    canon: id => `https://www.instagram.com/reel/${id}/`,
+    thumb: () => '',
+    embed: id => `https://www.instagram.com/reel/${id}/embed`,
+    mark: '<svg viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" aria-hidden="true"><path d="M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm5 3.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm5.4-3.1a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6z"/></svg>',
   },
 };
 
