@@ -743,12 +743,19 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 /* 스킬 설명 창(bdOpenSkill)만 다릅니다. 고를 것이 없고 표 하나만 읽는 창이라,
    목록 창처럼 모바일에서 화면을 꽉 채우면 표 몇 줄이 허공에 뜬 채 답답해 보입니다.
    내용만큼만 서게 두고 아래에 여백을 둡니다 — 길면 그때 max-height 가 잡아 스크롤합니다. */
-/* height 는 반드시 fit-content 입니다. dialog:modal 은 UA 가 위아래를 0 으로 붙여 두어서
-   auto 로 두면 내용과 무관하게 max-height 까지 늘어납니다(표 아래가 450px 텅 빕니다). */
+/* 높이를 «내용만큼» 만들기 — dialog:modal 은 UA 가 inset:0 이라 height:auto 로 두면
+   위아래로 늘어납니다(표 아래가 450px 텅 빕니다). 아래를 풀고 translate 로 가운데 둡니다.
+   height:fit-content 로도 되지만 사파리가 내용보다 짧게 잡아 표가 잘립니다(아이폰에서 확인).
+   dvh 는 주소창이 접힐 때의 실제 높이입니다. 모르는 브라우저는 윗줄 vh 로 떨어집니다. */
 #bd-modal[data-view="skill"] {
-  width: min(100% - 28px, 460px); height: fit-content; max-height: min(84vh, 700px);
+  width: min(100% - 28px, 460px);
+  top: 50%; bottom: auto; height: auto; transform: translateY(-50%);
+  max-height: min(84vh, 700px);
+  max-height: min(84dvh, 700px);
 }
-#bd-modal[data-view="skill"] #bd-modal-body { padding-bottom: 18px; }
+/* flex:1 은 flex-basis:0 이라 «내용만큼» 을 잴 때 엔진마다 다르게 나올 수 있습니다.
+   이 창은 창 높이가 내용에서 나오므로 늘어나지 않게 못 박습니다(줄어들며 스크롤되는 것은 그대로). */
+#bd-modal[data-view="skill"] #bd-modal-body { flex: 0 1 auto; padding-bottom: 18px; }
 
 /* 무기 종류 격자 */
 .bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; padding-bottom: 4px; }
