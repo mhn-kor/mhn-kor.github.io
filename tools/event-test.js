@@ -142,13 +142,36 @@ const ok = (cond, what) => {
   await page.locator('#ev-j-img').setInputFiles(png);
   ok(await page.locator('#ev-j-thumb').getAttribute('src') !== null, 'PNG 미리보기가 붙는다');
 
-  // 다 채우면 검사를 전부 지나 «로컬에는 디스코드가 없다» 까지 갑니다.
+  /* 다 채우면 실제 전송 경로를 탑니다. 로컬에는 함수가 없어 404 로 끝나는데, 그게
+     맞습니다 — 로컬만 따로 빠져나가게 만들면 그 길이 시험되지 않은 채 남습니다.
+     보내는 동안 버튼이 «보내는 중…» 이 되는지 보려고 응답을 잠깐 늦춥니다. */
+  await page.route('**/functions/v1/discord-entry', async r => {
+    await new Promise(z => setTimeout(z, 1200));
+    await r.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+  });
   await page.locator('#ev-j-title').fill('제 첫 토벌입니다');
   await page.locator('#ev-j-nick').fill('보노보노 / 태도 / 서울');
   await page.locator('#ev-j-body').fill('★10 처음 잡았습니다!');
+  const sendLabel = await page.locator('#ev-j-submit').textContent();
   await page.locator('#ev-j-submit').click();
-  ok(/로컬/.test(await page.locator('#ev-j-err').textContent()),
-     '폼 검사를 모두 통과하고 로컬 안내에서 멈춘다');
+  await page.waitForTimeout(400);
+  const busy = await page.evaluate(() => {
+    const b = document.getElementById('ev-j-submit');
+    return { text: b.textContent, busy: b.classList.contains('busy'), off: b.disabled,
+             spin: getComputedStyle(b, '::before').animationName };
+  });
+  ok(/중…$/.test(busy.text) && busy.busy && busy.off,
+     `보내는 동안 버튼이 «${busy.text}» 로 바뀌고 잠긴다`);
+  ok(busy.spin === 'evspin', `버튼 안에서 동그라미가 돈다 (${busy.spin})`);
+  await page.waitForFunction(() => !document.getElementById('ev-j-submit').disabled, null, { timeout: 5000 });
+  ok((await page.locator('#ev-j-submit').textContent()) === sendLabel
+    && !(await page.locator('#ev-j-submit').evaluate(e => e.classList.contains('busy'))),
+     '끝나면 버튼이 원래대로 돌아온다');
+  /* 함수가 없을 때(404) «전송에 실패했습니다» 로 뭉뚱그리면 원인을 찾을 수 없습니다.
+     실제로 배포 때 여기서 한참 헤맸습니다. */
+  ok(/배포되지 않았습니다/.test(await page.locator('#ev-j-err').textContent()),
+     `함수가 없으면 그렇다고 말한다 (${await page.locator('#ev-j-err').textContent()})`);
+  await page.unroute('**/functions/v1/discord-entry');
   await page.locator('#ev-join-cancel').click();
 
   // ── 운영자: 열기 · 닫기 ───────────────────────────────────────────

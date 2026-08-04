@@ -21,8 +21,10 @@ const EV_IMG_MAX = 8 * 1024 * 1024;
 const EV_IMG_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
 /* 함수는 Supabase 에만 있습니다. 로컬 미리보기(docker compose)는 PostgREST 뿐이라
-   응모를 보낼 곳이 없습니다 — 그때는 창을 열되 «로컬에서는 안 갑니다» 라고 말합니다. */
-const EV_FN = SUPABASE_URL + '/functions/v1/discord-entry';
+   여기로 보내면 404 가 납니다 — 그게 맞습니다. 로컬만 따로 빠져나가게 만들면 그 길이
+   시험되지 않은 채 남고, 배포본에서 처음 도는 코드가 됩니다.
+   주소를 API 로 잡는 이유도 같습니다: 로컬에서 실수로 «진짜» 채팅방에 쏘지 않습니다. */
+const EV_FN = API + '/functions/v1/discord-entry';
 const EV_LOCAL = API !== SUPABASE_URL;
 
 const EV_ERR = {
@@ -35,6 +37,9 @@ const EV_ERR = {
   FULL: '방금 선착순 인원이 다 찼습니다. 아깝게 놓치셨습니다.',
   DUP: '이 닉네임으로 이미 응모하셨습니다. 선착순 이벤트는 한 번만 참여할 수 있습니다.',
   NO_WEBHOOK: '디스코드 연결이 아직 설정되지 않았습니다. 운영자에게 알려주세요.',
+  /* 함수 자체가 없을 때. 이걸 «전송에 실패했습니다» 로 뭉뚱그리면 원인을 찾을 수 없습니다
+     — 실제로 배포 때 한참 헤맸습니다. */
+  NO_FUNCTION: '디스코드 연결이 아직 배포되지 않았습니다. 운영자에게 알려주세요.',
 };
 
 /* 이벤트가 지금 어느 상태인가. 여기 시계와 숫자는 «받아온 시점» 의 것이라 안내용입니다 —
@@ -343,12 +348,16 @@ async function evJoin(e) {
     : nickname.length > NICK_MAX ? `닉네임은 ${NICK_MAX}자 이내로 입력해 주세요.`
     : !body ? '내용을 입력해 주세요.'
     : body.length > EV_BODY_MAX ? `내용은 ${EV_BODY_MAX}자 이내로 입력해 주세요.`
-    : EV_LOCAL ? '로컬 미리보기에는 디스코드 연결이 없습니다. 배포본에서 시험해 주세요.'
     : null;
   if (bad) { err.textContent = bad; err.hidden = false; return; }
 
+  /* 응모는 이미지까지 실어 보내므로 몇 초가 걸립니다. 버튼이 잠기기만 하면 «먹통인가»
+     싶어 다시 누르게 되므로, 지금 무엇을 하고 있는지 글자로 말해 줍니다. */
   const btn = $('#ev-j-submit');
+  const label = btn.textContent;
   btn.disabled = true;
+  btn.classList.add('busy');
+  btn.textContent = file ? '이미지 올리는 중…' : '보내는 중…';
   err.hidden = true;
   const fd = new FormData();
   fd.append('event_id', evPending.id);
@@ -366,7 +375,7 @@ async function evJoin(e) {
       body: fd,
     });
     const out = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(out.error || `HTTP ${r.status}`);
+    if (!r.ok) throw new Error(out.error || (r.status === 404 ? 'NO_FUNCTION' : `HTTP ${r.status}`));
     /* 남은 자리는 서버가 세어 돌려줍니다. 여기서 1 을 빼면 그 사이에 남이 넣은 응모가
        빠져 화면 숫자가 실제와 어긋납니다. 목록을 다시 받아올 필요도 없습니다. */
     if (out.entries != null) { evPending.entries = out.entries; evRender(); }
@@ -383,6 +392,8 @@ async function evJoin(e) {
     if (!EV_ERR[e2.message]) console.error(e2);
   } finally {
     btn.disabled = false;
+    btn.classList.remove('busy');
+    btn.textContent = label;
   }
 }
 

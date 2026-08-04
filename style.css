@@ -2059,6 +2059,23 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 }
 #ev-n-x:hover { color: var(--bone); background: rgba(255,255,255,.12); }
 
+/* 보내는 동안의 버튼. .btn:disabled 의 opacity .5 를 조금 되돌립니다 — 잠긴 것과
+   «죽은 것» 은 달라 보여야 하고, 안에서 도는 동그라미가 보여야 합니다. */
+.btn.busy { position: relative; padding-left: 34px; }
+.btn.busy:disabled { opacity: .9; }
+.btn.busy::before {
+  content: ''; position: absolute; left: 13px; top: 50%; margin-top: -7px;
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: evspin .7s linear infinite;
+}
+@keyframes evspin { to { transform: rotate(360deg); } }
+/* 움직임 줄이기에서는 돌리지 않고 깜빡입니다 — «일하는 중» 은 알려야 합니다. */
+@media (prefers-reduced-motion: reduce) {
+  .btn.busy::before { animation: evblink 1.4s ease-in-out infinite; }
+  @keyframes evblink { 50% { opacity: .25; } }
+}
+
 #ev-list { display: grid; gap: 14px; }
 .ev-card {
   background: var(--surface); border: 1px solid var(--line);
