@@ -208,7 +208,7 @@ function rkTopMap(rows) {
 
 if (typeof module !== 'undefined') {
   module.exports = { rkVid, rkCanon, rkEmbed, rkThumb, rkShortLink, RK_SRC,
-    rkTime, rkParse, rkBuildParam, rkOrder, rkKey, rkGroup, rkTopMap };
+    rkTime, rkParse, rkBuildParam, rkOrder, rkKey, rkGroup, rkTopMap, rnNickCut };
 }
 
 /* 금 · 은 · 동 왕관. 리더보드 카드 왼쪽 위와 랭킹 탭이 같이 씁니다.
@@ -998,12 +998,15 @@ function rnHall(boards) {
   const by = new Map();
   for (const list of boards) {
     list.slice(0, 3).forEach((r, i) => {
-      const e = by.get(r.nickname) || { nick: r.nickname, c: [0, 0, 0], best: r };
+      const e = by.get(r.nickname) || { nick: r.nickname, c: [0, 0, 0], gold: [], best: r };
       e.c[i]++;
+      if (!i) e.gold.push(r);                         // 시상대 아래로 흘려보낼 «금관 기록»
       if (r.time_sec < e.best.time_sec) e.best = r;   // 자랑거리로 붙일 «가장 빠른 기록»
       by.set(r.nickname, e);
     });
   }
+  // 금관은 빠른 순으로 흐릅니다 — 판을 도는 순서대로 두면 볼 때마다 뒤죽박죽으로 보입니다.
+  for (const e of by.values()) e.gold.sort((a, b) => a.time_sec - b.time_sec);
   // 금이 먼저, 같으면 은 · 동 순. 그래도 같으면 이름순 — 그릴 때마다 순서가 바뀌면 안 됩니다.
   return [...by.values()].sort((a, b) =>
     b.c[0] - a.c[0] || b.c[1] - a.c[1] || b.c[2] - a.c[2] || a.nick.localeCompare(b.nick, 'ko'));
@@ -1012,6 +1015,52 @@ function rnHall(boards) {
 const RN_MEDAL = ['금', '은', '동'];
 const rnMedals = c => c.map((n, i) => (n
   ? `<span class="hall-m c${i + 1}" title="${RN_MEDAL[i]}관 ${n}개">${RK_CROWN}<b>${n}</b></span>` : '')).join('');
+
+/* «jeremy / 이것저것 / 구디단» 처럼 닉네임 뒤에 길드나 무기를 덧붙여 적는 사람이 많습니다.
+   진짜 이름은 첫 슬래시 앞이므로 거기서 딱 한 번 자릅니다.
+   자르지 않는 경우는 null 입니다 — 슬래시가 없거나(그냥 «보노보노»), 맨 앞에 있거나
+   («/ 어쩌고»), 앞이 공백뿐(«  / 어쩌고»)이면 남길 이름이 없습니다.
+   ※ function 선언이라 위쪽 module.exports 에서 먼저 이름을 부를 수 있습니다(호이스팅). */
+function rnNickCut(nick) {
+  const i = nick.indexOf('/');
+  const head = i > 0 ? nick.slice(0, i) : '';
+  const name = head.trim();
+  /* 이름과 슬래시 사이의 공백은 «덧말» 쪽이 들고 갑니다. 그리는 쪽에서 공백을 끼워 넣으면
+     붙여 쓴 «KOKOA/랜스» 가 «KOKOA /랜스» 로 바뀝니다. */
+  return name ? { name, tail: nick.slice(head.trimEnd().length) } : null;
+}
+
+/* 몬스터 표시 이름. 자료에 없는 id 는 id 그대로 보여 줍니다(빈 칸보다 낫습니다). */
+const rnMonName = id => (rkMon(id) ? rkMon(id).name : id);
+
+/* 금관을 딴 판들이 상패 아래를 오른쪽에서 왼쪽으로 한 줄로 지나갑니다. 목록은 한 벌뿐이고,
+   마지막 기록이 왼쪽 밖으로 완전히 빠진 뒤에 다음 바퀴가 오른쪽에서 들어옵니다(style.css 참고).
+   두 벌을 이어 붙이면 이음매는 없지만 금관이 한둘뿐인 사람은 같은 줄이 나란히 보입니다.
+   흐르는 시간은 개수에 맞춰 넘깁니다 — 한 값으로 고정하면 금관 하나인 사람과 여덟인 사람의
+   글자 속도가 여덟 배 차이 납니다. 상수 3.5초는 «빈 칸을 가로지르는» 몫입니다. */
+function rnFlow(gold) {
+  /* 아이콘은 loading="lazy" 를 쓰지 않습니다 — 이 줄은 오른쪽 화면 밖에서 시작하므로
+     늦게 불러오면 지나가는 도중에 그림이 튀어나옵니다. 카드마다 몇 개뿐이라 그냥 받습니다. */
+  const one = gold.map(r => {
+    const m = rkMon(r.monster);
+    return `<span class="pod-f">${
+      m ? `<img src="assets/monster/${esc(m.icon)}.png" width="16" height="16" alt="">` : ''
+    }${esc(m ? m.name : r.monster)}${
+      r.variant === 'dim' ? '<i>차원변이</i>' : ''}<b>${rkTime(r.time_sec)}</b></span>`;
+  }).join('');
+  return `<div class="pod-flow" style="--flow:${(gold.length * 2.6 + 3.5).toFixed(1)}s">
+      <div class="pod-flow-t">${one}</div>
+    </div>`;
+}
+
+/* 두 조각으로 그립니다 — 1위 상패에서 뒷조각만 잠깐 부숴 이름을 남기기 위한 것입니다
+   (style.css 의 pod-tail-break). 2 · 3위는 조각만 나뉘고 보이는 건 그대로입니다. */
+function rnNick(nick) {
+  const cut = rnNickCut(nick);
+  return cut
+    ? `<span class="pod-name">${esc(cut.name)}</span><span class="pod-tail">${esc(cut.tail)}</span>`
+    : esc(nick);
+}
 
 function rnHallDraw(boards) {
   const hall = rnHall(boards);
@@ -1022,9 +1071,10 @@ function rnHallDraw(boards) {
     <li class="pod p${i + 1}">
       <span class="pod-rank">${i + 1}</span>
       <span class="pod-crown">${RK_CROWN}</span>
-      <b class="pod-nick">${esc(h.nick)}</b>
+      <b class="pod-nick">${rnNick(h.nick)}</b>
       <span class="pod-medals">${rnMedals(h.c)}</span>
-      <span class="pod-best">최속 ${rkTime(h.best.time_sec)} · ${esc(rkMon(h.best.monster) ? rkMon(h.best.monster).name : h.best.monster)}</span>
+      ${h.gold.length ? rnFlow(h.gold)
+        : `<span class="pod-best">최속 ${rkTime(h.best.time_sec)} · ${esc(rnMonName(h.best.monster))}</span>`}
     </li>`).join('');
 
   /* 4위부터는 명패 한 줄씩. 열 명까지만 — 그 아래는 왕관이 하나뿐이라 줄 세우는 뜻이 옅어집니다. */

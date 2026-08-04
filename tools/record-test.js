@@ -5,7 +5,7 @@
    record.js 의 rkVid / rkCanon / rkParse / rkTime 을 고쳤다면 반드시 돌려보세요. */
 const path = require('path');
 const { rkVid, rkCanon, rkEmbed, rkThumb, rkShortLink, RK_SRC, rkTime, rkParse, rkBuildParam,
-  rkOrder, rkKey, rkGroup, rkTopMap } = require(path.join(__dirname, '..', 'record.js'));
+  rkOrder, rkKey, rkGroup, rkTopMap, rnNickCut } = require(path.join(__dirname, '..', 'record.js'));
 
 // supabase/schema.sql 의 video_url CHECK 와 같은 식입니다. 여기가 통과하면 DB 도 통과합니다.
 const CHECK = /^https:\/\/(www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}|x\.com\/i\/status\/[0-9]{5,25}|www\.tiktok\.com\/@i\/video\/[0-9]{5,25}|chzzk\.naver\.com\/clips\/[A-Za-z0-9_-]{6,24}|tv\.naver\.com\/v\/[0-9]{5,12}|www\.instagram\.com\/reel\/[A-Za-z0-9_-]{5,24}\/)$/;
@@ -227,5 +227,24 @@ ok('왕관은 판마다 3위까지', [...rkTopMap(rows)].sort((a, b) => a[0] - b
 const same = [rec(9, 'm', 10, 'dim', 40), rec(8, 'm', 10, 'dim', 40)].sort(rkOrder);
 ok('시간·시각이 같으면 id 순', same.map(r => r.id), [8, 9]);
 
-console.log(fail ? `실패 ${fail}건` : '통과 — 영상 URL · 시간 · 빌드 링크 · 순위');
+/* ── 닉네임 자르기 (명예의 전당 1위 연출) ────────────────────────
+   진짜 이름은 첫 슬래시 앞입니다. 여기가 틀리면 1위 상패에서 «부수는» 조각이 어긋나
+   이름 일부가 같이 사라지거나, 남길 이름이 없어 빈 칸이 커집니다. */
+ok('첫 슬래시 앞이 이름', rnNickCut('jeremy / 이것저것 / 구디단'),
+  { name: 'jeremy', tail: ' / 이것저것 / 구디단' });                // 둘째 슬래시는 덧말에 남습니다
+ok('이름의 앞뒤 공백은 털어냄', rnNickCut('  보노보노   /  라보 '),
+  { name: '보노보노', tail: '   /  라보 ' });                       // 사이 공백은 덧말이 들고 갑니다
+ok('붙여 쓴 것도', rnNickCut('KOKOA/랜스'), { name: 'KOKOA', tail: '/랜스' });
+ok('슬래시가 없으면 자르지 않음', rnNickCut('보노보노'), null);
+ok('맨 앞 슬래시 — 남길 이름이 없음', rnNickCut('/ 어쩌고'), null);
+ok('앞이 공백뿐이어도 자르지 않음', rnNickCut('   / 어쩌고'), null);
+ok('슬래시 하나뿐', rnNickCut('/'), null);
+/* 두 조각을 도로 붙이면 원문이어야 합니다 — 글자가 새거나 공백이 끼면 화면의 이름이 달라집니다
+   (그리는 쪽에서 공백을 넣던 때 «KOKOA/랜스» 가 «KOKOA /랜스» 로 바뀌는 걸 여기서 잡았습니다). */
+for (const n of ['jeremy / 이것저것 / 구디단', 'KOKOA/랜스', '  보노보노   /  라보 ']) {
+  const c = rnNickCut(n);
+  ok(`조각을 붙이면 원문: ${n}`, c.name + c.tail, n.trimStart());
+}
+
+console.log(fail ? `실패 ${fail}건` : '통과 — 영상 URL · 시간 · 빌드 링크 · 순위 · 닉네임 자르기');
 process.exit(fail ? 1 : 0);
