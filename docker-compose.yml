@@ -11,6 +11,10 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_PASSWORD: postgres
+      # 이벤트 기간은 «하루의 처음~끝» 로 심습니다(dev/03-seed.sql 의 date_trunc).
+      # UTC 로 두면 한국에서 볼 때 09:00 이 되어 «날짜만» 표시가 안 걸립니다.
+      TZ: Asia/Seoul
+      PGTZ: Asia/Seoul
     ports: ['54322:5432']          # psql -h localhost -p 54322 -U postgres
     volumes:
       # 파일명 순서대로 실행됩니다. anon 롤과 extensions 스키마가 먼저 있어야

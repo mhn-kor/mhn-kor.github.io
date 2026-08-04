@@ -596,3 +596,217 @@ grant execute on function public.vote_recommended_build(bigint, smallint, text) 
 grant execute on function public.my_recommended_votes(bigint[], text)             to anon;
 grant execute on function public.add_recommended_comment(bigint, text, text, text) to anon;
 grant execute on function public.delete_recommended_comment(bigint, text)         to anon;
+
+-- ══════════════════════════════════════════════════════════════════════
+-- 이벤트
+-- ══════════════════════════════════════════════════════════════════════
+-- 운영자가 이벤트를 열어 두면, 방문자가 «참여하기» 로 응모합니다.
+-- 응모 «내용» 은 여기에 남지 않습니다 — 곧장 디스코드 채팅방으로 갑니다
+-- (supabase/functions/discord-entry). 이 표에 남는 것은 이벤트와 «응모 건수» 뿐입니다.
+-- 선착순을 세려면 숫자 하나는 있어야 하고, 그 숫자에는 누가 무엇을 냈는지가 없습니다.
+--
+-- 등록·삭제는 마스터 비밀번호로만 합니다. 개인 비밀번호를 따로 두지 않는 이유는
+-- 이벤트를 여는 사람이 운영자 한 사람뿐이기 때문입니다. app_config 에 master_pw 가
+-- 없으면 crypt 비교가 성립하지 않아 «아무도 못 연다» 로 닫힙니다(fail closed).
+
+create table if not exists public.events (
+  id         bigint generated always as identity primary key,
+  title      text        not null check (char_length(btrim(title)) between 1 and 60),
+  -- 줄바꿈을 그대로 보여 주므로(.ev-body 의 pre-wrap) 여러 문단을 담을 수 있습니다.
+  body       text        not null check (char_length(btrim(body)) between 1 and 4000),
+  -- 기간. 둘 다 null 이면 «상시» 입니다. 시작만 있으면 그때부터 계속,
+  -- 종료만 있으면 지금부터 그때까지. 응모를 받을지는 이 두 값이 정합니다.
+  starts_at  timestamptz,
+  ends_at    timestamptz,
+  -- 선착순 인원. null 이면 무제한입니다. entries 가 여기 닿으면 더 안 받습니다.
+  capacity   int,
+  entries    int         not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- create table if not exists 는 이미 만들어진 표를 손대지 않습니다.
+-- 먼저 만든 DB 를 위해 컬럼과 제약을 따로 얹습니다(여러 번 실행해도 안전합니다).
+alter table public.events add column if not exists starts_at timestamptz;
+alter table public.events add column if not exists ends_at   timestamptz;
+alter table public.events add column if not exists capacity  int;
+alter table public.events add column if not exists entries   int not null default 0;
+alter table public.events drop constraint if exists events_period_check;
+alter table public.events add constraint events_period_check
+  check (starts_at is null or ends_at is null or ends_at > starts_at);
+alter table public.events drop constraint if exists events_capacity_check;
+alter table public.events add constraint events_capacity_check
+  check (capacity is null or capacity between 1 and 100000);
+alter table public.events drop constraint if exists events_entries_check;
+alter table public.events add constraint events_entries_check check (entries >= 0);
+
+create index if not exists events_created_at_idx on public.events (created_at desc);
+
+alter table public.events enable row level security;
+
+-- 숨길 컬럼이 없습니다. pw_hash 를 두지 않았으므로 표 전체를 읽게 둡니다.
+-- entries 도 보여줍니다 — «남은 자리» 를 그리려면 있어야 하고, 셈만 담긴 값입니다.
+revoke all on public.events from anon;
+grant select (id, title, body, starts_at, ends_at, capacity, entries, created_at)
+  on public.events to anon;
+
+drop policy if exists "public read" on public.events;
+create policy "public read" on public.events for select to anon using (true);
+
+-- 인자가 늘어날 때마다 옛 판을 지웁니다. create or replace 는 «인자 추가» 를 새
+-- 오버로드로 만들 뿐이라, 남겨 두면 anon 이 기간·인원 없이 부를 수 있습니다.
+drop function if exists public.add_event(text, text, text);
+drop function if exists public.add_event(text, text, timestamptz, timestamptz, text);
+create or replace function public.add_event(
+  p_title text, p_body text, p_starts_at timestamptz, p_ends_at timestamptz,
+  p_capacity int, p_master text
+) returns bigint
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare new_id bigint;
+begin
+  if not exists (select 1 from public.app_config
+                  where key = 'master_pw' and value = crypt(p_master, value)) then
+    raise exception 'BAD_MASTER';
+  end if;
+  -- 값의 앞뒤·범위는 events_period_check · events_capacity_check 가 봅니다
+  -- (여기서 또 적으면 두 곳이 어긋납니다).
+  insert into public.events (title, body, starts_at, ends_at, capacity)
+  values (btrim(p_title), btrim(p_body), p_starts_at, p_ends_at, p_capacity)
+  returning id into new_id;
+  return new_id;
+end $$;
+
+create or replace function public.delete_event(
+  p_id bigint, p_master text
+) returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare n int;
+begin
+  delete from public.events
+   where id = p_id
+     and exists (select 1 from public.app_config
+                  where key = 'master_pw' and value = crypt(p_master, value));
+  get diagnostics n = row_count;
+  return n > 0;
+end $$;
+
+-- ── 중복 응모 막기 ──────────────────────────────────────────────────
+-- 인원 제한이 있는 이벤트에서만, 한 닉네임이 한 번만 응모하게 합니다.
+-- 정원이 없는 이벤트는 그대로 둡니다 — «표류연성 자랑» 처럼 여러 장 올릴 만한 것이
+-- 있고, 막아서 얻는 것도 없습니다.
+--
+-- 여기에 남는 것은 «닉네임을 이벤트 번호와 함께 해싱한 값» 하나뿐입니다. 제목도 내용도
+-- 이미지도 없고, 목록을 읽어도 누가 무엇을 냈는지 알 수 없습니다. 그래도 같은 닉네임이면
+-- 같은 값이 나오므로 두 번째 응모를 막을 수 있습니다.
+-- 이벤트 번호를 섞는 이유: 안 섞으면 한 사람의 값이 이벤트마다 같아, 이 표만으로
+-- «이 사람이 어느 이벤트에 참여했는지» 가 드러납니다.
+--
+-- 닉네임을 바꿔 다시 내면 막지 못합니다. 그건 이 표로 풀 수 있는 문제가 아니고
+-- (로그인이 없습니다), 상품은 어차피 닉네임으로 나갑니다.
+create table if not exists public.event_claims (
+  event_id  bigint not null references public.events(id) on delete cascade,
+  who_hash  text   not null,
+  primary key (event_id, who_hash)
+);
+
+alter table public.event_claims enable row level security;
+-- anon 은 읽지도 쓰지도 못합니다. security definer 함수만 소유자 권한으로 봅니다.
+revoke all on public.event_claims from anon;
+
+-- ── 선착순 자리 ─────────────────────────────────────────────────────
+-- «세고 나서 늘리면» 안 됩니다. 두 사람이 동시에 마지막 자리를 누르면 둘 다 «아직
+-- 자리 있음» 을 읽고 둘 다 늘려 정원을 넘깁니다. 선착순은 그 순간을 위한 기능이라
+-- 그렇게 만들면 있으나 마나입니다.
+--
+-- 그래서 검사와 증가를 «한 문장» 안에 둡니다. update ... where 는 행을 잠그고
+-- 조건을 다시 본 뒤에 쓰므로, 동시에 들어와도 정확히 한 쪽만 갱신됩니다.
+-- 기간도 여기서 같이 봅니다 — 자리를 주는 판정이 한 곳에만 있어야 어긋나지 않습니다.
+-- 인자가 늘었습니다. 옛 1인자 판이 남아 있으면 중복 검사 없이 자리를 줍니다.
+drop function if exists public.claim_event_slot(bigint);
+create or replace function public.claim_event_slot(p_id bigint, p_who text default '') returns json
+language plpgsql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+declare r record; e record; h text;
+begin
+  update public.events
+     set entries = entries + 1
+   where id = p_id
+     and (capacity  is null or entries < capacity)
+     and (starts_at is null or now() >= starts_at)
+     and (ends_at   is null or now() <= ends_at)
+  returning title, entries, capacity into r;
+
+  if found then
+    /* 정원이 있는 이벤트만 한 닉네임 한 번입니다. 자리를 «잡은 뒤» 에 넣는 이유:
+       먼저 넣고 자리가 없으면, 응모하지도 못한 사람이 영영 막힙니다.
+       동시에 같은 닉네임 둘이 들어와도 unique 가 한 쪽만 통과시키고, 진 쪽은
+       방금 늘린 자리를 그대로 되돌립니다. */
+    if r.capacity is not null and coalesce(btrim(p_who), '') <> '' then
+      h := encode(digest(p_id::text || '|' || lower(btrim(p_who)), 'sha256'), 'hex');
+      begin
+        insert into public.event_claims (event_id, who_hash) values (p_id, h);
+      exception when unique_violation then
+        update public.events set entries = greatest(0, entries - 1) where id = p_id;
+        return json_build_object('ok', false, 'reason', 'DUP');
+      end;
+    end if;
+    return json_build_object('ok', true, 'title', r.title,
+                             'entries', r.entries, 'capacity', r.capacity);
+  end if;
+
+  -- 못 준 이유를 알려줍니다. «없는 이벤트» 와 «자리가 없다» 를 뭉뚱그리면
+  -- 응모자에게 엉뚱한 안내가 나가고 원인을 찾을 수 없습니다.
+  select * into e from public.events where id = p_id;
+  if not found then
+    return json_build_object('ok', false, 'reason', 'NO_EVENT');
+  elsif e.starts_at is not null and now() < e.starts_at then
+    return json_build_object('ok', false, 'reason', 'NOT_STARTED');
+  elsif e.ends_at is not null and now() > e.ends_at then
+    return json_build_object('ok', false, 'reason', 'ENDED');
+  else
+    return json_build_object('ok', false, 'reason', 'FULL',
+                             'entries', e.entries, 'capacity', e.capacity);
+  end if;
+end $$;
+
+-- 자리를 잡아 두고 디스코드 전송이 실패했을 때 되돌립니다. 안 되돌리면 아무도
+-- 응모하지 않은 자리가 영영 잠깁니다. greatest 로 0 아래로는 안 내려갑니다.
+-- 중복 표시도 같이 지웁니다 — 안 지우면 실패한 사람이 다시 낼 수 없게 됩니다.
+drop function if exists public.release_event_slot(bigint);
+create or replace function public.release_event_slot(p_id bigint, p_who text default '') returns void
+language sql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+  update public.events set entries = greatest(0, entries - 1) where id = p_id;
+  delete from public.event_claims
+   where event_id = p_id
+     and who_hash = encode(digest(p_id::text || '|' || lower(btrim(coalesce(p_who, ''))), 'sha256'), 'hex');
+$$;
+
+revoke all on function public.add_event(text, text, timestamptz, timestamptz, int, text) from public, anon;
+revoke all on function public.delete_event(bigint, text)                                 from public, anon;
+grant execute on function public.add_event(text, text, timestamptz, timestamptz, int, text) to anon;
+grant execute on function public.delete_event(bigint, text)                                 to anon;
+
+-- 자리를 잡고 되돌리는 일은 «Edge Function 만» 할 수 있어야 합니다. anon 에게 열어 두면
+-- 응모하지도 않고 claim 만 반복해 선착순 30명짜리를 30번 요청으로 채워 버릴 수 있습니다.
+-- 그래서 service_role 에게만 줍니다 — 그 키는 브라우저에 나가지 않습니다.
+revoke all on function public.claim_event_slot(bigint, text)   from public, anon;
+revoke all on function public.release_event_slot(bigint, text) from public, anon;
+do $$
+begin
+  grant execute on function public.claim_event_slot(bigint, text)   to service_role;
+  grant execute on function public.release_event_slot(bigint, text) to service_role;
+exception when undefined_object then
+  -- 로컬 미리보기(docker compose)에는 service_role 롤이 없습니다. dev/03-seed.sql 이
+  -- 대신 anon 에게 열어 줍니다 — 그 파일은 프로덕션에서 돌지 않습니다.
+  raise notice 'service_role 롤이 없습니다 — 로컬 개발 환경으로 보고 넘어갑니다.';
+end $$;

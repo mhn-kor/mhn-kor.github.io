@@ -55,7 +55,46 @@ select public.add_record('크샬장인 / 활', 'kushala_daora', 8, 'normal', 'bo
          88, 'https://www.youtube.com/watch?v=iiiiiiiiiii', null, 'test1234');
 
 -- 로컬 전용 마스터 비밀번호: devmaster
--- 실제 운영 비밀번호를 이 파일에 넣지 마세요. 저장소는 공개입니다.
+--
+-- 이 파일은 공개 저장소에 커밋됩니다. 여기 적힌 값은 곧 «누구나 아는 값» 이므로
+-- 운영(Supabase)의 master_pw 로는 절대 쓰지 마세요 — 같으면 누구나 친구 코드·기록·
+-- 추천빌드·이벤트를 지울 수 있습니다. 운영 값은 대시보드에서만 넣습니다
+-- (README 의 «마스터 비밀번호» 절).
 insert into public.app_config (key, value)
 values ('master_pw', extensions.crypt('devmaster', extensions.gen_salt('bf', 8)))
 on conflict (key) do update set value = excluded.value;
+
+-- 이벤트. 등록은 마스터 비밀번호로만 하므로 위에서 심은 devmaster 를 씁니다.
+-- 기간은 화면에서 만드는 것과 같은 꼴(하루의 처음 00:00 ~ 끝 23:59)로 둡니다.
+-- 진행중 · 선착순 마감 · 상시 · 시작 전 · 종료 다섯 갈래를 다 심어 두어야 상태 배지와
+-- 잠긴 버튼을 한 화면에서 볼 수 있습니다 (tools/event-test.js 가 이것들을 셉니다).
+select public.add_event(
+  '첫 사냥 인증 이벤트',
+  E'★10 몬스터를 처음 잡은 스크린샷을 올려주세요.\n\n- 보상: 추첨 3명 기프티콘\n- 참여하기를 눌러 제목·닉네임·내용을 적고 이미지를 붙이면 디스코드로 바로 응모됩니다.',
+  date_trunc('day', now()) - interval '2 days', date_trunc('day', now()) + interval '23 hours 59 minutes' + interval '5 days', 30, 'devmaster');
+select public.add_event(
+  '표류연성 대박 자랑',
+  E'표류석에서 원하는 스킬이 한 번에 붙은 순간을 자랑해 주세요.\n이미지 한 장이면 충분합니다.',
+  null, null, null, 'devmaster');            -- 상시 · 인원 무제한
+select public.add_event(
+  '선착순 10명 기프티콘',
+  E'선착순 10명입니다. 자리가 다 차면 참여 버튼이 잠깁니다.',
+  null, null, 10, 'devmaster');
+select public.add_event(
+  '여름 특별 이벤트',
+  E'다음 주에 시작합니다. 아직 응모할 수 없습니다.',
+  date_trunc('day', now()) + interval '3 days', date_trunc('day', now()) + interval '23 hours 59 minutes' + interval '10 days', null, 'devmaster');
+select public.add_event(
+  '봄맞이 스크린샷 대회',
+  E'끝난 이벤트입니다. 당첨자는 디스코드에서 발표했습니다.',
+  date_trunc('day', now()) - interval '30 days', date_trunc('day', now()) + interval '23 hours 59 minutes' - interval '2 days', 50, 'devmaster');
+
+-- 선착순이 «찬» 모습을 보려고 자리를 미리 채워 둡니다. 그리고 30명짜리에는 몇 자리만.
+update public.events set entries = capacity where title = '선착순 10명 기프티콘';
+update public.events set entries = 24       where title = '첫 사냥 인증 이벤트';
+
+-- 자리를 잡는 함수는 프로덕션에서 service_role 만 부를 수 있습니다(schema.sql).
+-- 로컬 PostgREST 는 언제나 anon 으로 도므로, 여기서만 열어 줍니다.
+-- !! 이 두 줄은 로컬 전용입니다. schema.sql 로 옮기지 마세요 !!
+grant execute on function public.claim_event_slot(bigint, text)   to anon;
+grant execute on function public.release_event_slot(bigint, text) to anon;

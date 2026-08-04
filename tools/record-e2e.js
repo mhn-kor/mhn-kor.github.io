@@ -62,6 +62,14 @@ const dialogClosed = (page, sel, timeout = 15000) =>
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 1000 } });
   page.on('pageerror', e => { fail++; console.error('✗ 페이지 예외:', e.message); });
+  /* 진행중인 이벤트가 있으면 첫 화면에 공지 창이 뜹니다(event.js 의 evNotice).
+     «오늘 하루 안 보기» 는 이벤트 번호로 덮는 것이라 번호를 모르는 여기서는 못 씁니다
+     (새 이벤트는 덮어 둔 사이에도 떠야 하니 그게 맞습니다). 여기서 볼 것은 리더보드라
+     열리는 족족 닫습니다 — 창 자체는 tools/event-test.js 가 봅니다. */
+  await page.addInitScript(() => addEventListener('DOMContentLoaded', () => {
+    const d = document.getElementById('ev-notice');
+    if (d) new MutationObserver(() => d.open && d.close()).observe(d, { attributes: true });
+  }));
 
   await page.goto(`${BASE}/#record`, { waitUntil: 'networkidle' });
   await page.waitForSelector('#rk-list .rk-item', { timeout: 15000 });

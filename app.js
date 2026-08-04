@@ -47,7 +47,8 @@ document.querySelectorAll('dialog').forEach(closeOnBackdrop);
    — 명세상 창을 열면 안쪽 첫 요소에 포커스가 갑니다. «빌드 고르기» 는 그 첫 요소가
    검색칸이라, .focus() 호출을 지우는 것만으로는 안 걸립니다. 창은 11개고 여는 자리는
    그보다 많아, 부르는 쪽마다 막으면 새 창에서 또 빠뜨립니다. */
-const KEEP_FOCUS = new Set(['reg', 'rk-reg', 'rc-add', 'del', 'rk-del', 'rc-del']);   // 등록 · 삭제 비밀번호
+const KEEP_FOCUS = new Set(['reg', 'rk-reg', 'rc-add', 'ev-add', 'ev-join',
+                            'del', 'rk-del', 'rc-del', 'ev-del']);   // 등록 · 삭제 비밀번호
 const noAutoFocus = dlg => matchMedia('(max-width: 640px)').matches && !KEEP_FOCUS.has(dlg && dlg.id);
 /* 창을 연 뒤 직접 포커스를 줄 때 씁니다. 어느 창인지는 요소가 들고 있습니다. */
 const focusIn = el => { if (!noAutoFocus(el.closest('dialog'))) el.focus(); };
@@ -907,8 +908,8 @@ const saveNick = n => localStorage.setItem(NICK_KEY, n);
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {
   const h = location.hash.slice(1);
-  const tab = ['codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend'].includes(h) ? h : 'notice';
-  for (const t of ['notice', 'codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend']) $('#panel-' + t).hidden = tab !== t;
+  const tab = ['codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend', 'event'].includes(h) ? h : 'notice';
+  for (const t of ['notice', 'codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend', 'event']) $('#panel-' + t).hidden = tab !== t;
   if (tab === 'smelt') drawSmelt();
   // build.js 는 app.js 의 $ / esc / toast 를 쓰므로 뒤에 로드됩니다.
   // 첫 호출 시점에는 아직 없을 수 있어 확인 후 부릅니다(로드 직후 스스로 한 번 그립니다).
@@ -917,6 +918,7 @@ function showTab() {
   if (tab === 'record') drawRecord();
   if (tab === 'rank') drawRank();          // 리더보드와 같은 목록을 record.js 가 같이 그립니다
   if (tab === 'recommend' && typeof drawRecommend === 'function') drawRecommend();
+  if (tab === 'event' && typeof drawEvent === 'function') drawEvent();
   for (const a of document.querySelectorAll('.tabs a')) {
     a.toggleAttribute('aria-current', a.dataset.tab === tab);
   }
@@ -928,6 +930,7 @@ function showTab() {
   const url = new URL(location);
   if (tab !== 'build') url.searchParams.delete('build');
   if (tab !== 'record' && tab !== 'rank') url.searchParams.delete('rec');
+  if (tab !== 'event') url.searchParams.delete('ev');
   if (url.href !== location.href) history.replaceState(null, '', url);
 }
 window.addEventListener('hashchange', () => { showTab(); window.scrollTo(0, 0); });
