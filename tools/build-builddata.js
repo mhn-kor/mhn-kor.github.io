@@ -252,7 +252,10 @@ async function main() {
   const I8 = objAt(src, src.indexOf('I8={') + 3);       // 몬스터별 속성·곡선 참조
   const K7 = objAt(src, src.indexOf('K7={') + 3);       // 등급별 공격력·속성 곡선
   const skillKo = koSkillTable(src);
+  /* mhn.quest 의 한국어 표기가 공식 표기와 다른 몬스터. */
+  const MON_KO_FIX = { 멜제나: '멜-제나' };
   const monKo = pickTable(src, 'anja:"안쟈나프"');
+  for (const k of Object.keys(monKo)) if (MON_KO_FIX[monKo[k]]) monKo[k] = MON_KO_FIX[monKo[k]];
   const monEn = pickTable(src, 'anja:"Anjanath"');
   const skillName = skillNamer(skillKo, official);
 

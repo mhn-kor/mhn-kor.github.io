@@ -15,8 +15,9 @@ const SCRIPTS = ['app-secure.js', 'i18n-secure.js', 'map-secure.js', 'suit-secur
 const QUEST = 'https://mhn.quest/';
 const MAX_PX = 64;
 
-/* 한국어 이름이 저장소 표기와 다른 몬스터. 표류연성 탭 아이콘을 그대로 쓰려면 여기서 이어줍니다. */
-const NAME_FIX = { 쿠루루야쿠: '쿠루루야크', 치치야쿠: '치치야크', 푸르푸르: '푸루푸루', 랑그로트라: '랑그로토라', 가란고름: '가란고르무' };
+/* mhnow.me 의 한국어 표기가 공식 표기와 다른 몬스터. 몬스터 이름은 물론 «○○의 비늘» 같은
+   재료 이름에도 들어가므로, 아래 ko() 에서 한국어 문자열마다 통째로 바꿔치웁니다. */
+const NAME_FIX = { 쿠루루야쿠: '쿠루루야크', 치치야쿠: '치치야크', 푸르푸르: '푸루푸루', 랑그로트라: '랑그로토라', 가란고름: '가란고르무', 오오나즈치: '오나즈치' };
 /* 저장소에 아이콘이 없어 mhnow.me 에서 받아오는 몬스터 (고룡은 표류석을 안 줘서 표류연성 탭에 없습니다). */
 const FETCH_MONSTER = ['kushala_daora', 'teostra', 'nergigante', 'kirin', 'chameleos', 'namielle', 'malzeno', 'velkhana'];
 /* 출현 구역은 mhn.quest 에서 옵니다. 몬스터 키가 표류연성 탭 아이콘 키와 같아서 그대로 이어지는데,
@@ -246,7 +247,11 @@ async function saveIcon(url, dest) {
 (async () => {
   const { MONSTER_MAP, MATERIAL_CATALOG, UPGRADE_RECIPES, i18n, suit } = await pull();
   const questBiome = await pullBiome();
-  const ko = o => (o && (o.ko || (o.name && o.name.ko))) || null;
+  const ko = o => {
+    let s = (o && (o.ko || (o.name && o.name.ko))) || null;
+    if (s) for (const [from, to] of Object.entries(NAME_FIX)) s = s.split(from).join(to);
+    return s;
+  };
 
   // 사이트가 실제로 보여주는 순서·목록 그대로 (commons 가 없는 몬스터는 재료 표가 없습니다).
   const order = Object.keys(suit).filter(k => MONSTER_MAP[k] && MONSTER_MAP[k].commons);
@@ -282,7 +287,7 @@ async function saveIcon(url, dest) {
       const r = i + 1, two = e && typeof e === 'object';
       (two || r === 1 ? [`${m.id}_r${r}_w`, `${m.id}_r${r}_a`] : [`${m.id}_r${r}`]).forEach(put);
     });
-    const icon = iconByName[name] || iconByName[NAME_FIX[name]] || (FETCH_MONSTER.includes(m.id) ? m.id : null);
+    const icon = iconByName[name] || (FETCH_MONSTER.includes(m.id) ? m.id : null);
     if (!icon) console.log(`! ${m.id}(${name}) 아이콘을 못 찾았습니다 — NAME_FIX 나 FETCH_MONSTER 에 넣어주세요`);
     /* 출현 구역. 아이콘 키가 곧 mhn.quest 키입니다(고룡만 QUEST_KEY 로 이어줍니다).
        고룡은 특정 구역에 안 나오므로 빈 배열이 정상 — 화면에서 '없음' 으로 걸립니다. */
