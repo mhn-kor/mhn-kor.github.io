@@ -57,7 +57,7 @@ code {
 }
 .bar { display: flex; align-items: center; gap: 16px; padding: 12px 0; }
 .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; margin-right: auto; }
-.mark { width: 38px; height: 38px; flex: none; }
+.mark { width: 63px; height: 44px; flex: none; }
 .brand-txt { display: flex; flex-direction: column; line-height: 1.25; }
 .brand-txt b { font-size: 1.02rem; font-weight: 700; letter-spacing: -.02em; }
 .brand-txt i {
@@ -1020,7 +1020,7 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   .btn.chat { padding: 8px 11px; }
   /* 로고는 글자를 남기고 크기만 줄입니다. 폭이 모자라면 말줄임으로 잘리게 두어
      헤더가 넘쳐 가로 스크롤이 생기는 것을 막습니다(320px 화면 기준). */
-  .mark { width: 30px; height: 30px; }
+  .mark { width: 49px; height: 34px; }
   .brand { min-width: 0; gap: 8px; }
   .brand-txt { overflow: hidden; }
   .brand-txt b, .brand-txt i { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

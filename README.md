@@ -8,9 +8,9 @@ style.css
 app.js       ← Supabase URL + publishable 키, 이 파일 맨 위 2줄
 material.js       재료 탭 계산·화면
 material-data.js  재료 탭 데이터 (몬스터 · 레시피 · 한국어 이름)
-favicon.svg  로고 겸 파비콘
+favicon.png  파비콘 (로고의 태극 메달만 잘라낸 것)
 vendor/      qrcode-generator (MIT)
-assets/      공지용 인증 예시 이미지
+assets/      로고(logo.png) · 공지용 인증 예시 이미지
 tools/       QR 스캔 회귀 테스트 (선택)
 dev/         로컬 미리보기용 초기화·시드·nginx 설정
 docker-compose.yml   Postgres + PostgREST + nginx
