@@ -9,7 +9,7 @@
  */
 
 const BD_KEY = 'mhnkr.builds';
-const BD_MAX = 8;                 // 카드 상한. 이 이상은 비교가 아니라 목록이 됩니다.
+const BD_MAX = 100;               // 카드 상한. 실수로 무한 복제되는 것만 막는 안전핀입니다.
 const BD_PARTS = () => BUILD.parts;
 
 /* 표류석: 색상별 스킬 풀을 표류연성 데이터에서 그대로 가져옵니다.
@@ -586,6 +586,8 @@ const BD_I = {
   link: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
   del: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   star: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="m12 3 2.6 5.6 6 .8-4.4 4.2 1.1 6L12 16.8 6.7 19.6l1.1-6L3.4 9.4l6-.8z"/></svg>',
+  up: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 14.5 7-7 7 7"/></svg>',
+  down: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 9.5 7 7 7-7"/></svg>',
   kakao: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 3C6.9 3 2.8 6.2 2.8 10.2c0 2.5 1.6 4.8 4.2 6.1l-.9 3.3c-.1.3.2.5.5.4l3.9-2.4q.7.1 1.5.1c5.1 0 9.2-3.2 9.2-7.5S17.1 3 12 3z"/></svg>',
 };
 /* 이 이벤트 장비 5종은 몬스터 소재가 아니라서 참조 사이트에도 아이콘이 없습니다(404).
@@ -853,6 +855,34 @@ function bdOpenType(bi) {
       </button>`).join('')}</div>`, false);
 }
 
+/* 빌드 목록 — 이름 줄 아래 장비 여섯 칸(bdIconRow)을 깔고, ▲▼로 순서를 바꿉니다.
+   카드가 길어 화면에 하나씩만 보이므로, 순서는 여기서 한눈에 만집니다.
+   여섯 칸에 부위 제목은 달지 않습니다 — 칸 순서가 카드와 같고 title 로 충분합니다. */
+function bdFillList() {
+  $('#bd-modal-body').innerHTML = `<ul class="bd-blist">${bdState.builds.map((b, i) => {
+    const styleName = b.st ? bdStylesOf(b.wt)[b.st - 1] : null;
+    return `
+    <li class="bd-brow">
+      <span class="bd-lb">
+        <span class="bd-bn"><img src="assets/part/${esc(b.wt)}.png" width="18" height="18" alt="">
+          ${esc((b.n || '').trim() || `빌드 ${i + 1}`)}
+          ${styleName ? `<i class="bd-lst">${esc(styleName)}</i>` : ''}</span>
+        ${bdIconRow(b)}
+      </span>
+      <span class="bd-bp">
+        <button class="bd-ic" data-move="${i}:-1" title="위로" aria-label="위로"${i === 0 ? ' disabled' : ''}>${BD_I.up}</button>
+        <button class="bd-ic" data-move="${i}:1" title="아래로" aria-label="아래로"${i === bdState.builds.length - 1 ? ' disabled' : ''}>${BD_I.down}</button>
+      </span>
+    </li>`;
+  }).join('')}</ul>`;
+}
+
+function bdOpenList() {
+  bdPick = { kind: 'list' };
+  bdOpen('빌드 목록', '', false, { view: 'skill' });   // 읽기 창과 같은 «내용만큼» 높이
+  bdFillList();
+}
+
 /* 스타일 강화 */
 function bdOpenStyle(bi) {
   bdPick = { kind: 'st', bi };
@@ -1063,6 +1093,15 @@ $('#bd-modal-body').addEventListener('click', e => {
   if (bdDlg().dataset.owner !== 'build') return;      // 리더보드가 연 모달이면 record.js 담당
   const b = bdState.builds[bdPick.bi];
 
+  /* 빌드 목록: ▲▼로 이웃과 자리를 바꿉니다. 창은 열어 둔 채 뒤의 카드도 같이 다시 그립니다. */
+  const mv = e.target.closest('[data-move]');
+  if (mv) {
+    const [i, d] = mv.dataset.move.split(':').map(Number);
+    const a = bdState.builds;
+    [a[i], a[i + d]] = [a[i + d], a[i]];
+    bdSave(); bdRender(); return bdFillList();
+  }
+
   const gi = e.target.closest('.bd-gi');
   if (gi) {
     b.wt = gi.dataset.v; b.st = 0;
@@ -1165,13 +1204,15 @@ $('#bd-modal-close').addEventListener('click', () => bdDlg().close());
 
 $('#bd-add').addEventListener('click', () => {
   if (bdState.builds.length >= BD_MAX) return toast(`빌드는 ${BD_MAX}개까지입니다`);
-  bdState.builds.push(bdNewBuild());
+  /* 새 빌드는 맨 앞에 — 만들자마자 만지는 것이 새 빌드라, 스크롤 없이 바로 보이게. */
+  bdState.builds.unshift(bdNewBuild());
   bdSave(); bdRender();
 });
 $('#bd-detail').addEventListener('click', () => {
   bdState.detail = !bdState.detail;
   bdSave(); bdRender();
 });
+$('#bd-list').addEventListener('click', bdOpenList);
 
 /* ── 추천 빌드 ─────────────────────────────────────────────────── */
 /* 등록은 recommend.js 가 아니라 여기 있습니다. 올릴 대상이 «지금 보고 있는 빌드»라

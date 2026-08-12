@@ -857,6 +857,20 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 /* 그 부위가 없는 세트는 빈 자리로 두어 칸이 어긋나지 않게 합니다. */
 .bd-bx { width: 28px; height: 28px; display: block; }
 
+/* 빌드 목록 창(bdOpenList). 줄 구조는 일괄선택 목록(.bd-brow)을 그대로 쓰고,
+   장비 여섯 칸은 추천빌드 카드의 .bd-row6 을 그대로 씁니다. */
+.bd-lb { flex: 1; min-width: 0; padding: 3px 0; }
+.bd-lb .bd-bn { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 5px; }
+.bd-lb .bd-row6 { margin-bottom: 0; }
+/* 무기 스타일 뱃지 — 카드의 .bd-style.on 과 같은 보라 알약, 읽기 전용이라 작게. */
+.bd-lst {
+  font-style: normal; font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  color: #CBA6F7; background: rgba(160,120,230,.16); border: 1px solid rgba(160,120,230,.45);
+}
+/* 끝에 선 빌드의 못 가는 방향. 자리는 지켜 두 버튼이 흔들리지 않게 합니다. */
+.bd-ic:disabled { opacity: .25; cursor: default; }
+.bd-ic:disabled:hover { color: var(--muted); border-color: var(--line); }
+
 /* 걸린 스킬의 레벨. 뱃지와 같은 색이라 어느 스킬 때문에 걸린 칸인지 바로 압니다.
    숫자가 붙으면 칸이 세로로 길어지고, 여러 색이면 그만큼 옆으로 늘어납니다. */
 .bd-bb.lv { width: auto; min-width: 28px; height: auto; padding: 3px 3px 2px; gap: 1px; }
