@@ -156,6 +156,20 @@ const EXTRA_FOR = {
   'insect-glaive': ['kinsect'],
 };
 
+/* 사냥벌레는 공식 사이트가 정답이다 — mhn.quest 번들은 쿠루루블레이드의 공격 계통을
+   틀리게 담고 있었다(切斷, 실제는 打擊). fetch-official.js 가 받아 둔 kinsect.json 의
+   열거값을 번들과 같은 중국어 키로 바꿔 세트의 kinsect 를 통째로 덮는다.
+   모르는 열거값은 그대로 내보내 화면에서 눈에 띄게 한다(조용히 빠뜨리지 않는다). */
+const KINSECT_ENUM = {
+  SMASH: '共鬥', PIERCE: '飛翔', POWDER: '粉塵',
+  BLUNT: '打擊', CUT: '切斷',
+  QUICK: '迅速', STAMINA: '耐力', POWER: '力量',
+  SMASH_TYPE_1: '昏厥威力UP', SMASH_TYPE_2: '全力共鬥攻擊', SMASH_TYPE_3: '強化時屬性值UP',
+  PIERCE_TYPE_1: '追擊頻率UP', PIERCE_TYPE_2: '制空',
+  POWDER_TYPE_1: '強化時最大耐力UP', POWDER_TYPE_2: '強爆粉塵', POWDER_TYPE_3: '連爆粉塵',
+  EXTEND_ENHANCEMENT: '善於採集', ENHANCEMENT_HARVEST_UP: '解除採集限制',
+};
+
 /* 탄·화살은 [종류, 레벨…] 배열, 병·포격은 문자열, 연주는 {키:곡}, 곤충은 {속성…}.
    화면에 그대로 쓸 수 있도록 짧은 문자열 배열로 눌러 담는다. */
 function weaponExtra(wkey, mon, X) {
@@ -251,6 +265,8 @@ async function main() {
   const off = JSON.parse(fs.readFileSync(path.join(DATA, 'official-names.json'), 'utf8'));
   /* 병·탄·포격 등의 한국어 이름표. 게임 패치와 무관하게 거의 바뀌지 않아 저장소에 둡니다. */
   const X = JSON.parse(fs.readFileSync(path.join(DATA, 'wextra.json'), 'utf8'));
+  /* 공식 사이트의 조충곤별 사냥벌레(fetch-official.js 가 생성). */
+  const KIN = JSON.parse(fs.readFileSync(path.join(DATA, 'kinsect.json'), 'utf8'));
 
   /* 스킬 최대 레벨은 공식 스킬 페이지의 레벨 표 행 수입니다.
      skill-desc.js 가 그 표를 그대로 담고 있어 따로 표를 두지 않습니다. */
@@ -300,6 +316,7 @@ async function main() {
   const armorSets = new Set(Object.keys(off.armor).map(k => k.replace(/_(head|chest|arms|waist|legs)$/, '')));
   const sets = [];
   const warn = [];
+  const kinMiss = [];
 
   for (const [key, raw] of Object.entries(B8)) {
     const en = monEn[key] || key;
@@ -352,6 +369,14 @@ async function main() {
          (mhn.quest 도 이벤트 장비를 소재명으로 표시한다) */
       const name = (ovr && ovr.names[wkey]) || official || (hasOfficial ? null : (elem ? `${monKo[key] || key} ${wko}` : null));
       if (!name) continue;
+      /* 조충곤은 공식 사냥벌레로 번들 값을 덮는다. 공식 목록에 없는 무기(이벤트)만 번들대로. */
+      let wmon = mon;
+      if (wkey === 'insect-glaive') {
+        const spec = [slug, ...cands].filter(Boolean).map(c => KIN[`${c}_${suffix}`]).find(Boolean);
+        const z = e => KINSECT_ENUM[e] || e;
+        if (spec) wmon = { ...mon, kinsect: { type: z(spec.type), attack: z(spec.attack), performance: z(spec.perf), bonus: z(spec.bonus) } };
+        else if (mon.kinsect) kinMiss.push(key);
+      }
       const curve = elem && mon[elem];
       const atk = curve && K7[curve.base] ? K7[curve.base].at(-1) : null;
       const ele = curve && curve.ele && K7[curve.ele] ? K7[curve.ele].at(-1) : null;
@@ -361,7 +386,7 @@ async function main() {
         t: wkey, tn: wko, name,
         e: elem && elem !== 'white' ? ELEM_KO[elem] || elem : null,
         atk, ele, crit,
-        x: weaponExtra(wkey, mon, X),
+        x: weaponExtra(wkey, wmon, X),
         /* 종류 전용 스킬이 있을 때만 담는다. 없으면 세트의 weaponSkills 를 쓴다. */
         ...(raw[wkey] ? { sk: wsk(raw[wkey]) } : {}),
       });
@@ -401,6 +426,7 @@ async function main() {
   process.stderr.write(`세트 ${sets.length} / 방어구 ${sets.reduce((n, s) => n + Object.keys(s.pieces).length, 0)} / `
     + `무기 ${nw} (공격력 있음 ${withAtk})\n`);
   if (warn.length) process.stderr.write(`공식 이름 없어 대체 ${warn.length}개 (이벤트 장비)\n`);
+  if (kinMiss.length) process.stderr.write(`공식 사냥벌레 없어 번들값 사용 ${kinMiss.length}개: ${kinMiss.join(', ')}\n`);
 
   /* 아이콘 받는 도구가 쓸 영문 이름표. 참조 사이트가 «great_jagras» 처럼 영문
      스네이크로 파일을 두어서, 짧은 키(g-jagr)만으로는 주소를 만들 수 없습니다. */

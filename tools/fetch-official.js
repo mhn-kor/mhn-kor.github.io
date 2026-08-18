@@ -101,11 +101,30 @@ async function main() {
   fs.writeFileSync(file, JSON.stringify(names, null, 1) + '\n');
   fs.writeFileSync(path.join(OUT, 'skill-urls.json'), JSON.stringify(skillUrls, null, 1) + '\n');
 
+  /* 조충곤 사냥벌레. 무기 목록 페이지에 전 무기 데이터가 JSON 으로 내장돼 있고,
+     조충곤에만 insectGlaiveSpec(타입·공격 계통·성능·보너스 열거값)이 붙습니다.
+     mhn.quest 번들이 이 값을 틀리게 담은 적이 있어(쿠루루블레이드) 공식을 정답으로 둡니다. */
+  const kinsect = {};
+  const wpage = (await get('/ko/weapons')).replace(/&quot;/g, '"');
+  let ki = -1;
+  while ((ki = wpage.indexOf('"insectGlaiveSpec":{', ki + 1)) >= 0) {
+    const id = /"id":"([a-z0-9_]+)"/i.exec(wpage.slice(wpage.lastIndexOf('"id":"', ki), ki));
+    const spec = JSON.parse(wpage.slice(ki + 19, wpage.indexOf('}', ki) + 1));
+    if (!id || !/_INSECTGLAIVE$/.test(id[1])) continue;
+    kinsect[id[1].toLowerCase()] = {
+      type: spec.attackType,                                      // SMASH(공투)·PIERCE(비상)·POWDER(가루)
+      attack: spec.attackAttribute.replace('ATTACK_ATTRIBUTE_', ''),   // BLUNT(타격)·CUT(절단)
+      perf: spec.parameterType.replace('PARAMETER_TYPE_', ''),    // QUICK·STAMINA·POWER
+      bonus: spec.bonusKind,
+    };
+  }
+  fs.writeFileSync(path.join(OUT, 'kinsect.json'), JSON.stringify(kinsect, null, 1) + '\n');
+
   const added = (k) => Object.keys(names[k]).filter(s => !(old[k] || {})[s]);
   process.stderr.write(
     `\n방어구 ${Object.keys(names.armor).length}개 (신규 ${added('armor').length})` +
     ` / 무기 ${Object.keys(names.weapon).length}개 (신규 ${added('weapon').length})` +
-    ` / 스킬 ${Object.keys(skillUrls).length}개\n` +
+    ` / 스킬 ${Object.keys(skillUrls).length}개 / 사냥벌레 ${Object.keys(kinsect).length}개\n` +
     `요청 ${fetched}쪽${failed.length ? `, 실패 ${failed.length}: ${failed.slice(0, 5).join(', ')}` : ''}\n`);
   for (const k of ['armor', 'weapon']) {
     if (added(k).length) process.stderr.write(`신규 ${k}: ${added(k).join(', ')}\n`);

@@ -749,6 +749,7 @@ node tools/update.js          # 이거 하나면 됩니다
 |---|---|---|
 | 장비 스킬·표류석 칸·공격력 곡선 | mhn.quest 번들 | `build-data.js` |
 | 장비 한국어 이름, 방어구 나열 순서 | monsterhunternow.com | `tools/data/official-names.json` |
+| 조충곤 사냥벌레(타입·공격 계통·성능·보너스) | monsterhunternow.com | `tools/data/kinsect.json` |
 | 스킬 레벨별 설명(=점수 계산의 근거) | monsterhunternow.com | `skill-desc.js` |
 | 몬스터 아이콘 | mhnow.me | `assets/monster/*.png` |
 | 재료·서식지 | mhnow.me + mhn.quest | `material-data.js`, `assets/material/*.png` |

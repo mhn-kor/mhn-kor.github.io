@@ -1,0 +1,308 @@
+{
+ "aknosom_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "SMASH_TYPE_1"
+ },
+ "anjanath_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "SMASH_TYPE_1"
+ },
+ "astalos_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "azure_rathalos_insectglaive": {
+  "type": "POWDER",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "POWDER_TYPE_1"
+ },
+ "barioth_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "beotodus_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "SMASH_TYPE_1"
+ },
+ "black_diablos_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "POWER",
+  "bonus": "PIERCE_TYPE_2"
+ },
+ "bone_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "EXTEND_ENHANCEMENT"
+ },
+ "brute_tigrex_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "ENHANCEMENT_HARVEST_UP"
+ },
+ "chameleos_insectglaive": {
+  "type": "POWDER",
+  "attack": "BLUNT",
+  "perf": "POWER",
+  "bonus": "POWDER_TYPE_3"
+ },
+ "chatacabra_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "ENHANCEMENT_HARVEST_UP"
+ },
+ "coral_pukeipukei_insectglaive": {
+  "type": "POWDER",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "POWDER_TYPE_2"
+ },
+ "deviljho_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "POWER",
+  "bonus": "SMASH_TYPE_2"
+ },
+ "diablos_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "ebony_odogaron_insectglaive": {
+  "type": "SMASH",
+  "attack": "CUT",
+  "perf": "STAMINA",
+  "bonus": "SMASH_TYPE_3"
+ },
+ "espinas_insectglaive": {
+  "type": "SMASH",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "SMASH_TYPE_2"
+ },
+ "fulgur_anjanath_insectglaive": {
+  "type": "SMASH",
+  "attack": "CUT",
+  "perf": "STAMINA",
+  "bonus": "SMASH_TYPE_3"
+ },
+ "garangolm_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "POWER",
+  "bonus": "SMASH_TYPE_2"
+ },
+ "glavenus_insectglaive": {
+  "type": "SMASH",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "SMASH_TYPE_3"
+ },
+ "gossharag_insectglaive": {
+  "type": "SMASH",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "SMASH_TYPE_2"
+ },
+ "jyuratodus_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "SMASH_TYPE_1"
+ },
+ "khezu_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "SMASH_TYPE_1"
+ },
+ "kirin_insectglaive": {
+  "type": "SMASH",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "SMASH_TYPE_2"
+ },
+ "kuluyaku_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "kushaladaora_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "lagombi_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "legiana_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "PIERCE_TYPE_2"
+ },
+ "lunagaron_insectglaive": {
+  "type": "POWDER",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "POWDER_TYPE_1"
+ },
+ "magnamalo_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "malzeno_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "mizutsune_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "STAMINA",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "namielle_insectglaive": {
+  "type": "SMASH",
+  "attack": "CUT",
+  "perf": "STAMINA",
+  "bonus": "SMASH_TYPE_3"
+ },
+ "nargacuga_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "nergigante_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "POWER",
+  "bonus": "PIERCE_TYPE_2"
+ },
+ "nightshade_paolumu_insectglaive": {
+  "type": "POWDER",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "POWDER_TYPE_1"
+ },
+ "odogaron_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "SMASH_TYPE_1"
+ },
+ "ore_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "EXTEND_ENHANCEMENT"
+ },
+ "pukeipukei_insectglaive": {
+  "type": "POWDER",
+  "attack": "CUT",
+  "perf": "STAMINA",
+  "bonus": "POWDER_TYPE_1"
+ },
+ "rajang_insectglaive": {
+  "type": "PIERCE",
+  "attack": "BLUNT",
+  "perf": "POWER",
+  "bonus": "PIERCE_TYPE_2"
+ },
+ "rathalos_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "STAMINA",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "rathian_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "seregios_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "ENHANCEMENT_HARVEST_UP"
+ },
+ "silver_rathalos_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "somnacanth_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "QUICK",
+  "bonus": "SMASH_TYPE_1"
+ },
+ "stygian_zinogre_insectglaive": {
+  "type": "POWDER",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "POWDER_TYPE_2"
+ },
+ "tigrex_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "STAMINA",
+  "bonus": "SMASH_TYPE_1"
+ },
+ "tobikadachi_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "STAMINA",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "tzitziyaku_insectglaive": {
+  "type": "POWDER",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "POWDER_TYPE_1"
+ },
+ "velkhana_insectglaive": {
+  "type": "POWDER",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "POWDER_TYPE_2"
+ },
+ "viper_tobikadachi_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "STAMINA",
+  "bonus": "PIERCE_TYPE_1"
+ },
+ "zinogre_insectglaive": {
+  "type": "POWDER",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "POWDER_TYPE_2"
+ }
+}
