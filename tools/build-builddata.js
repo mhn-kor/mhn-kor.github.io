@@ -90,10 +90,13 @@ const SKILL_ALIAS = {
 };
 
 function objAt(src, idx) {
-  let d = 0;
+  let d = 0, q = null;
   for (let i = idx; i < src.length; i++) {
-    if (src[i] === '{') d++;
-    else if (src[i] === '}') { d--; if (d === 0) return eval('(' + src.slice(idx, i + 1) + ')'); }
+    const c = src[i];
+    if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
+    if (c === '"' || c === "'") q = c;
+    else if (c === '{') d++;
+    else if (c === '}') { d--; if (d === 0) return eval('(' + src.slice(idx, i + 1) + ')'); }
   }
   throw new Error('닫히지 않은 객체 리터럴');
 }
@@ -150,8 +153,7 @@ const EXTRA_FOR = {
   'charge-blade': ['phial'],
   gunlance: ['shelling'],
   'hunting-horn': ['songs'],
-  /* 조충곤(kinsect)은 번들에 한국어 이름표가 없어 중국어만 나옵니다.
-     번역이 생기면 'insect-glaive': ['kinsect'] 를 되살리세요. */
+  'insect-glaive': ['kinsect'],
 };
 
 /* 탄·화살은 [종류, 레벨…] 배열, 병·포격은 문자열, 연주는 {키:곡}, 곤충은 {속성…}.
@@ -189,7 +191,10 @@ function weaponExtra(wkey, mon, X) {
       // 값이 [정식명, 약칭] 형태다. 정식명을 쓴다.
       out.push(...Object.values(v).map(z => (Array.isArray(t[z]) ? t[z][0] : t[z]) || z));
     } else if (field === 'kinsect') {
-      out.push(...Object.values(v).filter(z => typeof z === 'string'));
+      /* {type,performance,attack,bonus} — 값이 중국어 키라 wextra 의 한국어 표로 바꾼다.
+         표기는 Niantic 공식 도움말(조충곤 페이지)의 한국어 용어를 따랐다. */
+      const t = X.kinsect || {};
+      out.push(...['type', 'attack', 'performance', 'bonus'].map(f => t[v[f]] || v[f]).filter(Boolean));
     }
   }
   return out.length ? out : null;
@@ -198,26 +203,51 @@ function weaponExtra(wkey, mon, X) {
 const DATA = require('path').join(__dirname, 'data');
 const QUEST = 'https://mhn.quest/';
 
-/* mhn.quest 의 번들 주소는 배포 때마다 바뀝니다. 첫 페이지에서 script 태그를 읽어 찾습니다. */
+/* mhn.quest 의 번들 주소는 배포 때마다 바뀝니다. 첫 페이지에서 script 태그를 읽어 찾습니다.
+   장비·곡선 데이터는 본체가 지연 로드하는 data-*.js 청크에, 한국어 이름표는 lang-ko-*.js
+   청크에 따로 들어 있어 셋을 모두 받습니다. MHNKR_BUNDLE=디렉터리 로 미리 받아 둔
+   세 파일(index-*.js, data-*.js, lang-ko-*.js)을 읽으면 오프라인에서도 돌 수 있습니다. */
 async function fetchBundle() {
-  const home = await (await fetch(QUEST, { headers: { 'user-agent': 'Mozilla/5.0' } })).text();
-  const cands = [...home.matchAll(/<script[^>]+src="([^"]+\.js[^"]*)"/g)].map(m => m[1]);
-  let best = null;
-  for (const c of cands) {
-    const url = new URL(c, QUEST).href;
-    const t = await (await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0' } })).text();
-    /* 장비 표(B8)와 곡선 표(K7)가 같이 든 파일이 우리가 찾는 번들입니다. */
-    if (t.includes('B8={') && t.includes('K7={')) { best = t; break; }
-    if (!best && t.length > 500000) best = null;
+  if (process.env.MHNKR_BUNDLE) {
+    const dir = process.env.MHNKR_BUNDLE;
+    const pick = (re) => {
+      const f = fs.readdirSync(dir).find(n => re.test(n));
+      if (!f) throw new Error(`${dir} 에 ${re} 파일이 없습니다`);
+      return fs.readFileSync(path.join(dir, f), 'utf8');
+    };
+    return { src: pick(/^index.*\.js$/), data: pick(/^data-.*\.js$/), ko: pick(/^lang-ko.*\.js$/) };
   }
-  if (!best) throw new Error('mhn.quest 번들을 찾지 못했습니다 (사이트 구조가 바뀌었을 수 있습니다)');
-  return best;
+  const get = async (url) => (await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0' } })).text();
+  const home = await get(QUEST);
+  const cands = [...home.matchAll(/<script[^>]+src="([^"]+\.js[^"]*)"/g)].map(m => m[1]);
+  let src = null;
+  for (const c of cands) {
+    const t = await get(new URL(c, QUEST).href);
+    /* import("./data-….js") 를 가진 파일이 본체입니다. */
+    if (/import\("\.\/data-[^"]+\.js"\)/.test(t)) { src = t; break; }
+  }
+  if (!src) throw new Error('mhn.quest 번들을 찾지 못했습니다 (사이트 구조가 바뀌었을 수 있습니다)');
+  const chunk = async (name) => {
+    const m = src.match(new RegExp(`import\\("\\./(${name}-[^"]+\\.js)"\\)`));
+    if (!m) throw new Error(`${name} 청크 주소를 본체에서 찾지 못했습니다`);
+    return get(QUEST + 'assets/' + m[1]);
+  };
+  return { src, data: await chunk('data'), ko: await chunk('lang-ko') };
+}
+
+/* 데이터 청크는 변수명이 빌드마다 바뀌지만 export 별칭은 고정입니다
+   (export{c as set,k as eq,…}). 별칭으로 변수명을 알아내 그 객체를 꺼냅니다. */
+function exportedObj(data, alias) {
+  const names = data.match(/export\{([^}]*)\}/)[1];
+  const m = names.match(new RegExp(`(?:^|,)\\s*([\\w$]+) as ${alias}\\s*(?:,|$)`));
+  if (!m) throw new Error(`데이터 청크에 ${alias} export 가 없습니다`);
+  const decl = data.match(new RegExp(`[,;({]${m[1].replace('$', '\\$')}=\\{`));
+  if (!decl) throw new Error(`${alias}(${m[1]}) 선언을 찾지 못했습니다`);
+  return objAt(data, decl.index + decl[0].length - 1);
 }
 
 async function main() {
-  const src = process.env.MHNKR_BUNDLE
-    ? fs.readFileSync(process.env.MHNKR_BUNDLE, 'utf8')   // 오프라인 재생성용
-    : await fetchBundle();
+  const { src, data, ko } = await fetchBundle();
   const off = JSON.parse(fs.readFileSync(path.join(DATA, 'official-names.json'), 'utf8'));
   /* 병·탄·포격 등의 한국어 이름표. 게임 패치와 무관하게 거의 바뀌지 않아 저장소에 둡니다. */
   const X = JSON.parse(fs.readFileSync(path.join(DATA, 'wextra.json'), 'utf8'));
@@ -248,13 +278,13 @@ async function main() {
     if (n > 0) skillMax[normName(k)] = n;
   }
 
-  const B8 = objAt(src, src.indexOf('B8={') + 3);       // 장비 스킬·표류슬롯
-  const I8 = objAt(src, src.indexOf('I8={') + 3);       // 몬스터별 속성·곡선 참조
-  const K7 = objAt(src, src.indexOf('K7={') + 3);       // 등급별 공격력·속성 곡선
-  const skillKo = koSkillTable(src);
+  const B8 = exportedObj(data, 'eq');          // 장비 스킬·표류슬롯
+  const I8 = exportedObj(data, 'set');         // 몬스터별 속성·곡선 참조
+  const K7 = exportedObj(data, 'weaponVal');   // 등급별 공격력·속성 곡선
+  const skillKo = koSkillTable(ko);
   /* mhn.quest 의 한국어 표기가 공식 표기와 다른 몬스터. */
   const MON_KO_FIX = { 멜제나: '멜-제나' };
-  const monKo = pickTable(src, 'anja:"안쟈나프"');
+  const monKo = pickTable(ko, 'anja:"안쟈나프"');
   for (const k of Object.keys(monKo)) if (MON_KO_FIX[monKo[k]]) monKo[k] = MON_KO_FIX[monKo[k]];
   const monEn = pickTable(src, 'anja:"Anjanath"');
   const skillName = skillNamer(skillKo, official);

@@ -932,7 +932,10 @@ function bdFillGear(q) {
     if (!needle) return true;
     const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
     const sk = (isW ? bdWSkills(s, item) : item.skills).map(x => x.s).join('');
-    return norm(s.name + item.name + sk).includes(needle);
+    /* 무기는 부가정보(벌레·탄·화살·병·포격·연주)로도 좁힐 수 있습니다 —
+       «절단» «관통» 처럼 종류로 찾는 일이 잦습니다. */
+    const extra = isW && item.x ? item.x.join('') : '';
+    return norm(s.name + item.name + sk + extra).includes(needle);
   });
 
   /* 그룹이 바뀌는 자리에 머리글을 끼웁니다. 목록이 85줄이라 어디서 이벤트·기타

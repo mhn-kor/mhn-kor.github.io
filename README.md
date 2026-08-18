@@ -756,8 +756,9 @@ node tools/update.js          # 이거 하나면 됩니다
 두 사이트의 키가 달라 **영문 몬스터 이름을 다리로 이어 붙입니다.** 그래서
 `tools/data/monster-en.json`(자동 생성)이 아이콘 주소를 만드는 데 쓰입니다.
 
-`tools/data/wextra.json` 만 손으로 관리합니다 — 탄·병·포격 이름표라 게임 패치와
-거의 무관합니다.
+`tools/data/wextra.json` 만 손으로 관리합니다 — 탄·병·포격·사냥벌레 이름표라 게임
+패치와 거의 무관합니다. 사냥벌레(조충곤) 표기는 번들에 한국어가 없어 Niantic 공식
+도움말의 용어(비상형·공투형·가루형, 절단·타격 등)를 옮겨 적었습니다.
 
 무기 스킬은 대개 소재 공통이라 세트의 `weaponSkills` 에 한 벌만 둡니다. 다만
 바젤기우스·이블조처럼 **종류마다 스킬이 다른 소재**가 있어, 그런 무기는 자기 스킬을
@@ -798,8 +799,11 @@ node tools/build-test.js                                       # 무기 스킬 �
 ### 잘 안 될 때
 
 - **`mhn.quest 번들을 찾지 못했습니다`** — 그 사이트 구조가 바뀐 것입니다.
-  `tools/build-builddata.js` 의 `fetchBundle()` 이 `B8={` 와 `K7={` 이 같이 든
-  스크립트를 찾습니다. 번들을 손으로 받았다면 `MHNKR_BUNDLE=경로` 로 넘기세요.
+  `tools/build-builddata.js` 의 `fetchBundle()` 이 본체 스크립트에서
+  `import("./data-….js")` · `import("./lang-ko-….js")` 주소를 읽어 데이터·한국어
+  청크를 따라 받습니다. 장비 표는 `export{… as eq, … as set, … as weaponVal}`
+  별칭으로 찾습니다. 세 파일(index·data·lang-ko)을 손으로 받아 뒀다면
+  `MHNKR_BUNDLE=디렉터리` 로 넘기세요.
 - **아이콘을 못 받음** — 이벤트 장비는 참조 사이트에도 그림이 없습니다.
   그 키를 `build.js` 의 `BD_NOICON` 에 넣으면 이벤트 표류석 아이콘으로 대신 나옵니다.
 - **새 이벤트 무기가 전 종류(14종)로 나옴** — 이벤트 무기는 제작비용 표에 종류가
