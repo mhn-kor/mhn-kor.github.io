@@ -50,7 +50,9 @@ const bdStylesOf = wt => (typeof BD_STYLES !== 'undefined' && BD_STYLES[wt]) || 
 const bdSpOf = wt => (typeof BD_SP !== 'undefined' && BD_SP[wt]) || null;
 
 function bdSave() {
-  localStorage.setItem(BD_KEY, JSON.stringify(bdState));
+  /* 저장이 막힌 브라우저(사파리 «모든 쿠키 차단», 쿼터 초과)에서도 화면까지 죽이지
+     않습니다 — 이번 방문 동안은 메모리로 동작하고 저장만 안 됩니다. */
+  try { localStorage.setItem(BD_KEY, JSON.stringify(bdState)); } catch (e) { /* 무시 */ }
 }
 
 /* 부위가 가진 표류 슬롯 수. 슬롯보다 많이 끼워진 표류석은 무시합니다. */
@@ -1468,38 +1470,39 @@ function drawBuild() {
   if (typeof BUILD === 'undefined') return;
   if (!bdDrawn) {
     bdDrawn = true;
-    const q = new URLSearchParams(location.search).get('build');
+    let hasSaved = false;
+    try {
+      const saved = JSON.parse(localStorage.getItem(BD_KEY) || 'null');
+      if (saved && Array.isArray(saved.builds) && saved.builds.length) {
+        bdState = { detail: !!saved.detail, builds: saved.builds.map(x => ({ ...bdNewBuild(), ...x, ds: { ...bdNewBuild().ds, ...(x.ds || {}) }, cond: { ...(x.cond || {}) } })) };
+        hasSaved = true;
+      }
+    } catch (e) { /* 저장값이 깨졌으면 기본값으로 */ }
+
+    /* 공유 링크는 저장해 둔 내 빌드 «맨 앞에» 새 카드로 얹습니다 — 링크를 연 목적이
+       그 빌드를 보는 것이라, 저장 빌드가 많을 때 뒤에 얹으면 스크롤 밖이라 안 보입니다.
+       예전에는 링크의 빌드 하나로 상태를 갈아끼웠는데, 그 뒤 아무 편집이든 저장되는
+       순간 원래 빌드가 전부 지워졌습니다. 링크 카드는 여기서 저장하지 않습니다 — 리더보드의
+       «빌드 보기» 처럼 구경만 하는 링크가 저장 목록에 쌓이면 안 되고, 편집을
+       시작하면 그 편집의 bdSave 가 이 카드도 함께 저장합니다.
+       링크 값은 한 번 쓰고 주소에서 지워, 그 자리에서 새로고침해도 같은 카드가
+       거듭 늘지 않게 합니다.
+       URLSearchParams 를 안 쓰는 이유: 그쪽 디코딩과 bdParse 의 디코딩이 겹치면
+       두 번 풀립니다. 날 문자열을 그대로 넘겨 bdParse 한 곳에서만 풉니다.
+       '+' 만 %20 으로 돌려놓습니다 — app.js 의 showTab() 이 searchParams 를 만지며
+       쿼리를 폼 인코딩으로 다시 쓰기 때문에, 여기 도달한 '+' 는 언제나 공백입니다
+       (진짜 '+' 는 bdEscape 가 %2B 로 내보내고 폼 인코딩도 그대로 둡니다). */
+    const q = (/[?&]build=([^&]*)/.exec(location.search) || [])[1];
     if (q) {
-      /* 공유 링크는 링크에 담긴 구성만 새 카드로 엽니다. 저장값과 섞으면
-         남의 링크를 열었을 때 내 장비가 남아 다른 빌드가 됩니다. */
-      const kv = {};
-      for (const part of String(q).split(',')) {
-        const i = part.indexOf('=');
-        if (i > 0) kv[part.slice(0, i)] = part.slice(i + 1);
-      }
-      const b = bdNewBuild();
-      if (kv.wt && BUILD.weaponTypes.some(t => t.k === kv.wt)) b.wt = kv.wt;
-      if (bdSet(kv.w)) b.w = kv.w;
-      b.st = Math.max(0, Math.min(bdStylesOf(b.wt).length, parseInt(kv.st, 10) || 0));
-      for (const { k } of BUILD.parts) {
-        if (bdSet(kv[k]) && bdSet(kv[k]).pieces[k]) b[k] = kv[k];
-      }
-      for (const nm of String(kv.c || '').split(';')) if (nm) b.cond[nm] = true;
-      /* 방어구를 먼저 채운 뒤에 표류석을 끼웁니다. 칸 수가 방어구에 달려 있습니다. */
-      for (const e of String(kv.ds || '').split(';')) {
-        const [part, i, color, skill] = e.split('|');
-        if (!Array.isArray(b.ds[part]) || !(+i >= 0)) continue;
-        const g = bdStones().find(x => x.group === color);
-        if (g && g.skills.some(x => x.name === skill)) b.ds[part][+i] = { c: color, s: skill };
-      }
-      bdState = { builds: [b], detail: false };
-    } else {
-      try {
-        const saved = JSON.parse(localStorage.getItem(BD_KEY) || 'null');
-        if (saved && Array.isArray(saved.builds) && saved.builds.length) {
-          bdState = { detail: !!saved.detail, builds: saved.builds.map(x => ({ ...bdNewBuild(), ...x, ds: { ...bdNewBuild().ds, ...(x.ds || {}) }, cond: { ...(x.cond || {}) } })) };
-        }
-      } catch (e) { /* 저장값이 깨졌으면 기본값으로 */ }
+      const b = bdParse(q.replace(/\+/g, '%20'));
+      if (!b) toast('빌드를 읽지 못했습니다');
+      else if (hasSaved && bdState.builds.length >= BD_MAX) toast(`빌드는 ${BD_MAX}개까지입니다`);
+      else if (hasSaved) bdState.builds.unshift(b);
+      /* 저장된 게 없으면 기본으로 깔린 빈 카드를 링크 카드로 갈음합니다. */
+      else bdState = { builds: [b], detail: false };
+      const url = new URL(location);
+      url.searchParams.delete('build');
+      history.replaceState(null, '', url);
     }
   }
   bdRender();
