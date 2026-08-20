@@ -816,6 +816,7 @@ function bdOpen(title, bodyHtml, withSearch, opt = {}) {
   $('#bd-srow').hidden = !withSearch;
   $('#bd-clear').hidden = !opt.clear;
   $('#bd-gsk').hidden = !opt.sk;      // 스킬 표시는 장비 선택에서만 씁니다
+  $('#bd-wf').hidden = true;          // 상세 필터 칩은 무기 선택(bdOpenGear)이 다시 켭니다
   $('#bd-bulk-foot').hidden = true;
   $('#bd-bulk-foot').innerHTML = '';
   if (withSearch) {
@@ -908,6 +909,48 @@ function bdSkBtn() {
   el.setAttribute('aria-pressed', String(bdGearSk));
 }
 
+/* 무기 종류별 상세 필터 — 검색창 위에 칩으로 깝니다. 칩은 하나만 걸리고 다시 누르면
+   풀립니다. 항목은 [이름, 대조 정규식?] 이고, 정규식이 없으면 부가정보(x) 항목과
+   «같거나 그 낱말로 시작» 하면 맞은 것으로 봅니다(«일반형» ↔ «일반형 포격»).
+   수렵피리는 연주가 36곡이라 곡명 대신 계열(공격력UP 대·소 묶음 등)로 깝니다.
+   정령왕의 가호·회피거리UP 처럼 계열이 없는 한두 곡은 검색창이 맡습니다. */
+const BD_WF_AMMO = [
+  ['통상탄', /^통상탄/], ['관통탄', /^관통/],
+  /* «산탄» 은 화염산탄처럼 앞에 속성이 붙지만, 확산탄과 수냉확산탄의 «…산탄» 과는
+     갈라야 합니다 — 앞 글자가 '확' 이면 확산탄 계열입니다. */
+  ['산탄', /(^|[^확])산탄/], ['철갑유탄', /철갑유탄/], ['확산탄', /확산탄/],
+  ['참렬탄', /^참렬/], ['속성탄', /^(화염|수냉|전격|빙결|멸룡)탄/], ['상태이상탄', /^(독|마비|수면)탄/],
+];
+const BD_WFILTER = {
+  'insect-glaive': [['비상형'], ['공투형'], ['가루형'], ['절단'], ['타격']],
+  'light-gun': BD_WF_AMMO,
+  'heavy-gun': [...BD_WF_AMMO, ['용격탄', /용격탄/]],
+  bow: [['Lv4 연사'], ['Lv4 관통'], ['Lv4 확산'], ['독병'], ['마비병'], ['수면병'], ['폭파병']],
+  gunlance: [['일반형'], ['방사형'], ['확산형']],
+  'switch-axe': [['강격병'], ['멸기병'], ['강속성병'], ['독병'], ['마비병'], ['멸룡병']],
+  'charge-blade': [['유탄병'], ['강속성병']],
+  'hunting-horn': [
+    /* ^ 앵커가 없으면 «불속성 공격력UP» 이 공격력UP 으로도 걸립니다. */
+    ['공격력UP', /^공격력UP/], ['회심률UP', /^회심률UP/], ['속성치UP', /^속성치UP/],
+    ['속성 공격력UP', /^(불|물|번개|얼음|용)속성 공격력UP/], ['SP게이지 가속', /^SP게이지 가속/],
+    ['고주파 충격파', /^고주파 충격파/], ['방어력UP'], ['청각 보호', /^청각 보호/],
+    ['무효·내성', /무효|내성/],
+  ],
+};
+let bdGearWf = null;   // 걸려 있는 칩([이름, 정규식?] 그대로). 창을 열 때마다 풉니다.
+const bdWfTest = ([n, re], e) => (re ? re.test(e) : e === n || e.startsWith(n + ' '));
+
+function bdWfChips() {
+  const el = $('#bd-wf');
+  const list = (bdPick && bdPick.kind === 'gear' && bdPick.target === 'weapon'
+    && BD_WFILTER[bdState.builds[bdPick.bi].wt]) || [];
+  el.hidden = !list.length;
+  el.innerHTML = list.map(([n]) => {
+    const on = bdGearWf && bdGearWf[0] === n;
+    return `<button type="button" class="bd-wfc${on ? ' on' : ''}" data-wf="${esc(n)}" aria-pressed="${on}">${esc(n)}</button>`;
+  }).join('');
+}
+
 function bdOpenGear(bi, target) {
   bdPick = { kind: 'gear', bi, target };
   const b = bdState.builds[bi];
@@ -917,6 +960,8 @@ function bdOpenGear(bi, target) {
     ? `<img src="assets/part/${esc(b.wt)}.png" width="24" height="24" alt="">무기 · ${esc(type.n)}`
     : `<img src="assets/part/${esc(target)}.png" width="24" height="24" alt="">${esc(BD_PARTS().find(p => p.k === target).n)}`;
   bdOpen(head, '', true, { sk: true });
+  bdGearWf = null;
+  bdWfChips();
   bdSkBtn();
   bdFillGear('');
 }
@@ -931,8 +976,10 @@ function bdFillGear(q) {
 
   const list = BUILD.sets.filter(s => (isW ? s.weapons.some(w => w.t === b.wt) : s.pieces[target]));
   const rows = list.filter(s => {
-    if (!needle) return true;
     const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
+    /* 상세 필터 칩(벌레 타입·탄 종류 등)이 걸려 있으면 부가정보가 맞는 무기만 남깁니다. */
+    if (isW && bdGearWf && !(item.x || []).some(e => bdWfTest(bdGearWf, e))) return false;
+    if (!needle) return true;
     const sk = (isW ? bdWSkills(s, item) : item.skills).map(x => x.s).join('');
     /* 무기는 부가정보(벌레·탄·화살·병·포격·연주)로도 좁힐 수 있습니다 —
        «절단» «관통» 처럼 종류로 찾는 일이 잦습니다. */
@@ -964,7 +1011,8 @@ function bdFillGear(q) {
 function bdGearCell(s, b, target, isW, chosen) {
   const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
   const sk = (isW ? bdWSkills(s, item) : item.skills).map(x => `${x.s} ${x.lv}`).join(', ');
-  const tip = [s.name, item.name, sk, !isW && item.slot ? `표류석 ${item.slot}칸` : ''].filter(Boolean).join(' · ');
+  const tip = [s.name, item.name, sk, isW && item.x ? item.x.join(' · ') : '',
+    !isW && item.slot ? `표류석 ${item.slot}칸` : ''].filter(Boolean).join(' · ');
   return `<button class="bd-lr cell${s.key === chosen ? ' on' : ''}" data-v="${esc(s.key)}"
     title="${esc(tip)}" aria-label="${esc(s.name)}">${bdMon(s.key)}</button>`;
 }
@@ -992,6 +1040,7 @@ function bdGearRow(s, b, target, isW, chosen) {
             <b>${esc(s.name)}</b>
             <i>${esc(item.name)}${meta ? ' <span class="bd-lm">' + meta + '</span>' : ''}</i>
             <span class="bd-ls">${sk.map(x => `<em>${esc(x.s)}<b>${x.lv}</b></em>`).join('')}</span>
+            ${isW && item.x ? `<span class="bd-lx">${item.x.map(t => `<i>${esc(t)}</i>`).join('')}</span>` : ''}
           </span>
           ${slots}
         </button>`;
@@ -1197,6 +1246,16 @@ $('#bd-bulk-foot').addEventListener('click', e => {
 $('#bd-gsk').addEventListener('click', () => {
   bdGearSk = !bdGearSk;
   bdSkBtn();
+  bdFillGear($('#bd-q').value.trim());
+});
+
+/* 무기 상세 필터 칩. 하나만 걸리고, 걸린 칩을 다시 누르면 풀립니다. */
+$('#bd-wf').addEventListener('click', e => {
+  const c = e.target.closest('[data-wf]');
+  if (!c || !bdPick || bdPick.kind !== 'gear') return;
+  const hit = (BD_WFILTER[bdState.builds[bdPick.bi].wt] || []).find(([n]) => n === c.dataset.wf);
+  bdGearWf = bdGearWf === hit ? null : hit;
+  bdWfChips();
   bdFillGear($('#bd-q').value.trim());
 });
 

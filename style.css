@@ -714,6 +714,16 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 }
 #bd-modal-close:hover { color: var(--bone); background: rgba(255,255,255,.12); }
 #bd-modal h2 img { width: 24px; height: 24px; flex: none; }
+/* 무기 상세 필터 칩(검색창 위). 하나만 걸리고 다시 누르면 풀립니다. */
+#bd-wf { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 20px 10px; }
+#bd-wf[hidden] { display: none; }
+.bd-wfc {
+  font: inherit; font-size: .76rem; color: var(--muted); cursor: pointer;
+  background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 999px;
+  padding: 3px 10px;
+}
+.bd-wfc:hover { color: var(--bone); }
+.bd-wfc.on { color: var(--amber-hi); background: rgba(233,161,59,.14); border-color: rgba(233,161,59,.45); }
 /* position 은 스킬 자동완성 목록(#bd-q-list)의 기준입니다. 검색줄 너비에 딱 맞습니다. */
 .bd-srow { position: relative; display: flex; align-items: center; gap: 8px; margin: 0 20px 12px; }
 .bd-srow[hidden] { display: none; }
@@ -794,6 +804,13 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
   background: rgba(233,161,59,.1); color: var(--muted);
 }
 .bd-ls em b { color: var(--amber-hi); margin-left: 3px; }
+/* 무기 목록의 부가정보(벌레·탄·화살·병·포격·연주) — 스킬 칩 아래, 필터 칩과 짝입니다.
+   스킬 칩(호박색 바탕)과 헷갈리지 않게 무채색 바탕을 씁니다. */
+.bd-lx { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.bd-lx i {
+  font-style: normal; font-size: .71rem; padding: 1px 6px; border-radius: 999px;
+  background: rgba(255,255,255,.05); color: var(--muted);
+}
 /* 방어구 목록 오른쪽 끝의 표류석 슬롯. 카드의 육각형과 같은 모양이라
    빈 칸이 몇 개인지 목록에서 바로 읽힙니다. */
 .bd-rs { display: flex; gap: 3px; flex: none; margin-left: auto; align-self: center; }
