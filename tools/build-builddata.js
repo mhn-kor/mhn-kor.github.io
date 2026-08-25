@@ -46,6 +46,20 @@ const EVENT_WEAPONS = {
   'spring-26': { types: ['light-gun'], names: { 'light-gun': '로즈어썰트' } },
 };
 
+/* 번들에 세트 키 자체가 아직 없는 이벤트 장비 — 게임·공식 공지에서 확인한 만렙 값을
+   통째로 적는다. 번들이 이 키를 알게 되면 자동으로 이쪽을 버리고 번들 값을 쓴다.
+   en 은 mhnow.me 아이콘 파일 이름(fetch-icons)이 된다. */
+const HAND_SETS = [
+  {
+    /* 사냥꾼들의 여름 축제 2026. 수치는 mhnow.me, 스킬·속성은 공식 공지
+       (monsterhunternow.com/ko/news/summerofhunters-2026), 포격 유형은 etims.info 확인. */
+    key: 'summer-26', name: '여름 축제26', en: 'Tropical Cannon',
+    u: 6, id: 99, g: 1, o: 999, pieces: {},
+    weaponSkills: [{ s: '각성의 일격', lv: 3 }],
+    weapons: [{ t: 'gunlance', tn: '건랜스', name: '트로피컬캐논', e: '수면', atk: 1817, ele: 516, crit: 0, x: ['방사형 포격'] }],
+  },
+];
+
 const ELEM_KO = {
   fire: '불', water: '물', thunder: '번개', thunder2: '번개', ice: '얼음', dragon: '용',
   poison: '독', paralysis: '마비', sleep: '수면', blast: '폭파', white: '무속성',
@@ -409,6 +423,11 @@ async function main() {
     });
   }
 
+  for (const h of HAND_SETS) {
+    if (B8[h.key]) process.stderr.write(`번들에 ${h.key} 가 생겼습니다 — HAND_SETS 에서 지우세요 (번들 값 사용)\n`);
+    else sets.push(h);
+  }
+
   sets.sort((a, b) => a.g - b.g || a.u - b.u || a.id - b.id);
 
   const out = {
@@ -431,7 +450,7 @@ async function main() {
   /* 아이콘 받는 도구가 쓸 영문 이름표. 참조 사이트가 «great_jagras» 처럼 영문
      스네이크로 파일을 두어서, 짧은 키(g-jagr)만으로는 주소를 만들 수 없습니다. */
   fs.writeFileSync(path.join(DATA, 'monster-en.json'),
-    JSON.stringify(Object.fromEntries(sets.map(s => [s.key, monEn[s.key] || s.key])), null, 1) + '\n');
+    JSON.stringify(Object.fromEntries(sets.map(s => [s.key, monEn[s.key] || s.en || s.key])), null, 1) + '\n');
 
   process.stdout.write('/* 자동 생성 파일 — tools/build-builddata.js 로 다시 만듭니다. 직접 수정하지 마세요. */\n'
     + 'const BUILD = ' + JSON.stringify(out) + ';\n');
