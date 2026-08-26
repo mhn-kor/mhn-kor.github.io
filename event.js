@@ -262,7 +262,9 @@ async function evShare(id) {
         objectType: 'feed',
         content: {
           title: `[이벤트] ${r.title}`, description: desc,
-          imageUrl: typeof BD_OG === 'string' ? BD_OG : '', link,
+          /* 카드 그림이 있으면 그걸 씁니다 — Storage 공개 주소라 카카오 서버가 받아갈
+             수 있습니다. 없으면 지금까지처럼 사이트 대표 이미지(og)입니다. */
+          imageUrl: r.image_url || (typeof BD_OG === 'string' ? BD_OG : ''), link,
         },
         buttons: [{ title: '이벤트 보기', link }],
       });
