@@ -444,7 +444,12 @@ async function evAdd(e) {
       const fd = new FormData();
       fd.append('master', master);
       fd.append('image', file);
-      const ur = await fetch(EV_IMGFN, { method: 'POST', headers: { apikey: SUPABASE_KEY }, body: fd });
+      /* 함수가 배포되지 않았으면 404 인데, 프로덕션(교차 출처)에서는 preflight 가
+         CORS 헤더 없이 404 라 fetch 자체가 던집니다 — 그 경우도 미배포 안내로 모읍니다.
+         (로컬은 같은 출처라 404 응답이 그대로 옵니다.) */
+      const ur = await fetch(EV_IMGFN, { method: 'POST', headers: { apikey: SUPABASE_KEY }, body: fd })
+        .catch(() => null);
+      if (!ur) throw new Error('NO_IMGFN');
       const uo = await ur.json().catch(() => ({}));
       if (!ur.ok) throw new Error(uo.error || (ur.status === 404 ? 'NO_IMGFN' : `HTTP ${ur.status}`));
       image_url = uo.url;
@@ -474,7 +479,7 @@ async function evAdd(e) {
       BAD_MASTER: '마스터 비밀번호가 아닙니다.',
       /* 함수가 없을 때를 «실패했습니다» 로 뭉뚱그리지 않습니다 — discord-entry 의
          NO_FUNCTION 과 같은 이유이고, 그림만 빼면 등록은 되니 그 길도 알려 줍니다. */
-      NO_IMGFN: '그림 올리기(event-image)가 아직 배포되지 않았습니다. 그림을 빼고 등록하거나 함수를 배포해 주세요.',
+      NO_IMGFN: '그림 올리기(event-image)에 연결하지 못했습니다 — 함수가 아직 배포되지 않았을 수 있습니다. 그림을 빼면 등록됩니다.',
       IMG_TOO_BIG: '카드 그림은 3MB 이하만 올릴 수 있습니다.',
       IMG_TYPE: EV_ERR.IMG_TYPE,
       TOO_MANY: EV_ERR.TOO_MANY,
