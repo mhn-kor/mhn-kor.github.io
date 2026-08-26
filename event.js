@@ -624,6 +624,9 @@ function evNotice() {
 
   $('#ev-n-title').textContent = r.title;
   $('#ev-n-meta').innerHTML = esc(evPeriod(r)) + evSeats(r, 'open');
+  const img = $('#ev-n-img');
+  img.hidden = !r.image_url;
+  if (r.image_url) img.src = r.image_url; else img.removeAttribute('src');
   $('#ev-n-body').textContent = r.body;
   $('#ev-n-hide').dataset.evId = r.id;
   $('#ev-notice').showModal();
