@@ -171,6 +171,26 @@ JWT 가 아닙니다. 검증을 켜 두면 anon 키를 보내도 파싱에 실�
   동그라미가 돕니다. 잠기기만 하면 먹통인 줄 알고 다시 누릅니다.
 - 함수 로그: Supabase 대시보드 → Edge Functions → discord-entry → Logs.
 
+### 카드 그림 (선택)
+
+이벤트를 열 때 그림 한 장을 붙일 수 있습니다. 그림은 Supabase Storage 의 `event-img`
+버킷(공개 읽기 · 무료 플랜 1GB)에 올라가고, 카드에는 주소만 남습니다(`events.image_url`).
+
+**브라우저가 Storage 에 직접 올리지 않습니다.** 쓰기를 anon 에게 여는 순간 누구나
+스크립트로 1GB 를 채울 수 있습니다. 대신 `event-image` 함수가 **마스터 비밀번호를
+확인한 뒤** service_role 로 올립니다 — 웹훅 주소를 함수에만 두는 것과 같은 이유입니다.
+
+```bash
+supabase functions deploy event-image --no-verify-jwt
+```
+
+- 버킷과 제한(3MB · PNG/JPG/GIF/WEBP)은 `schema.sql` 이 만듭니다. 따로 만들 것 없습니다.
+- **이벤트를 지워도 그림은 남습니다** — 3MB 씩 300장이 1GB 라 몇 년치입니다.
+  차면 대시보드 → Storage → event-img 에서 옛것을 지우세요.
+- 로컬 미리보기에는 Storage 도 함수도 없습니다. 그림을 붙이면 «아직 배포되지
+  않았습니다» 로 멈추고(이벤트는 안 만들어집니다), 그림 없는 등록은 그대로 됩니다.
+- 함수 검사는 `node tools/event-image-test.js` (discord-entry-test 와 같은 방식).
+
 ### 이벤트 열기 · 닫기
 
 이벤트(제목 · 내용 · 기간)는 **마스터 비밀번호를 아는 사람만** 등록하고 지웁니다

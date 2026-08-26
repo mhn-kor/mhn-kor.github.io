@@ -25,6 +25,10 @@ const EV_IMG_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
    시험되지 않은 채 남고, 배포본에서 처음 도는 코드가 됩니다.
    주소를 API 로 잡는 이유도 같습니다: 로컬에서 실수로 «진짜» 채팅방에 쏘지 않습니다. */
 const EV_FN = API + '/functions/v1/discord-entry';
+/* 이벤트 카드 그림은 Storage 로 갑니다(응모 이미지는 디스코드로만 가고 남지 않습니다).
+   마스터 확인 뒤 service_role 로 올리는 함수라, 여기서도 마스터 비밀번호를 실어 보냅니다. */
+const EV_IMGFN = API + '/functions/v1/event-image';
+const EV_EIMG_MAX = 3 * 1024 * 1024;   // event-image 의 IMG_MAX · 버킷 file_size_limit 와 같아야 합니다
 const EV_LOCAL = API !== SUPABASE_URL;
 
 const EV_ERR = {
@@ -153,7 +157,7 @@ async function evLoad() {
   const box = $('#ev-list');
   box.innerHTML = '<p class="bd-empty">불러오는 중…</p>';
   try {
-    const r = await rest(`events?select=id,title,body,starts_at,ends_at,capacity,entries,created_at`
+    const r = await rest(`events?select=id,title,body,starts_at,ends_at,capacity,entries,image_url,created_at`
       + `&order=created_at.desc&limit=${EV_LIMIT}`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     evRows = await r.json();
@@ -221,6 +225,7 @@ function evCard(r) {
               title="삭제 (마스터 비밀번호 필요)">${TRASH_ICON}</button>
     </header>
     <p class="ev-meta">${esc(evPeriod(r))}${evSeats(r, st)}</p>
+    ${r.image_url ? `<img class="ev-img" src="${esc(r.image_url)}" alt="" loading="lazy">` : ''}
     <p class="ev-body">${esc(r.body)}</p>
     <div class="ev-act">${share}${btn}</div>
   </article>`;
@@ -408,6 +413,7 @@ async function evAdd(e) {
   const capRaw = $('#ev-a-cap').value.trim();
   const capacity = capRaw ? Number(capRaw) : null;   // 비우면 무제한
   const master = $('#ev-a-pw').value;
+  const file = $('#ev-a-img').files[0] || null;
 
   const bad = !title ? '이벤트명을 입력해 주세요.'
     : title.length > EV_TITLE_MAX ? `이벤트명은 ${EV_TITLE_MAX}자 이내로 입력해 주세요.`
@@ -416,19 +422,36 @@ async function evAdd(e) {
     : starts_at && ends_at && ends_at <= starts_at ? '종료가 시작보다 빠릅니다.'
     : capacity != null && !(Number.isInteger(capacity) && capacity >= 1 && capacity <= EV_CAP_MAX)
       ? `선착순 인원은 1 ~ ${EV_CAP_MAX} 사이의 정수로 적어주세요.`
+    : file && !EV_IMG_TYPES.includes(file.type) ? EV_ERR.IMG_TYPE
+    : file && file.size > EV_EIMG_MAX ? '카드 그림은 3MB 이하만 올릴 수 있습니다.'
     : !master ? '마스터 비밀번호를 입력해 주세요.'
     : null;
   if (bad) { err.textContent = bad; err.hidden = false; return; }
 
   const btn = $('#ev-a-submit');
+  const label = btn.textContent;
   btn.disabled = true;
   err.hidden = true;
   try {
+    /* 그림이 있으면 먼저 Storage 로 올려 주소를 받습니다. 마스터가 틀리면 여기서
+       걸리므로, 그림 없는 이벤트가 «절반만» 만들어지는 일은 없습니다. */
+    let image_url = null;
+    if (file) {
+      btn.classList.add('busy');
+      btn.textContent = '이미지 올리는 중…';
+      const fd = new FormData();
+      fd.append('master', master);
+      fd.append('image', file);
+      const ur = await fetch(EV_IMGFN, { method: 'POST', headers: { apikey: SUPABASE_KEY }, body: fd });
+      const uo = await ur.json().catch(() => ({}));
+      if (!ur.ok) throw new Error(uo.error || (ur.status === 404 ? 'NO_IMGFN' : `HTTP ${ur.status}`));
+      image_url = uo.url;
+    }
     const r = await rest('rpc/add_event', {
       method: 'POST',
       body: JSON.stringify({
         p_title: title, p_body: body, p_starts_at: starts_at, p_ends_at: ends_at,
-        p_capacity: capacity, p_master: master,
+        p_capacity: capacity, p_master: master, p_image_url: image_url,
       }),
     });
     if (!r.ok) {
@@ -436,7 +459,7 @@ async function evAdd(e) {
       throw new Error(/BAD_MASTER/.test(e2.message || '') ? 'BAD_MASTER' : `HTTP ${r.status}`);
     }
     evRows.unshift({
-      id: await r.json(), title, body, starts_at, ends_at, capacity, entries: 0,
+      id: await r.json(), title, body, starts_at, ends_at, capacity, entries: 0, image_url,
       created_at: new Date().toISOString(),
     });
     evRender();
@@ -445,13 +468,22 @@ async function evAdd(e) {
     evAddPeriod();                 // reset() 은 칸만 비웁니다. 되읽는 줄도 되돌립니다.
     toast('이벤트가 등록되었습니다!');
   } catch (e3) {
-    err.textContent = e3.message === 'BAD_MASTER'
-      ? '마스터 비밀번호가 아닙니다.'
-      : '등록에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+    const M = {
+      BAD_MASTER: '마스터 비밀번호가 아닙니다.',
+      /* 함수가 없을 때를 «실패했습니다» 로 뭉뚱그리지 않습니다 — discord-entry 의
+         NO_FUNCTION 과 같은 이유이고, 그림만 빼면 등록은 되니 그 길도 알려 줍니다. */
+      NO_IMGFN: '그림 올리기(event-image)가 아직 배포되지 않았습니다. 그림을 빼고 등록하거나 함수를 배포해 주세요.',
+      IMG_TOO_BIG: '카드 그림은 3MB 이하만 올릴 수 있습니다.',
+      IMG_TYPE: EV_ERR.IMG_TYPE,
+      TOO_MANY: EV_ERR.TOO_MANY,
+    };
+    err.textContent = M[e3.message] || '등록에 실패했습니다. 잠시 후 다시 시도해 주세요.';
     err.hidden = false;
-    if (e3.message !== 'BAD_MASTER') console.error(e3);
+    if (!M[e3.message]) console.error(e3);
   } finally {
     btn.disabled = false;
+    btn.classList.remove('busy');
+    btn.textContent = label;
   }
 }
 

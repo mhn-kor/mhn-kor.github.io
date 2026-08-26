@@ -621,6 +621,9 @@ create table if not exists public.events (
   -- 선착순 인원. null 이면 무제한입니다. entries 가 여기 닿으면 더 안 받습니다.
   capacity   int,
   entries    int         not null default 0,
+  -- 카드에 얹는 그림(선택). Storage 의 event-img 버킷 공개 주소가 들어옵니다
+  -- (supabase/functions/event-image 가 올리고 주소를 돌려줍니다).
+  image_url  text,
   created_at timestamptz not null default now()
 );
 
@@ -638,6 +641,12 @@ alter table public.events add constraint events_capacity_check
   check (capacity is null or capacity between 1 and 100000);
 alter table public.events drop constraint if exists events_entries_check;
 alter table public.events add constraint events_entries_check check (entries >= 0);
+alter table public.events add column if not exists image_url text;
+-- 주소는 event-image 함수만 만들지만(마스터 확인 뒤), 값이 <img src> 로 그대로 들어가므로
+-- https 주소 꼴만 받게 못 박아 둡니다.
+alter table public.events drop constraint if exists events_image_url_check;
+alter table public.events add constraint events_image_url_check
+  check (image_url is null or (image_url ~ '^https://' and char_length(image_url) <= 500));
 
 create index if not exists events_created_at_idx on public.events (created_at desc);
 
@@ -646,7 +655,7 @@ alter table public.events enable row level security;
 -- 숨길 컬럼이 없습니다. pw_hash 를 두지 않았으므로 표 전체를 읽게 둡니다.
 -- entries 도 보여줍니다 — «남은 자리» 를 그리려면 있어야 하고, 셈만 담긴 값입니다.
 revoke all on public.events from anon;
-grant select (id, title, body, starts_at, ends_at, capacity, entries, created_at)
+grant select (id, title, body, starts_at, ends_at, capacity, entries, image_url, created_at)
   on public.events to anon;
 
 drop policy if exists "public read" on public.events;
@@ -656,9 +665,10 @@ create policy "public read" on public.events for select to anon using (true);
 -- 오버로드로 만들 뿐이라, 남겨 두면 anon 이 기간·인원 없이 부를 수 있습니다.
 drop function if exists public.add_event(text, text, text);
 drop function if exists public.add_event(text, text, timestamptz, timestamptz, text);
+drop function if exists public.add_event(text, text, timestamptz, timestamptz, int, text);
 create or replace function public.add_event(
   p_title text, p_body text, p_starts_at timestamptz, p_ends_at timestamptz,
-  p_capacity int, p_master text
+  p_capacity int, p_master text, p_image_url text default null
 ) returns bigint
 language plpgsql
 security definer
@@ -670,12 +680,37 @@ begin
                   where key = 'master_pw' and value = crypt(p_master, value)) then
     raise exception 'BAD_MASTER';
   end if;
-  -- 값의 앞뒤·범위는 events_period_check · events_capacity_check 가 봅니다
-  -- (여기서 또 적으면 두 곳이 어긋납니다).
-  insert into public.events (title, body, starts_at, ends_at, capacity)
-  values (btrim(p_title), btrim(p_body), p_starts_at, p_ends_at, p_capacity)
+  -- 값의 앞뒤·범위는 events_period_check · events_capacity_check ·
+  -- events_image_url_check 가 봅니다 (여기서 또 적으면 두 곳이 어긋납니다).
+  insert into public.events (title, body, starts_at, ends_at, capacity, image_url)
+  values (btrim(p_title), btrim(p_body), p_starts_at, p_ends_at, p_capacity, nullif(btrim(coalesce(p_image_url, '')), ''))
   returning id into new_id;
   return new_id;
+end $$;
+
+-- 이벤트 그림 올리기(event-image 함수)가 마스터 비밀번호를 먼저 확인할 때 씁니다.
+-- anon 에게 주지 않습니다 — 참/거짓을 그대로 주는 함수라, 열어 두면 마스터 비밀번호
+-- 판별기가 됩니다(add_event 로도 되지만 굳이 문을 하나 더 낼 이유가 없습니다).
+create or replace function public.check_master(p_master text) returns boolean
+language sql
+security definer
+set search_path = public, extensions, pg_temp
+as $$
+  select exists (select 1 from public.app_config
+                  where key = 'master_pw' and value = crypt(p_master, value));
+$$;
+
+-- ── 이벤트 그림 버킷 ────────────────────────────────────────────────
+-- 읽기는 공개(주소만 알면 CDN 으로 받음), 쓰기는 아무에게도 열지 않습니다 —
+-- 올리는 곳은 service_role 로 도는 event-image 함수 하나뿐입니다.
+-- 로컬 미리보기(docker compose)에는 storage 스키마가 없어 있을 때만 만듭니다.
+do $$ begin
+  if exists (select 1 from information_schema.schemata where schema_name = 'storage') then
+    insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+    values ('event-img', 'event-img', true, 3145728,
+            array['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
+    on conflict (id) do nothing;
+  end if;
 end $$;
 
 create or replace function public.delete_event(
@@ -791,10 +826,18 @@ as $$
      and who_hash = encode(digest(p_id::text || '|' || lower(btrim(coalesce(p_who, ''))), 'sha256'), 'hex');
 $$;
 
-revoke all on function public.add_event(text, text, timestamptz, timestamptz, int, text) from public, anon;
-revoke all on function public.delete_event(bigint, text)                                 from public, anon;
-grant execute on function public.add_event(text, text, timestamptz, timestamptz, int, text) to anon;
-grant execute on function public.delete_event(bigint, text)                                 to anon;
+revoke all on function public.add_event(text, text, timestamptz, timestamptz, int, text, text) from public, anon;
+revoke all on function public.delete_event(bigint, text)                                       from public, anon;
+grant execute on function public.add_event(text, text, timestamptz, timestamptz, int, text, text) to anon;
+grant execute on function public.delete_event(bigint, text)                                       to anon;
+-- check_master 는 event-image 함수(service_role)만 씁니다 — anon 에게 열면 판별기가 됩니다.
+revoke all on function public.check_master(text) from public, anon;
+do $$
+begin
+  grant execute on function public.check_master(text) to service_role;
+exception when undefined_object then
+  raise notice 'service_role 롤이 없습니다 — 로컬 개발 환경으로 보고 넘어갑니다.';
+end $$;
 
 -- 자리를 잡고 되돌리는 일은 «Edge Function 만» 할 수 있어야 합니다. anon 에게 열어 두면
 -- 응모하지도 않고 claim 만 반복해 선착순 30명짜리를 30번 요청으로 채워 버릴 수 있습니다.

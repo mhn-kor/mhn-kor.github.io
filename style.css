@@ -2163,6 +2163,12 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
   .ev-period-in input[type="time"] { grid-column: 2; }
 }
 /* 줄바꿈은 그대로 살리고, 띄어쓰기 없는 긴 글이 카드를 밀어내지 않게 끊습니다. */
+/* 카드 그림. 세로로 긴 원본이 카드를 잡아먹지 않게 높이를 자릅니다 — 포스터 전체를
+   보여주는 자리가 아니라 «무슨 이벤트인지» 를 한눈에 보이는 자리입니다. */
+.ev-img {
+  display: block; width: 100%; max-height: 300px; object-fit: cover;
+  margin: 0 0 10px; border: 1px solid var(--line); border-radius: 10px;
+}
 .ev-body { margin: 0; font-size: .9rem; line-height: 1.65; color: var(--muted);
   white-space: pre-wrap; overflow-wrap: anywhere; }
 /* 공유는 왼쪽, 참여는 오른쪽. 참여가 이 카드의 «할 일» 이라 끝자리를 줍니다. */
