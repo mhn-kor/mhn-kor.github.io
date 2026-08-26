@@ -247,6 +247,17 @@ function evShareDesc(r) {
   return evPeriod(r) + seats + '\n' + r.body.split('\n')[0].slice(0, 80);
 }
 
+/* 카톡 카드가 이미지를 제 비율로 그리도록 실제 크기를 함께 보냅니다. 크기 힌트가
+   없으면 카톡이 기본 비율로 잘라 보여줍니다. 카드에 이미 그려진 그림이라 대개
+   캐시에서 바로 오지만, 못 재면 크기 없이(지금까지처럼) 보냅니다. */
+const evImgSize = url => new Promise(res => {
+  const i = new Image();
+  i.onload = () => res({ w: i.naturalWidth, h: i.naturalHeight });
+  i.onerror = () => res(null);
+  setTimeout(() => res(null), 1500);
+  i.src = url;
+});
+
 async function evShare(id) {
   const r = evRows.find(x => String(x.id) === String(id));
   if (!r) return;
@@ -258,6 +269,7 @@ async function evShare(id) {
     try {
       /* 빌드용 리스트 템플릿은 방어구 5줄짜리라 이벤트에는 안 맞습니다.
          그림 한 장 + 글인 feed 를 씁니다(리더보드 공유와 같습니다). */
+      const size = r.image_url ? await evImgSize(r.image_url) : null;
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
@@ -265,6 +277,7 @@ async function evShare(id) {
           /* 이벤트 이미지가 있으면 그걸 씁니다 — Storage 공개 주소라 카카오 서버가 받아갈
              수 있습니다. 없으면 지금까지처럼 사이트 대표 이미지(og)입니다. */
           imageUrl: r.image_url || (typeof BD_OG === 'string' ? BD_OG : ''), link,
+          ...(size ? { imageWidth: size.w, imageHeight: size.h } : null),
         },
         buttons: [{ title: '이벤트 보기', link }],
       });
