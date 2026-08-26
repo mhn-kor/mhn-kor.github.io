@@ -171,7 +171,7 @@ JWT 가 아닙니다. 검증을 켜 두면 anon 키를 보내도 파싱에 실�
   동그라미가 돕니다. 잠기기만 하면 먹통인 줄 알고 다시 누릅니다.
 - 함수 로그: Supabase 대시보드 → Edge Functions → discord-entry → Logs.
 
-### 카드 그림 (선택)
+### 이벤트 이미지 (선택)
 
 이벤트를 열 때 그림 한 장을 붙일 수 있습니다. 그림은 Supabase Storage 의 `event-img`
 버킷(공개 읽기 · 무료 플랜 1GB)에 올라가고, 카드에는 주소만 남습니다(`events.image_url`).

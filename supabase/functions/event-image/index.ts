@@ -1,4 +1,4 @@
-/* 이벤트 카드 그림 올리기 → Supabase Storage (event-img 버킷)
+/* 이벤트 이미지 올리기 → Supabase Storage (event-img 버킷)
  *
  * 브라우저가 Storage 에 직접 올리게 두면 안 됩니다. 쓰기를 anon 에게 여는 순간
  * 누구나 스크립트로 1GB(무료 플랜 전체)를 채울 수 있고, 막을 방법이 버킷 비우기밖에
