@@ -873,6 +873,14 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 .bd-bb.on img { opacity: 1; }
 /* 그 부위가 없는 세트는 빈 자리로 두어 칸이 어긋나지 않게 합니다. */
 .bd-bx { width: 28px; height: 28px; display: block; }
+/* 부위 다섯 칸은 고정 폭 격자입니다 — 스킬 뱃지로 칸이 넓어져도 열이 밀리지 않습니다.
+   세로 구분선은 배경 그라디언트로 긋고(칸 폭과 같은 주기), 위아래 음수 여백으로
+   줄의 위아래 여백까지 채워 윗줄과 이어져 보이게 합니다. */
+.bd-p5 {
+  display: grid; grid-template-columns: repeat(5, 38px); gap: 0;
+  justify-items: center; align-items: center; align-self: stretch; margin: -5px 0;
+  background: repeating-linear-gradient(to right, rgba(255,255,255,.06) 0 1px, transparent 1px 38px);
+}
 
 /* 빌드 목록 창(bdOpenList). 줄 구조는 일괄선택 목록(.bd-brow)을 그대로 쓰고,
    장비 여섯 칸은 추천빌드 카드의 .bd-row6 을 그대로 씁니다. */
@@ -889,10 +897,13 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 .bd-ic:disabled:hover { color: var(--muted); border-color: var(--line); }
 
 /* 걸린 스킬의 레벨. 뱃지와 같은 색이라 어느 스킬 때문에 걸린 칸인지 바로 압니다.
-   숫자가 붙으면 칸이 세로로 길어지고, 여러 색이면 그만큼 옆으로 늘어납니다. */
-.bd-bb.lv { width: auto; min-width: 28px; height: auto; padding: 3px 3px 2px; gap: 1px; }
+   숫자가 붙으면 칸이 세로로 길어집니다. 옆으로는 격자 칸 폭까지만 늘고,
+   색이 셋 이상이라 넘치면 다음 줄로 감쌉니다. */
+/* margin: 0 은 스킬 설명 표의 일반 .lv 규칙(margin: 0 0 10px 17px)이 이 버튼에도
+   걸리는 것을 막습니다 — 그 여백이 칸 안에서 버튼을 우상단으로 밀어냅니다. */
+.bd-bb.lv { width: auto; min-width: 28px; max-width: 36px; height: auto; margin: 0; padding: 3px 3px 2px; gap: 1px; }
 .bd-bb.lv img { opacity: .8; }
-.bd-bl { display: flex; gap: 2px; }
+.bd-bl { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; }
 .bd-bl em {
   font-style: normal; font-size: .58rem; font-weight: 800; line-height: 1.55;
   min-width: 12px; text-align: center; border-radius: 3px;

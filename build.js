@@ -331,7 +331,7 @@ function bdFillBulk(q) {
       ${bdMon(s.key)}
       <span class="bd-bn">${esc(s.name)}</span>
       ${nsk > 1 ? `<span class="bd-bc${n === nsk ? ' full' : ''}" title="이 세트가 덮는 스킬 ${n}종">${n}/${nsk}</span>` : ''}
-      <span class="bd-bp">${parts.map(p => {
+      <span class="bd-bp bd-p5">${parts.map(p => {
         const pc = s.pieces[p.k];
         if (!pc || !hit.includes(p.k)) return '<i class="bd-bx"></i>';
         const on = bdBulk[p.k] === s.key;
