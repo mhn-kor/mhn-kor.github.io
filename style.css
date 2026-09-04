@@ -591,6 +591,9 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 .bd-sum > .bd-empty { grid-column: 1 / -1; padding: 6px 12px; }
 .bd-tr {
   display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: baseline;
+  /* 옆 칸 설명이 길어 칸이 늘어나도 이름·게이지는 위에 붙입니다 — 늘어난 공간이
+     행 사이에 고르게 퍼지면 짧은 칸의 내용이 가운데에 뜬 것처럼 보입니다. */
+  align-content: start;
   padding: 5px 11px; border-bottom: 1px solid rgba(255,255,255,.045);
 }
 .bd-tr:nth-child(odd) { box-shadow: inset -1px 0 0 rgba(255,255,255,.045); }
