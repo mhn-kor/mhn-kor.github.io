@@ -72,9 +72,27 @@ const HAND_SETS = [
       belt: { name: '브라키디오스 허리', skills: [{ s: '추가 공격【폭파】', lv: 2 }, { s: '폭파속성 강화', lv: 1 }], slot: 1 },
       greaves: { name: '브라키디오스 다리', skills: [{ s: '포술·경지', lv: 1 }, { s: '포술', lv: 2 }], slot: 1 },
     },
-    /* 보우건 두 종은 포술 Lv1 이라고 안내됐지만 무기 자체가 없어 아직 안 담는다. */
+    /* 무기는 전 종류. 공격력·속성·회심은 미공개라 null — 화면은 값 있는 칸만 그린다.
+       포격·병·사냥벌레·선율·탄·화살은 소개 이미지에 있어 담고, 표기는 wextra 를 따른다
+       (분진형→가루형, 고주충격파→고주파 충격파처럼 이미지와 다른 데가 있다).
+       보우건 두 종은 소재 공통 대신 포술 Lv1 이라고 안내되어 sk 로 갈음한다. */
     weaponSkills: [{ s: '추가 공격【폭파】', lv: 1 }],
-    weapons: [],
+    weapons: [
+      { t: 'shield-sword', tn: '한손검', name: '브라키디오스 한손검', e: '폭파', atk: null, ele: null, crit: null, x: null },
+      { t: 'great-sword', tn: '대검', name: '브라키디오스 대검', e: '폭파', atk: null, ele: null, crit: null, x: null },
+      { t: 'long-sword', tn: '태도', name: '브라키디오스 태도', e: '폭파', atk: null, ele: null, crit: null, x: null },
+      { t: 'dual-blades', tn: '쌍검', name: '브라키디오스 쌍검', e: '폭파', atk: null, ele: null, crit: null, x: null },
+      { t: 'hammer', tn: '해머', name: '브라키디오스 해머', e: '폭파', atk: null, ele: null, crit: null, x: null },
+      { t: 'hunting-horn', tn: '수렵피리', name: '브라키디오스 수렵피리', e: '폭파', atk: null, ele: null, crit: null, x: ['방어력UP', '풍압 내성', '공격력UP【대】'] },
+      { t: 'lance', tn: '랜스', name: '브라키디오스 랜스', e: '폭파', atk: null, ele: null, crit: null, x: null },
+      { t: 'gunlance', tn: '건랜스', name: '브라키디오스 건랜스', e: '폭파', atk: null, ele: null, crit: null, x: ['일반형 포격'] },
+      { t: 'switch-axe', tn: '슬래시액스', name: '브라키디오스 슬래시액스', e: '폭파', atk: null, ele: null, crit: null, x: ['강격병'] },
+      { t: 'charge-blade', tn: '차지액스', name: '브라키디오스 차지액스', e: '폭파', atk: null, ele: null, crit: null, x: ['유탄병'] },
+      { t: 'insect-glaive', tn: '조충곤', name: '브라키디오스 조충곤', e: '폭파', atk: null, ele: null, crit: null, x: ['공투형', '타격', '파워', '혼신의 공투격'] },
+      { t: 'light-gun', tn: '라이트보우건', name: '브라키디오스 라이트보우건', e: '폭파', atk: null, ele: null, crit: null, x: ['철갑유탄 3', '산탄 4'], sk: [{ s: '포술', lv: 1 }] },
+      { t: 'heavy-gun', tn: '헤비보우건', name: '브라키디오스 헤비보우건', e: '폭파', atk: null, ele: null, crit: null, x: ['용격탄 2', '철갑유탄 4'], sk: [{ s: '포술', lv: 1 }] },
+      { t: 'bow', tn: '활', name: '브라키디오스 활', e: '폭파', atk: null, ele: null, crit: null, x: ['Lv1 관통', 'Lv2 관통', 'Lv3 연사', 'Lv4 연사'] },
+    ],
   },
   {
     key: 'a-somna', name: '이소네미쿠니 아종', en: 'Aurora Somnacanth',
@@ -86,8 +104,18 @@ const HAND_SETS = [
       belt: { name: '이소네미쿠니 아종 허리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '차지 스톡', lv: 1 }], slot: 1 },
       greaves: { name: '이소네미쿠니 아종 다리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '절대 회피【SP】', lv: 1 }, { s: '매진', lv: 1 }], slot: 1 },
     },
+    /* 무기는 소개 이미지의 무기종 아이콘 7종만(쌍검·대검·태도·해머·수렵피리·차지액스·조충곤).
+       병(강속성병=차지액스)·사냥벌레·선율 정보도 그 7종과 맞아떨어진다. */
     weaponSkills: [{ s: '속성 공격 증강【SP】', lv: 1 }],
-    weapons: [],
+    weapons: [
+      { t: 'great-sword', tn: '대검', name: '이소네미쿠니 아종 대검', e: '얼음', atk: null, ele: null, crit: null, x: null },
+      { t: 'long-sword', tn: '태도', name: '이소네미쿠니 아종 태도', e: '얼음', atk: null, ele: null, crit: null, x: null },
+      { t: 'dual-blades', tn: '쌍검', name: '이소네미쿠니 아종 쌍검', e: '얼음', atk: null, ele: null, crit: null, x: null },
+      { t: 'hammer', tn: '해머', name: '이소네미쿠니 아종 해머', e: '얼음', atk: null, ele: null, crit: null, x: null },
+      { t: 'hunting-horn', tn: '수렵피리', name: '이소네미쿠니 아종 수렵피리', e: '얼음', atk: null, ele: null, crit: null, x: ['진동 무효', '청각 보호【대】', '고주파 충격파'] },
+      { t: 'charge-blade', tn: '차지액스', name: '이소네미쿠니 아종 차지액스', e: '얼음', atk: null, ele: null, crit: null, x: ['강속성병'] },
+      { t: 'insect-glaive', tn: '조충곤', name: '이소네미쿠니 아종 조충곤', e: '얼음', atk: null, ele: null, crit: null, x: ['가루형', '절단', '퀵', '채취 제한 해제'] },
+    ],
   },
 ];
 

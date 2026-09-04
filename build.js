@@ -506,7 +506,7 @@ function bdKakaoList(b) {
     const style = bdStylesOf(b.wt)[b.st - 1];
     rows.push({
       title: bdTight(w.name),
-      description: bdTight([wt && wt.n, w.atk ? `공격${w.atk}` : '', w.e ? `${w.e}${w.ele}` : '무속성',
+      description: bdTight([wt && wt.n, w.atk ? `공격${w.atk}` : '', w.e ? `${w.e}${w.ele ?? ''}` : '무속성',
         w.crit != null ? `회심${w.crit > 0 ? '+' : ''}${w.crit}%` : '',
         style ? `스타일${style}` : ''].filter(Boolean).join('·')),
       imageUrl: bdMonURL(bdSet(b.w).key), link,
@@ -594,9 +594,9 @@ const BD_I = {
 };
 /* 이 이벤트 장비 5종은 몬스터 소재가 아니라서 참조 사이트에도 아이콘이 없습니다(404).
    404 를 띄우지 않고 이벤트 표류석 아이콘으로 대신합니다.
-   brachy·a-somna 는 신규 몬스터 임시 데이터 — 참조 사이트에 아이콘이 오르면
-   fetch-icons 로 받고 여기서 뺍니다. */
-const BD_NOICON = new Set(['mr-beast', 'halloween-25', 'winter-25', 'lunar-25', 'spring-26', 'brachy', 'a-somna']);
+   brachy·a-somna 아이콘은 참조 사이트에 오르기 전까지 몬스터헌터 위키의 타 시리즈
+   아이콘(MHWI·MHRS)을 임시로 담아 두었습니다 — 오르면 fetch-icons 로 교체합니다. */
+const BD_NOICON = new Set(['mr-beast', 'halloween-25', 'winter-25', 'lunar-25', 'spring-26']);
 const bdIcon = key => (BD_NOICON.has(key) ? 'assets/stone/event.png' : `assets/monster/${key}.png`);
 const bdMon = key => `<img class="bd-mi" src="${esc(bdIcon(key))}" width="26" height="26" alt="" loading="lazy">`;
 const bdChips = list => list.map(x => `<span class="chip">${esc(x.s)}<b>${x.lv}</b></span>`).join('');
@@ -648,7 +648,7 @@ function bdCard(b, bi) {
         <b class="wn">${esc(w.name)}</b>
         ${w.atk ? `<span>${BD_SI.atk}<b>${w.atk}</b></span>` : ''}
         ${w.e && BD_EI[w.e]
-          ? `<span class="el" title="${esc(w.e)}속성">${bdIco(`assets/element/${BD_EI[w.e]}.png`)}<b>${w.ele}</b></span>`
+          ? `<span class="el" title="${esc(w.e)}속성">${bdIco(`assets/element/${BD_EI[w.e]}.png`)}${w.ele != null ? `<b>${w.ele}</b>` : ''}</span>`
           : '<span class="el">무속성</span>'}
         ${w.crit != null ? `<span class="cr${w.crit < 0 ? ' minus' : ''}">${BD_SI.crit}<b>${w.crit > 0 ? '+' : ''}${w.crit}%</b></span>` : ''}
         ${sp ? `<span class="sp">SP ${esc(styleName || sp)}</span>` : ''}
@@ -1027,7 +1027,7 @@ function bdGearRow(s, b, target, isW, chosen) {
            글자로 적으면 줄이 길어져 무기 이름이 잘립니다. */
         const meta = isW
           ? [item.atk ? BD_SI.atk + item.atk : '',
-             item.e && BD_EI[item.e] ? bdIco(`assets/element/${BD_EI[item.e]}.png`) + item.ele : '',
+             item.e && BD_EI[item.e] ? bdIco(`assets/element/${BD_EI[item.e]}.png`) + (item.ele ?? '') : '',
              item.crit != null ? BD_SI.crit + (item.crit > 0 ? '+' : '') + item.crit + '%' : '',
             ].filter(Boolean).join(' ')
           : '';
