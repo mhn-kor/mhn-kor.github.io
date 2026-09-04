@@ -58,6 +58,37 @@ const HAND_SETS = [
     weaponSkills: [{ s: '각성의 일격', lv: 3 }],
     weapons: [{ t: 'gunlance', tn: '건랜스', name: '트로피컬캐논', e: '수면', atk: 1817, ele: 516, crit: 0, x: ['방사형 포격'] }],
   },
+  /* 신규 몬스터 2종 — 공개된 소개 이미지 기준의 임시 값. 방어구 이름과 해금 챕터,
+     무기 수치는 아직 몰라 방어구 스킬만 담고 표류슬롯은 부위마다 1로 둔다.
+     번들·공식 목록에 오르면 이 두 항목을 지우고 다시 생성한다. 키가 번들과 다르면
+     경고가 안 뜨니 갱신 때 브라키디오스·이소네미쿠니로 직접 확인할 것. */
+  {
+    key: 'brachy', name: '브라키디오스', en: 'Brachydios',
+    u: 99, id: 9998, g: 0, o: 999,
+    pieces: {
+      helm: { name: '브라키디오스 머리', skills: [{ s: '록온', lv: 1 }, { s: '추가 공격【폭파】', lv: 2 }], slot: 1 },
+      mail: { name: '브라키디오스 몸', skills: [{ s: '포술·경지', lv: 1 }, { s: '공격 활성', lv: 1 }, { s: '투기 활성', lv: 1 }], slot: 1 },
+      gloves: { name: '브라키디오스 팔', skills: [{ s: '포술·경지', lv: 1 }, { s: '진가 발휘', lv: 1 }, { s: '가드 성능', lv: 1 }], slot: 1 },
+      belt: { name: '브라키디오스 허리', skills: [{ s: '추가 공격【폭파】', lv: 2 }, { s: '폭파속성 강화', lv: 1 }], slot: 1 },
+      greaves: { name: '브라키디오스 다리', skills: [{ s: '포술·경지', lv: 1 }, { s: '포술', lv: 2 }], slot: 1 },
+    },
+    /* 보우건 두 종은 포술 Lv1 이라고 안내됐지만 무기 자체가 없어 아직 안 담는다. */
+    weaponSkills: [{ s: '추가 공격【폭파】', lv: 1 }],
+    weapons: [],
+  },
+  {
+    key: 'a-somna', name: '이소네미쿠니 아종', en: 'Aurora Somnacanth',
+    u: 99, id: 9999, g: 0, o: 999,
+    pieces: {
+      helm: { name: '이소네미쿠니 아종 머리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '하이 차지【얼음】', lv: 2 }], slot: 1 },
+      mail: { name: '이소네미쿠니 아종 몸', skills: [{ s: '차지 스톡', lv: 1 }, { s: '차지 마스터', lv: 2 }], slot: 1 },
+      gloves: { name: '이소네미쿠니 아종 팔', skills: [{ s: '록온', lv: 1 }, { s: '흉회심', lv: 1 }, { s: '전심전력', lv: 1 }], slot: 1 },
+      belt: { name: '이소네미쿠니 아종 허리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '차지 스톡', lv: 1 }], slot: 1 },
+      greaves: { name: '이소네미쿠니 아종 다리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '절대 회피【SP】', lv: 1 }, { s: '매진', lv: 1 }], slot: 1 },
+    },
+    weaponSkills: [{ s: '속성 공격 증강【SP】', lv: 1 }],
+    weapons: [],
+  },
 ];
 
 const ELEM_KO = {
