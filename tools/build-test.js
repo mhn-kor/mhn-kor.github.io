@@ -33,20 +33,61 @@ vm.createContext(ctx);
 /* 표류석은 smelt-data.js 에서 옵니다 — 공유 링크 길이의 대부분이 표류석입니다.
    skill-desc.js 도 실어야 브라우저와 같은 조건이 됩니다. 빼면 SKILLDESC 가 없어서
    bdSkillDesc 가 늘 표류연성 쪽으로 떨어지고, 진짜로 빠진 스킬이 무엇인지 가려집니다. */
-for (const f of ['smelt-data.js', 'skill-desc.js', 'build-data.js', 'build.js']) {
+for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 }
 /* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
 const [BUILD, bdWSkills, bdTotals, bdNewBuild, bdBulkRows, bdArmorSkills,
-  bdShareParam, bdShareAbs, bdParse, bdStones, bdStoneLevels, bdSkillDesc, bdTotalRow, bdOpenSkill, BD_KAKAO_URL_MAX] =
+  bdShareParam, bdShareAbs, bdParse, bdStones, bdStoneLevels, bdSkillLevels, bdSkillDesc, bdTotalRow, bdOpenSkill, BD_KAKAO_URL_MAX] =
   ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild', 'bdBulkRows', 'bdArmorSkills',
-    'bdShareParam', 'bdShareAbs', 'bdParse', 'bdStones', 'bdStoneLevels', 'bdSkillDesc', 'bdTotalRow', 'bdOpenSkill',
+    'bdShareParam', 'bdShareAbs', 'bdParse', 'bdStones', 'bdStoneLevels', 'bdSkillLevels', 'bdSkillDesc', 'bdTotalRow', 'bdOpenSkill',
     'BD_KAKAO_URL_MAX'].map(n => vm.runInContext(n, ctx));
 
 let fail = 0;
 const check = (label, fn) => {
   try { fn(); } catch (e) { fail++; console.log('✗ ' + label + '\n  ' + e.message); }
 };
+
+check('신규 스킬 설명과 이소네미쿠니 아종 허리', () => {
+  const max = { '특수 스킬 위력 상승·경지': 2, '추가 공격【폭파】': 5, '포술·경지': 2, '차지 스톡': 3 };
+  for (const [name, lv] of Object.entries(max)) {
+    assert.strictEqual(bdSkillLevels(name).length, lv, `${name} 레벨 수`);
+    assert.ok(bdSkillDesc(name, lv), `${name} 최고 레벨 설명`);
+  }
+  const belt = BUILD.sets.find(s => s.key === 'a-somna').pieces.belt;
+  assert.strictEqual(belt.skills.find(s => s.s === '차지 스톡').lv, 2);
+});
+
+check('수동 몬스터 무기는 10-1 수치와 전용 정보를 쓴다', () => {
+  const brachy = BUILD.sets.find(s => s.key === 'brachy');
+  assert.strictEqual(brachy.weaponSpecNote, '10-1 기준');
+  for (const w of brachy.weapons) {
+    const gun = ['light-gun', 'heavy-gun'].includes(w.t);
+    assert.deepStrictEqual([w.e, w.atk, w.ele, w.crit], gun ? [null, 2095, null, 0] : ['폭파', 1675, 391, 10]);
+    assert.strictEqual(JSON.stringify(bdWSkills(brachy, w)), gun ? '[{"s":"포술","lv":1}]' : '[{"s":"추가 공격【폭파】","lv":1}]');
+  }
+  const somna = BUILD.sets.find(s => s.key === 'a-somna');
+  assert.strictEqual(somna.weaponSpecNote, '10-1 기준');
+  for (const w of somna.weapons) {
+    assert.deepStrictEqual([w.e, w.atk, w.ele, w.crit], ['얼음', 1210, 1298, -20]);
+    assert.strictEqual(JSON.stringify(bdWSkills(somna, w)), '[{"s":"속성 공격 증강【SP】","lv":1}]');
+  }
+});
+
+check('요청 무기는 같은 소재의 수치를 쓰고 특성이 맞다', () => {
+  const cases = [
+    ['rathi', 'great-sword', null], ['ratha', 'dual-blades', null],
+    ['barr', 'charge-blade', '유탄병'], ['barr', 'long-sword', null],
+    ['puke', 'gunlance', '확산형 포격'],
+  ];
+  for (const [key, type, extra] of cases) {
+    const set = BUILD.sets.find(s => s.key === key), weapon = set.weapons.find(w => w.t === type);
+    assert.ok(weapon, `${key}/${type} 무기가 없습니다`);
+    const base = set.weapons.find(w => w.t !== type);
+    for (const field of ['e', 'atk', 'ele', 'crit']) assert.strictEqual(weapon[field], base[field], `${key}/${type} ${field}`);
+    assert.strictEqual(extra ? weapon.x?.[0] : weapon.x, extra, `${key}/${type} 특성`);
+  }
+});
 
 /* 표류석으로만 붙는 스킬은 build-data.js 의 maxLv 와 skill-desc.js 양쪽에서 빠집니다 —
    생성기가 «빌드에 쓰이는 스킬» 을 장비·무기에서만 추리기 때문입니다. build.js 가

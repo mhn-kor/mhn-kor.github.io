@@ -72,7 +72,7 @@ const HAND_SETS = [
       belt: { name: '브라키디오스 허리', skills: [{ s: '추가 공격【폭파】', lv: 2 }, { s: '폭파속성 강화', lv: 1 }], slot: 1 },
       greaves: { name: '브라키디오스 다리', skills: [{ s: '포술·경지', lv: 1 }, { s: '포술', lv: 2 }], slot: 1 },
     },
-    /* 무기는 전 종류. 공격력·속성·회심은 미공개라 null — 화면은 값 있는 칸만 그린다.
+    /* 무기는 전 종류. 10-1 수치와 특징은 게임 화면 확인값이다.
        포격·병·사냥벌레·선율·탄·화살은 소개 이미지에 있어 담고, 표기는 wextra 를 따른다
        (분진형→가루형, 고주충격파→고주파 충격파처럼 이미지와 다른 데가 있다).
        보우건 두 종은 소재 공통 대신 포술 Lv1 이라고 안내되어 sk 로 갈음한다. */
@@ -101,7 +101,7 @@ const HAND_SETS = [
       helm: { name: '이소네미쿠니 아종 머리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '하이 차지【얼음】', lv: 2 }], slot: 1 },
       mail: { name: '이소네미쿠니 아종 몸', skills: [{ s: '차지 스톡', lv: 1 }, { s: '차지 마스터', lv: 2 }], slot: 1 },
       gloves: { name: '이소네미쿠니 아종 팔', skills: [{ s: '록온', lv: 1 }, { s: '흉회심', lv: 1 }, { s: '전심전력', lv: 1 }], slot: 1 },
-      belt: { name: '이소네미쿠니 아종 허리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '차지 스톡', lv: 1 }], slot: 1 },
+      belt: { name: '이소네미쿠니 아종 허리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '차지 스톡', lv: 2 }], slot: 1 },
       greaves: { name: '이소네미쿠니 아종 다리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '절대 회피【SP】', lv: 1 }, { s: '매진', lv: 1 }], slot: 1 },
     },
     /* 무기는 소개 이미지의 무기종 아이콘 7종만(쌍검·대검·태도·해머·수렵피리·차지액스·조충곤).
@@ -118,6 +118,32 @@ const HAND_SETS = [
     ],
   },
 ];
+
+/* 수동 몬스터 무기 수치. 같은 세트의 무기에 일괄 적용해 값이 어긋나지 않게 한다. */
+const HAND_WEAPON_SPECS = {
+  brachy: {
+    note: '10-1 기준', base: { e: '폭파', atk: 1675, ele: 391, crit: 10 },
+    alt: { e: null, atk: 2095, ele: null, crit: 0 }, altTypes: new Set(['light-gun', 'heavy-gun']),
+  },
+  'a-somna': { note: '10-1 기준', base: { e: '얼음', atk: 1210, ele: 1298, crit: -20 } },
+};
+for (const [key, spec] of Object.entries(HAND_WEAPON_SPECS)) {
+  const set = HAND_SETS.find(s => s.key === key);
+  set.weaponSpecNote = spec.note;
+  for (const weapon of set.weapons) Object.assign(weapon,
+    spec.altTypes?.has(weapon.t) ? spec.alt : spec.base);
+}
+
+/* 공식 목록에 아직 없는, 게임에서 확인한 기존 몬스터 무기.
+   같은 소재의 기존 무기 수치·속성을 복사하고 종류별 특성만 여기서 덮는다. */
+const HAND_WEAPON_ADDITIONS = {
+  rathi: [{ t: 'great-sword', tn: '대검', name: '리오레이아 대검' }],
+  barr: [
+    { t: 'charge-blade', tn: '차지액스', name: '볼보로스 차지액스', x: ['유탄병'] },
+    { t: 'long-sword', tn: '태도', name: '볼보로스 태도' },
+  ],
+  puke: [{ t: 'gunlance', tn: '건랜스', name: '푸케푸케 건랜스', x: ['확산형 포격'] }],
+};
 
 const ELEM_KO = {
   fire: '불', water: '물', thunder: '번개', thunder2: '번개', ice: '얼음', dragon: '용',
@@ -345,6 +371,9 @@ async function main() {
      skill-desc.js 가 그 표를 그대로 담고 있어 따로 표를 두지 않습니다. */
   const descSrc = fs.readFileSync(path.join(__dirname, '..', 'skill-desc.js'), 'utf8');
   const SKILLDESC = new Function(descSrc + ';return SKILLDESC;')();
+  const manualSrc = fs.readFileSync(path.join(__dirname, '..', 'skill-desc-overrides.js'), 'utf8');
+  const SKILLDESC_MANUAL = new Function(manualSrc + ';return SKILLDESC_MANUAL;')();
+  Object.assign(SKILLDESC, SKILLDESC_MANUAL);
   const official = Object.keys(SKILLDESC);
 
   /* 공식 방어구 목록의 세트 나열 순서. official-names.json 의 키 순서가 곧 그 순서입니다. */
@@ -463,6 +492,14 @@ async function main() {
         /* 종류 전용 스킬이 있을 때만 담는다. 없으면 세트의 weaponSkills 를 쓴다. */
         ...(raw[wkey] ? { sk: wsk(raw[wkey]) } : {}),
       });
+    }
+
+    /* 아직 공식 목록에 없는 무기는 같은 몬스터의 기존 무기 수치를 쓴다. */
+    for (const add of HAND_WEAPON_ADDITIONS[key] || []) {
+      if (weapons.some(w => w.t === add.t) || !weapons.length) continue;
+      const base = weapons[0];
+      weapons.push({ t: add.t, tn: add.tn, name: add.name, e: base.e, atk: base.atk,
+        ele: base.ele, crit: base.crit, x: add.x || null });
     }
 
     if (!Object.keys(pieces).length && !weapons.length) continue;

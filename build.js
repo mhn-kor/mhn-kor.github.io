@@ -121,7 +121,8 @@ const BD_BASE_HP = 100;
    표류연성 데이터에서 빌려 옵니다(위 bdStoneLevels 주석). 한 줄만 필요한 곳과
    표로 다 보여 주는 곳이 같은 것을 봐야 해서 여기 한 벌만 둡니다. */
 function bdSkillLevels(name) {
-  const rows = (typeof SKILLDESC !== 'undefined' && SKILLDESC[name]) || bdStoneLevels(name);
+  const rows = (typeof SKILLDESC_MANUAL !== 'undefined' && SKILLDESC_MANUAL[name])
+    || (typeof SKILLDESC !== 'undefined' && SKILLDESC[name]) || bdStoneLevels(name);
   return rows && rows.length ? rows : null;
 }
 
@@ -623,6 +624,7 @@ function bdCard(b, bi) {
   const wsk = ws ? bdWSkills(ws, w) : [];
   const styleName = b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
   const type = BUILD.weaponTypes.find(t => t.k === b.wt);
+  const wnote = ws && ws.weaponSpecNote;
   const D = bdState.detail;
 
   /* 무기 줄 — 이름 줄과 스킬 줄을 나눕니다. 스킬을 오른쪽에 붙이면 칩이 많을 때
@@ -651,6 +653,7 @@ function bdCard(b, bi) {
           ? `<span class="el" title="${esc(w.e)}속성">${bdIco(`assets/element/${BD_EI[w.e]}.png`)}${w.ele != null ? `<b>${w.ele}</b>` : ''}</span>`
           : '<span class="el">무속성</span>'}
         ${w.crit != null ? `<span class="cr${w.crit < 0 ? ' minus' : ''}">${BD_SI.crit}<b>${w.crit > 0 ? '+' : ''}${w.crit}%</b></span>` : ''}
+        ${wnote ? `<span class="wx" title="무기 수치는 ${esc(wnote)}입니다.">${esc(wnote)}</span>` : ''}
         ${sp ? `<span class="sp">SP ${esc(styleName || sp)}</span>` : ''}
         ${wx ? wx.map(t => `<span class="wx">${esc(t)}</span>`).join('') : ''}
       </div>` : ''}`;
@@ -1013,7 +1016,7 @@ function bdFillGear(q) {
 function bdGearCell(s, b, target, isW, chosen) {
   const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
   const sk = (isW ? bdWSkills(s, item) : item.skills).map(x => `${x.s} ${x.lv}`).join(', ');
-  const tip = [s.name, item.name, sk, isW && item.x ? item.x.join(' · ') : '',
+  const tip = [s.name, item.name, sk, isW && s.weaponSpecNote ? `무기 수치 ${s.weaponSpecNote}` : '', isW && item.x ? item.x.join(' · ') : '',
     !isW && item.slot ? `표류석 ${item.slot}칸` : ''].filter(Boolean).join(' · ');
   return `<button class="bd-lr cell${s.key === chosen ? ' on' : ''}" data-v="${esc(s.key)}"
     title="${esc(tip)}" aria-label="${esc(s.name)}">${bdMon(s.key)}</button>`;
@@ -1042,7 +1045,7 @@ function bdGearRow(s, b, target, isW, chosen) {
             <b>${esc(s.name)}</b>
             <i>${esc(item.name)}${meta ? ' <span class="bd-lm">' + meta + '</span>' : ''}</i>
             <span class="bd-ls">${sk.map(x => `<em>${esc(x.s)}<b>${x.lv}</b></em>`).join('')}</span>
-            ${isW && item.x ? `<span class="bd-lx">${item.x.map(t => `<i>${esc(t)}</i>`).join('')}</span>` : ''}
+            ${isW && (s.weaponSpecNote || item.x) ? `<span class="bd-lx">${s.weaponSpecNote ? `<i title="무기 수치는 ${esc(s.weaponSpecNote)}입니다.">${esc(s.weaponSpecNote)}</i>` : ''}${item.x ? item.x.map(t => `<i>${esc(t)}</i>`).join('') : ''}</span>` : ''}
           </span>
           ${slots}
         </button>`;
