@@ -385,8 +385,8 @@ function bdBulkFoot() {
 /* 링크 복사와 카카오톡 공유가 같은 URL 을 씁니다. 내 빌드도 추천빌드도 넘기므로
    목록의 번호가 아니라 빌드 객체를 받습니다.
    표류석은 `ds=부위|칸|색상|스킬;…` 로 담습니다. 구분자는 기존 형식이 쓰는
-   ',' 와 '=' 를 피해 ';' 와 '|' 를 골랐습니다. 색상·스킬을 이름으로 적는 건
-   smelt-data.js 를 다시 만들어 순서가 바뀌어도 옛 링크가 살아 있어야 하기 때문입니다.
+   ',' 와 '=' 를 피해 ';' 와 '|' 를 골랐습니다. 일반 표류석은 이름을 쓰고,
+   smelt-data.js 에 짧은 고정 code 를 둔 신규 표류석만 code 를 써 링크를 줄입니다.
 
    한글은 %EC%88%98 처럼 세 배로 불어나므로 encodeURIComponent 로 통째로 감싸지 않고
    쿼리에서 실제로 뜻이 달라지는 글자만 뺍니다(공백·% # & + ?). 장비 키·스킬명에는
@@ -399,7 +399,9 @@ function bdShareParam(b) {
   const ds = [];
   for (const { k } of BD_PARTS()) {
     (b.ds[k] || []).slice(0, bdSlotCount(b, k)).forEach((d, i) => {
-      if (d && d.s) ds.push(`${k}|${i}|${d.c}|${d.s}`);
+      if (!d || !d.s) return;
+      const g = bdStones().find(x => x.group === d.c), skill = g && g.skills.find(x => x.name === d.s);
+      ds.push(`${k}|${i}|${g && g.code && skill && skill.code ? g.code : d.c}|${g && g.code && skill && skill.code ? skill.code : d.s}`);
     });
   }
   const cond = Object.keys(b.cond || {}).filter(k => b.cond[k]);
@@ -597,7 +599,7 @@ const BD_I = {
    404 를 띄우지 않고 이벤트 표류석 아이콘으로 대신합니다.
    brachy·a-somna 아이콘은 참조 사이트에 오르기 전까지 몬스터헌터 위키의 타 시리즈
    아이콘(MHWI·MHRS)을 임시로 담아 두었습니다 — 오르면 fetch-icons 로 교체합니다. */
-const BD_NOICON = new Set(['mr-beast', 'halloween-25', 'winter-25', 'lunar-25', 'spring-26']);
+const BD_NOICON = new Set(['mr-beast', 'halloween-25', 'winter-25', 'lunar-25', 'spring-26', 'guardian']);
 const bdIcon = key => (BD_NOICON.has(key) ? 'assets/stone/event.png' : `assets/monster/${key}.png`);
 const bdMon = key => `<img class="bd-mi" src="${esc(bdIcon(key))}" width="26" height="26" alt="" loading="lazy">`;
 const bdChips = list => list.map(x => `<span class="chip">${esc(x.s)}<b>${x.lv}</b></span>`).join('');
@@ -624,7 +626,6 @@ function bdCard(b, bi) {
   const wsk = ws ? bdWSkills(ws, w) : [];
   const styleName = b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
   const type = BUILD.weaponTypes.find(t => t.k === b.wt);
-  const wnote = ws && ws.weaponSpecNote;
   const D = bdState.detail;
 
   /* 무기 줄 — 이름 줄과 스킬 줄을 나눕니다. 스킬을 오른쪽에 붙이면 칩이 많을 때
@@ -653,7 +654,6 @@ function bdCard(b, bi) {
           ? `<span class="el" title="${esc(w.e)}속성">${bdIco(`assets/element/${BD_EI[w.e]}.png`)}${w.ele != null ? `<b>${w.ele}</b>` : ''}</span>`
           : '<span class="el">무속성</span>'}
         ${w.crit != null ? `<span class="cr${w.crit < 0 ? ' minus' : ''}">${BD_SI.crit}<b>${w.crit > 0 ? '+' : ''}${w.crit}%</b></span>` : ''}
-        ${wnote ? `<span class="wx" title="무기 수치는 ${esc(wnote)}입니다.">${esc(wnote)}</span>` : ''}
         ${sp ? `<span class="sp">SP ${esc(styleName || sp)}</span>` : ''}
         ${wx ? wx.map(t => `<span class="wx">${esc(t)}</span>`).join('') : ''}
       </div>` : ''}`;
@@ -1016,7 +1016,7 @@ function bdFillGear(q) {
 function bdGearCell(s, b, target, isW, chosen) {
   const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
   const sk = (isW ? bdWSkills(s, item) : item.skills).map(x => `${x.s} ${x.lv}`).join(', ');
-  const tip = [s.name, item.name, sk, isW && s.weaponSpecNote ? `무기 수치 ${s.weaponSpecNote}` : '', isW && item.x ? item.x.join(' · ') : '',
+  const tip = [s.name, item.name, sk, isW && item.x ? item.x.join(' · ') : '',
     !isW && item.slot ? `표류석 ${item.slot}칸` : ''].filter(Boolean).join(' · ');
   return `<button class="bd-lr cell${s.key === chosen ? ' on' : ''}" data-v="${esc(s.key)}"
     title="${esc(tip)}" aria-label="${esc(s.name)}">${bdMon(s.key)}</button>`;
@@ -1045,7 +1045,7 @@ function bdGearRow(s, b, target, isW, chosen) {
             <b>${esc(s.name)}</b>
             <i>${esc(item.name)}${meta ? ' <span class="bd-lm">' + meta + '</span>' : ''}</i>
             <span class="bd-ls">${sk.map(x => `<em>${esc(x.s)}<b>${x.lv}</b></em>`).join('')}</span>
-            ${isW && (s.weaponSpecNote || item.x) ? `<span class="bd-lx">${s.weaponSpecNote ? `<i title="무기 수치는 ${esc(s.weaponSpecNote)}입니다.">${esc(s.weaponSpecNote)}</i>` : ''}${item.x ? item.x.map(t => `<i>${esc(t)}</i>`).join('') : ''}</span>` : ''}
+            ${isW && item.x ? `<span class="bd-lx">${item.x.map(t => `<i>${esc(t)}</i>`).join('')}</span>` : ''}
           </span>
           ${slots}
         </button>`;
@@ -1408,8 +1408,9 @@ function bdParse(param, title) {
   for (const e of String(kv.ds || '').split(';')) {
     const [part, i, color, skill] = e.split('|');
     if (!Array.isArray(b.ds[part]) || !(+i >= 0)) continue;
-    const g = bdStones().find(x => x.group === color);
-    if (g && g.skills.some(x => x.name === skill)) b.ds[part][+i] = { c: color, s: skill };
+    const g = bdStones().find(x => x.code === color) || bdStones().find(x => x.group === color);
+    const pick = g && (g.skills.find(x => x.code === skill) || g.skills.find(x => x.name === skill));
+    if (g && pick) b.ds[part][+i] = { c: g.group, s: pick.name };
   }
   for (const nm of String(kv.c || '').split(';')) if (nm) b.cond[nm] = true;
   return b;

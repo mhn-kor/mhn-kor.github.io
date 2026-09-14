@@ -58,6 +58,18 @@ const HAND_SETS = [
     weaponSkills: [{ s: '각성의 일격', lv: 3 }],
     weapons: [{ t: 'gunlance', tn: '건랜스', name: '트로피컬캐논', e: '수면', atk: 1817, ele: 516, crit: 0, x: ['방사형 포격'] }],
   },
+  {
+    /* 2026-09-17 공개 예정 이벤트 방어구. 공식 데이터에 오르면 이 항목을 지운다. */
+    key: 'guardian', name: '가디언', u: 6, id: 100, g: 1, o: 999,
+    pieces: {
+      helm: { name: '가디언헬름', skills: [{ s: '폭파 피해 내성', lv: 3 }], slot: 1 },
+      mail: { name: '가디언슈트', skills: [{ s: '귀마개', lv: 3 }], slot: 1 },
+      gloves: { name: '가디언암', skills: [{ s: '록온', lv: 1 }, { s: '점프 철인', lv: 1 }], slot: 1 },
+      belt: { name: '가디언코일', skills: [{ s: '장전 속도', lv: 2 }], slot: 1 },
+      greaves: { name: '가디언부츠', skills: [{ s: '반동 경감', lv: 1 }, { s: '특수 스킬 위력 상승', lv: 1 }], slot: 1 },
+    },
+    weaponSkills: [], weapons: [],
+  },
   /* 신규 몬스터 2종 — 공개된 소개 이미지 기준의 임시 값. 방어구 이름과 해금 챕터,
      무기 수치는 아직 몰라 방어구 스킬만 담고 표류슬롯은 부위마다 1로 둔다.
      번들·공식 목록에 오르면 이 두 항목을 지우고 다시 생성한다. 키가 번들과 다르면
@@ -72,7 +84,7 @@ const HAND_SETS = [
       belt: { name: '브라키디오스 허리', skills: [{ s: '추가 공격【폭파】', lv: 2 }, { s: '폭파속성 강화', lv: 1 }], slot: 1 },
       greaves: { name: '브라키디오스 다리', skills: [{ s: '포술·경지', lv: 1 }, { s: '포술', lv: 2 }], slot: 1 },
     },
-    /* 무기는 전 종류. 10-1 수치와 특징은 게임 화면 확인값이다.
+    /* 무기는 전 종류. 수치와 특징은 게임 화면 확인값이다.
        포격·병·사냥벌레·선율·탄·화살은 소개 이미지에 있어 담고, 표기는 wextra 를 따른다
        (분진형→가루형, 고주충격파→고주파 충격파처럼 이미지와 다른 데가 있다).
        보우건 두 종은 소재 공통 대신 포술 Lv1 이라고 안내되어 sk 로 갈음한다. */
@@ -91,7 +103,7 @@ const HAND_SETS = [
       { t: 'insect-glaive', tn: '조충곤', name: '브라키디오스 조충곤', e: '폭파', atk: null, ele: null, crit: null, x: ['공투형', '타격', '파워', '혼신의 공투격'] },
       { t: 'light-gun', tn: '라이트보우건', name: '브라키디오스 라이트보우건', e: '폭파', atk: null, ele: null, crit: null, x: ['철갑유탄 3', '산탄 4'], sk: [{ s: '포술', lv: 1 }] },
       { t: 'heavy-gun', tn: '헤비보우건', name: '브라키디오스 헤비보우건', e: '폭파', atk: null, ele: null, crit: null, x: ['용격탄 2', '철갑유탄 4'], sk: [{ s: '포술', lv: 1 }] },
-      { t: 'bow', tn: '활', name: '브라키디오스 활', e: '폭파', atk: null, ele: null, crit: null, x: ['Lv1 관통', 'Lv2 관통', 'Lv3 연사', 'Lv4 연사'] },
+      { t: 'bow', tn: '활', name: '브라키디오스 활', e: '폭파', atk: null, ele: null, crit: null, x: ['Lv1 관통', 'Lv1 관통', 'Lv4 연사', 'Lv4 연사'] },
     ],
   },
   {
@@ -122,14 +134,13 @@ const HAND_SETS = [
 /* 수동 몬스터 무기 수치. 같은 세트의 무기에 일괄 적용해 값이 어긋나지 않게 한다. */
 const HAND_WEAPON_SPECS = {
   brachy: {
-    note: '10-1 기준', base: { e: '폭파', atk: 1675, ele: 391, crit: 10 },
-    alt: { e: null, atk: 2095, ele: null, crit: 0 }, altTypes: new Set(['light-gun', 'heavy-gun']),
+    base: { e: '폭파', atk: 2007, ele: 416, crit: 10 },
+    alt: { e: null, atk: 2510, ele: null, crit: 0 }, altTypes: new Set(['light-gun', 'heavy-gun']),
   },
-  'a-somna': { note: '10-1 기준', base: { e: '얼음', atk: 1210, ele: 1298, crit: -20 } },
+  'a-somna': { base: { e: '얼음', atk: 1450, ele: 1614, crit: -20 } },
 };
 for (const [key, spec] of Object.entries(HAND_WEAPON_SPECS)) {
   const set = HAND_SETS.find(s => s.key === key);
-  set.weaponSpecNote = spec.note;
   for (const weapon of set.weapons) Object.assign(weapon,
     spec.altTypes?.has(weapon.t) ? spec.alt : spec.base);
 }

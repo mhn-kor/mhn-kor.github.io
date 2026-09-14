@@ -37,9 +37,9 @@ for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'b
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 }
 /* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
-const [BUILD, bdWSkills, bdTotals, bdNewBuild, bdBulkRows, bdArmorSkills,
+const [SMELT, BUILD, bdWSkills, bdTotals, bdNewBuild, bdBulkRows, bdArmorSkills,
   bdShareParam, bdShareAbs, bdParse, bdStones, bdStoneLevels, bdSkillLevels, bdSkillDesc, bdTotalRow, bdOpenSkill, BD_KAKAO_URL_MAX] =
-  ['BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild', 'bdBulkRows', 'bdArmorSkills',
+  ['SMELT', 'BUILD', 'bdWSkills', 'bdTotals', 'bdNewBuild', 'bdBulkRows', 'bdArmorSkills',
     'bdShareParam', 'bdShareAbs', 'bdParse', 'bdStones', 'bdStoneLevels', 'bdSkillLevels', 'bdSkillDesc', 'bdTotalRow', 'bdOpenSkill',
     'BD_KAKAO_URL_MAX'].map(n => vm.runInContext(n, ctx));
 
@@ -49,7 +49,7 @@ const check = (label, fn) => {
 };
 
 check('신규 스킬 설명과 이소네미쿠니 아종 허리', () => {
-  const max = { '특수 스킬 위력 상승·경지': 2, '추가 공격【폭파】': 5, '포술·경지': 2, '차지 스톡': 3 };
+  const max = { '점프 철인': 1, '특수 스킬 위력 상승·경지': 2, '추가 공격【폭파】': 5, '포술·경지': 2, '차지 스톡': 3 };
   for (const [name, lv] of Object.entries(max)) {
     assert.strictEqual(bdSkillLevels(name).length, lv, `${name} 레벨 수`);
     assert.ok(bdSkillDesc(name, lv), `${name} 최고 레벨 설명`);
@@ -58,18 +58,46 @@ check('신규 스킬 설명과 이소네미쿠니 아종 허리', () => {
   assert.strictEqual(belt.skills.find(s => s.s === '차지 스톡').lv, 2);
 });
 
-check('수동 몬스터 무기는 10-1 수치와 전용 정보를 쓴다', () => {
+check('수수께끼의[U]는 메인 스킬 세 개를 3.3%로 표시한다', () => {
+  const group = SMELT.groups.find(g => g.group === '수수께끼의[U]');
+  assert.ok(group && group.mystery, '수수께끼의[U]가 없습니다');
+  assert.strictEqual(group.code, 'u');
+  assert.strictEqual(JSON.stringify(group.skills.map(s => [s.name, s.rate, s.star, s.code])),
+    JSON.stringify([['상태 이상 축적 시 위력 UP', '3.3%', true, 'b'], ['포술', '3.3%', true, 'a'], ['특수 스킬 위력 상승', '3.3%', true, 's']]));
+  for (const skill of group.skills) assert.strictEqual(skill.levels.length, 5, `${skill.name} 레벨 수`);
+});
+
+check('가디언 이벤트 방어구는 다섯 부위와 표류 슬롯을 가진다', () => {
+  const set = BUILD.sets.find(s => s.key === 'guardian');
+  assert.ok(set && set.g === 1, '가디언이 이벤트 세트가 아닙니다');
+  const want = {
+    helm: ['가디언헬름', [['폭파 피해 내성', 3]]],
+    mail: ['가디언슈트', [['귀마개', 3]]],
+    gloves: ['가디언암', [['록온', 1], ['점프 철인', 1]]],
+    belt: ['가디언코일', [['장전 속도', 2]]],
+    greaves: ['가디언부츠', [['반동 경감', 1], ['특수 스킬 위력 상승', 1]]],
+  };
+  for (const [part, [name, skills]] of Object.entries(want)) {
+    const item = set.pieces[part];
+    assert.strictEqual(item.name, name, `${part} 이름`);
+    assert.strictEqual(item.slot, 1, `${part} 표류 슬롯`);
+    assert.strictEqual(JSON.stringify(item.skills.map(x => [x.s, x.lv])), JSON.stringify(skills), `${part} 스킬`);
+  }
+});
+
+check('수동 몬스터 무기는 확인한 수치와 전용 정보를 쓴다', () => {
   const brachy = BUILD.sets.find(s => s.key === 'brachy');
-  assert.strictEqual(brachy.weaponSpecNote, '10-1 기준');
+  assert.ok(!brachy.weaponSpecNote, '10-1 기준 안내가 남아 있습니다');
   for (const w of brachy.weapons) {
     const gun = ['light-gun', 'heavy-gun'].includes(w.t);
-    assert.deepStrictEqual([w.e, w.atk, w.ele, w.crit], gun ? [null, 2095, null, 0] : ['폭파', 1675, 391, 10]);
+    assert.deepStrictEqual([w.e, w.atk, w.ele, w.crit], gun ? [null, 2510, null, 0] : ['폭파', 2007, 416, 10]);
     assert.strictEqual(JSON.stringify(bdWSkills(brachy, w)), gun ? '[{"s":"포술","lv":1}]' : '[{"s":"추가 공격【폭파】","lv":1}]');
   }
+  assert.strictEqual(JSON.stringify(brachy.weapons.find(w => w.t === 'bow').x), '["Lv1 관통","Lv1 관통","Lv4 연사","Lv4 연사"]');
   const somna = BUILD.sets.find(s => s.key === 'a-somna');
-  assert.strictEqual(somna.weaponSpecNote, '10-1 기준');
+  assert.ok(!somna.weaponSpecNote, '10-1 기준 안내가 남아 있습니다');
   for (const w of somna.weapons) {
-    assert.deepStrictEqual([w.e, w.atk, w.ele, w.crit], ['얼음', 1210, 1298, -20]);
+    assert.deepStrictEqual([w.e, w.atk, w.ele, w.crit], ['얼음', 1450, 1614, -20]);
     assert.strictEqual(JSON.stringify(bdWSkills(somna, w)), '[{"s":"속성 공격 증강【SP】","lv":1}]');
   }
 });
