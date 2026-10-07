@@ -2,7 +2,8 @@
  *
  *   node tools/build-builddata.js > build-data.js
  *
- * 인자가 없습니다. mhn.quest 번들은 직접 받고, 장비 이름표는 tools/data/ 에서,
+ * --sets=키,키 로 지정한 세트만 갱신할 수 있습니다. mhn.quest 번들은 직접 받고,
+ * 장비 이름표는 tools/data/ 에서,
  * 스킬 최대 레벨은 skill-desc.js 에서 읽습니다. 번들을 미리 받아 뒀다면
  * MHNKR_BUNDLE=경로 로 넘겨 오프라인에서도 돌릴 수 있습니다.
  *
@@ -39,6 +40,10 @@ const WEAPONS = [
 ];
 const WEAPON_KEYS = new Set(WEAPONS.map(w => w[0]));
 
+/* 임시 데이터로 저장된 빌드·공유 링크의 키는 계속 유지한다. */
+const SET_KEYS = { brac: 'brachy', 'a-somn': 'a-somna' };
+const onlySets = process.argv.find(a => a.startsWith('--sets='))?.slice(7).split(',');
+
 /* 이벤트 무기 중에는 공식 목록에도 번들 비용표에도 없는 것이 있다
    (matUnknown = 재료 미상이라 제작비용 표 자체가 없음).
    게임에서 확인한 것만 여기 적는다. 비워 두면 종류를 못 좁혀 전 종류로 나온다. */
@@ -46,8 +51,8 @@ const EVENT_WEAPONS = {
   'spring-26': { types: ['light-gun'], names: { 'light-gun': '로즈어썰트' } },
 };
 
-/* 번들에 세트 키 자체가 아직 없는 이벤트 장비 — 게임·공식 공지에서 확인한 만렙 값을
-   통째로 적는다. 번들이 이 키를 알게 되면 자동으로 이쪽을 버리고 번들 값을 쓴다.
+/* 수동 유지하기로 한 이벤트 장비. 번들에 같은 키가 생겨도 이 값을 우선한다.
+   공식 전환은 확인 후 해당 항목을 제거할 때만 진행한다.
    en 은 mhnow.me 아이콘 파일 이름(fetch-icons)이 된다. */
 const HAND_SETS = [
   {
@@ -59,7 +64,7 @@ const HAND_SETS = [
     weapons: [{ t: 'gunlance', tn: '건랜스', name: '트로피컬캐논', e: '수면', atk: 1817, ele: 516, crit: 0, x: ['방사형 포격'] }],
   },
   {
-    /* 2026-09-17 공개 예정 이벤트 방어구. 공식 데이터에 오르면 이 항목을 지운다. */
+    /* 장비명·점프 철인 한국어 표기를 포함해 현재 수동 등록값을 유지한다. */
     key: 'guardian', name: '가디언', u: 6, id: 100, g: 1, o: 999,
     pieces: {
       helm: { name: '가디언헬름', skills: [{ s: '폭파 피해 내성', lv: 3 }], slot: 1 },
@@ -70,80 +75,7 @@ const HAND_SETS = [
     },
     weaponSkills: [], weapons: [],
   },
-  /* 신규 몬스터 2종 — 공개된 소개 이미지 기준의 임시 값. 방어구 이름과 해금 챕터,
-     무기 수치는 아직 몰라 방어구 스킬만 담고 표류슬롯은 부위마다 1로 둔다.
-     번들·공식 목록에 오르면 이 두 항목을 지우고 다시 생성한다. 키가 번들과 다르면
-     경고가 안 뜨니 갱신 때 브라키디오스·이소네미쿠니로 직접 확인할 것. */
-  {
-    key: 'brachy', name: '브라키디오스', en: 'Brachydios',
-    u: 99, id: 9998, g: 0, o: 999,
-    pieces: {
-      helm: { name: '브라키디오스 머리', skills: [{ s: '록온', lv: 1 }, { s: '추가 공격【폭파】', lv: 2 }], slot: 1 },
-      mail: { name: '브라키디오스 몸', skills: [{ s: '포술·경지', lv: 1 }, { s: '공격 활성', lv: 1 }, { s: '투기 활성', lv: 1 }], slot: 1 },
-      gloves: { name: '브라키디오스 팔', skills: [{ s: '포술·경지', lv: 1 }, { s: '진가 발휘', lv: 1 }, { s: '가드 성능', lv: 1 }], slot: 1 },
-      belt: { name: '브라키디오스 허리', skills: [{ s: '추가 공격【폭파】', lv: 2 }, { s: '폭파속성 강화', lv: 1 }], slot: 1 },
-      greaves: { name: '브라키디오스 다리', skills: [{ s: '포술·경지', lv: 1 }, { s: '포술', lv: 2 }], slot: 1 },
-    },
-    /* 무기는 전 종류. 수치와 특징은 게임 화면 확인값이다.
-       포격·병·사냥벌레·선율·탄·화살은 소개 이미지에 있어 담고, 표기는 wextra 를 따른다
-       (분진형→가루형, 고주충격파→고주파 충격파처럼 이미지와 다른 데가 있다).
-       보우건 두 종은 소재 공통 대신 포술 Lv1 이라고 안내되어 sk 로 갈음한다. */
-    weaponSkills: [{ s: '추가 공격【폭파】', lv: 1 }],
-    weapons: [
-      { t: 'shield-sword', tn: '한손검', name: '브라키디오스 한손검', e: '폭파', atk: null, ele: null, crit: null, x: null },
-      { t: 'great-sword', tn: '대검', name: '브라키디오스 대검', e: '폭파', atk: null, ele: null, crit: null, x: null },
-      { t: 'long-sword', tn: '태도', name: '브라키디오스 태도', e: '폭파', atk: null, ele: null, crit: null, x: null },
-      { t: 'dual-blades', tn: '쌍검', name: '브라키디오스 쌍검', e: '폭파', atk: null, ele: null, crit: null, x: null },
-      { t: 'hammer', tn: '해머', name: '브라키디오스 해머', e: '폭파', atk: null, ele: null, crit: null, x: null },
-      { t: 'hunting-horn', tn: '수렵피리', name: '브라키디오스 수렵피리', e: '폭파', atk: null, ele: null, crit: null, x: ['방어력UP', '풍압 내성', '공격력UP【대】'] },
-      { t: 'lance', tn: '랜스', name: '브라키디오스 랜스', e: '폭파', atk: null, ele: null, crit: null, x: null },
-      { t: 'gunlance', tn: '건랜스', name: '브라키디오스 건랜스', e: '폭파', atk: null, ele: null, crit: null, x: ['일반형 포격'] },
-      { t: 'switch-axe', tn: '슬래시액스', name: '브라키디오스 슬래시액스', e: '폭파', atk: null, ele: null, crit: null, x: ['강격병'] },
-      { t: 'charge-blade', tn: '차지액스', name: '브라키디오스 차지액스', e: '폭파', atk: null, ele: null, crit: null, x: ['유탄병'] },
-      { t: 'insect-glaive', tn: '조충곤', name: '브라키디오스 조충곤', e: '폭파', atk: null, ele: null, crit: null, x: ['공투형', '타격', '파워', '혼신의 공투격'] },
-      { t: 'light-gun', tn: '라이트보우건', name: '브라키디오스 라이트보우건', e: '폭파', atk: null, ele: null, crit: null, x: ['철갑유탄 3', '산탄 4'], sk: [{ s: '포술', lv: 1 }] },
-      { t: 'heavy-gun', tn: '헤비보우건', name: '브라키디오스 헤비보우건', e: '폭파', atk: null, ele: null, crit: null, x: ['용격탄 2', '철갑유탄 4'], sk: [{ s: '포술', lv: 1 }] },
-      { t: 'bow', tn: '활', name: '브라키디오스 활', e: '폭파', atk: null, ele: null, crit: null, x: ['Lv1 관통', 'Lv1 관통', 'Lv4 연사', 'Lv4 연사'] },
-    ],
-  },
-  {
-    key: 'a-somna', name: '이소네미쿠니 아종', en: 'Aurora Somnacanth',
-    u: 99, id: 9999, g: 0, o: 999,
-    pieces: {
-      helm: { name: '이소네미쿠니 아종 머리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '하이 차지【얼음】', lv: 2 }], slot: 1 },
-      mail: { name: '이소네미쿠니 아종 몸', skills: [{ s: '차지 스톡', lv: 1 }, { s: '차지 마스터', lv: 2 }], slot: 1 },
-      gloves: { name: '이소네미쿠니 아종 팔', skills: [{ s: '록온', lv: 1 }, { s: '흉회심', lv: 1 }, { s: '전심전력', lv: 1 }], slot: 1 },
-      belt: { name: '이소네미쿠니 아종 허리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '차지 스톡', lv: 2 }], slot: 1 },
-      greaves: { name: '이소네미쿠니 아종 다리', skills: [{ s: '얼음속성 공격 강화·경지', lv: 1 }, { s: '절대 회피【SP】', lv: 1 }, { s: '매진', lv: 1 }], slot: 1 },
-    },
-    /* 무기는 소개 이미지의 무기종 아이콘 7종만(쌍검·대검·태도·해머·수렵피리·차지액스·조충곤).
-       병(강속성병=차지액스)·사냥벌레·선율 정보도 그 7종과 맞아떨어진다. */
-    weaponSkills: [{ s: '속성 공격 증강【SP】', lv: 1 }],
-    weapons: [
-      { t: 'great-sword', tn: '대검', name: '이소네미쿠니 아종 대검', e: '얼음', atk: null, ele: null, crit: null, x: null },
-      { t: 'long-sword', tn: '태도', name: '이소네미쿠니 아종 태도', e: '얼음', atk: null, ele: null, crit: null, x: null },
-      { t: 'dual-blades', tn: '쌍검', name: '이소네미쿠니 아종 쌍검', e: '얼음', atk: null, ele: null, crit: null, x: null },
-      { t: 'hammer', tn: '해머', name: '이소네미쿠니 아종 해머', e: '얼음', atk: null, ele: null, crit: null, x: null },
-      { t: 'hunting-horn', tn: '수렵피리', name: '이소네미쿠니 아종 수렵피리', e: '얼음', atk: null, ele: null, crit: null, x: ['진동 무효', '청각 보호【대】', '고주파 충격파'] },
-      { t: 'charge-blade', tn: '차지액스', name: '이소네미쿠니 아종 차지액스', e: '얼음', atk: null, ele: null, crit: null, x: ['강속성병'] },
-      { t: 'insect-glaive', tn: '조충곤', name: '이소네미쿠니 아종 조충곤', e: '얼음', atk: null, ele: null, crit: null, x: ['가루형', '절단', '퀵', '채취 제한 해제'] },
-    ],
-  },
 ];
-
-/* 수동 몬스터 무기 수치. 같은 세트의 무기에 일괄 적용해 값이 어긋나지 않게 한다. */
-const HAND_WEAPON_SPECS = {
-  brachy: {
-    base: { e: '폭파', atk: 2007, ele: 416, crit: 10 },
-    alt: { e: null, atk: 2510, ele: null, crit: 0 }, altTypes: new Set(['light-gun', 'heavy-gun']),
-  },
-  'a-somna': { base: { e: '얼음', atk: 1450, ele: 1614, crit: -20 } },
-};
-for (const [key, spec] of Object.entries(HAND_WEAPON_SPECS)) {
-  const set = HAND_SETS.find(s => s.key === key);
-  for (const weapon of set.weapons) Object.assign(weapon,
-    spec.altTypes?.has(weapon.t) ? spec.alt : spec.base);
-}
 
 /* 공식 목록에 아직 없는, 게임에서 확인한 기존 몬스터 무기.
    같은 소재의 기존 무기 수치·속성을 복사하고 종류별 특성만 여기서 덮는다. */
@@ -416,6 +348,10 @@ async function main() {
   const monKo = pickTable(ko, 'anja:"안쟈나프"');
   for (const k of Object.keys(monKo)) if (MON_KO_FIX[monKo[k]]) monKo[k] = MON_KO_FIX[monKo[k]];
   const monEn = pickTable(src, 'anja:"Anjanath"');
+  for (const [source, key] of Object.entries(SET_KEYS)) {
+    monKo[key] = monKo[source];
+    monEn[key] = monEn[source];
+  }
   const skillName = skillNamer(skillKo, official);
 
   /* 무기 스킬. 소재 공통은 raw.weapon 이지만, 종류마다 스킬이 다른 소재는 종류 키에
@@ -431,11 +367,14 @@ async function main() {
   const warn = [];
   const kinMiss = [];
 
-  for (const [key, raw] of Object.entries(B8)) {
+  for (const [source, raw] of Object.entries(B8)) {
+    const key = SET_KEYS[source] || source;
+    if (onlySets && !onlySets.includes(key)) continue;
+    if (HAND_SETS.some(s => s.key === key)) continue;
     const en = monEn[key] || key;
     const cands = slugCandidates(en);
     const slug = SLUG_FIX[key] || cands.find(c => armorSets.has(c)) || null;
-    const mon = I8[key] || {};
+    const mon = I8[source] || {};
 
     const pieces = {};
     for (const s of SLOTS) {
@@ -494,7 +433,7 @@ async function main() {
       const atk = curve && K7[curve.base] ? K7[curve.base].at(-1) : null;
       const ele = curve && curve.ele && K7[curve.ele] ? K7[curve.ele].at(-1) : null;
       /* 회심(%). 음수인 무기가 많아 0 과 없음을 구분해야 한다. */
-      const crit = curve && curve.crit && K7[curve.crit] ? K7[curve.crit].at(-1) : null;
+      const crit = curve && curve.crit && K7[curve.crit] ? K7[curve.crit].at(-1) : (curve ? 0 : null);
       weapons.push({
         t: wkey, tn: wko, name,
         e: elem && elem !== 'white' ? ELEM_KO[elem] || elem : null,
@@ -531,10 +470,17 @@ async function main() {
   }
 
   for (const h of HAND_SETS) {
-    if (B8[h.key]) process.stderr.write(`번들에 ${h.key} 가 생겼습니다 — HAND_SETS 에서 지우세요 (번들 값 사용)\n`);
-    else sets.push(h);
+    if (onlySets && !onlySets.includes(h.key)) continue;
+    sets.push(h);
   }
 
+  if (onlySets) {
+    for (const key of onlySets) {
+      if (!sets.some(s => s.key === key)) throw new Error(`원본에 ${key} 세트가 없습니다`);
+    }
+    const current = new Function(fs.readFileSync(path.join(__dirname, '..', 'build-data.js'), 'utf8') + ';return BUILD;')();
+    sets.push(...current.sets.filter(s => !onlySets.includes(s.key)));
+  }
   sets.sort((a, b) => a.g - b.g || a.u - b.u || a.id - b.id);
 
   const out = {
@@ -556,11 +502,15 @@ async function main() {
 
   /* 아이콘 받는 도구가 쓸 영문 이름표. 참조 사이트가 «great_jagras» 처럼 영문
      스네이크로 파일을 두어서, 짧은 키(g-jagr)만으로는 주소를 만들 수 없습니다. */
+  const oldEn = onlySets ? JSON.parse(fs.readFileSync(path.join(DATA, 'monster-en.json'), 'utf8')) : {};
   fs.writeFileSync(path.join(DATA, 'monster-en.json'),
-    JSON.stringify(Object.fromEntries(sets.map(s => [s.key, monEn[s.key] || s.en || s.key])), null, 1) + '\n');
+    JSON.stringify(Object.fromEntries(sets.map(s => [s.key,
+      (onlySets && !onlySets.includes(s.key) ? oldEn[s.key] : monEn[s.key]) || s.en || s.key])), null, 1) + '\n');
 
-  process.stdout.write('/* 자동 생성 파일 — tools/build-builddata.js 로 다시 만듭니다. 직접 수정하지 마세요. */\n'
-    + 'const BUILD = ' + JSON.stringify(out) + ';\n');
+  const output = '/* 자동 생성 파일 — tools/build-builddata.js 로 다시 만듭니다. 직접 수정하지 마세요. */\n'
+    + 'const BUILD = ' + JSON.stringify(out) + ';\n';
+  if (process.argv.includes('--write')) fs.writeFileSync(path.join(__dirname, '..', 'build-data.js'), output);
+  else process.stdout.write(output);
 }
 
 main().catch(e => { process.stderr.write('실패: ' + e.message + '\n'); process.exit(1); });

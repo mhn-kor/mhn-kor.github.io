@@ -85,7 +85,7 @@ check('가디언 이벤트 방어구는 다섯 부위와 표류 슬롯을 가진
   }
 });
 
-check('수동 몬스터 무기는 확인한 수치와 전용 정보를 쓴다', () => {
+check('공식 전환 몬스터 무기는 10-5 수치와 전용 정보를 쓴다', () => {
   const brachy = BUILD.sets.find(s => s.key === 'brachy');
   assert.ok(!brachy.weaponSpecNote, '10-1 기준 안내가 남아 있습니다');
   for (const w of brachy.weapons) {
@@ -93,12 +93,48 @@ check('수동 몬스터 무기는 확인한 수치와 전용 정보를 쓴다', 
     assert.deepStrictEqual([w.e, w.atk, w.ele, w.crit], gun ? [null, 2510, null, 0] : ['폭파', 2007, 416, 10]);
     assert.strictEqual(JSON.stringify(bdWSkills(brachy, w)), gun ? '[{"s":"포술","lv":1}]' : '[{"s":"추가 공격【폭파】","lv":1}]');
   }
-  assert.strictEqual(JSON.stringify(brachy.weapons.find(w => w.t === 'bow').x), '["Lv1 관통","Lv1 관통","Lv4 연사","Lv4 연사"]');
+  assert.strictEqual(JSON.stringify(brachy.weapons.find(w => w.t === 'bow').x), '["Lv1 확산","Lv1 확산","Lv4 연사","Lv4 연사"]');
   const somna = BUILD.sets.find(s => s.key === 'a-somna');
   assert.ok(!somna.weaponSpecNote, '10-1 기준 안내가 남아 있습니다');
   for (const w of somna.weapons) {
     assert.deepStrictEqual([w.e, w.atk, w.ele, w.crit], ['얼음', 1450, 1614, -20]);
     assert.strictEqual(JSON.stringify(bdWSkills(somna, w)), '[{"s":"속성 공격 증강【SP】","lv":1}]');
+  }
+});
+
+check('공식 전환은 임시 키를 유지하고 장비 이름·슬롯을 가져온다', () => {
+  const names = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/official-names.json'), 'utf8'));
+  const parts = { helm: 'head', mail: 'chest', gloves: 'arms', belt: 'waist', greaves: 'legs' };
+  const types = { 'shield-sword': 'swordshield', 'great-sword': 'greatsword', 'long-sword': 'longsword',
+    'dual-blades': 'dualblades', hammer: 'hammer', 'hunting-horn': 'huntinghorn', lance: 'lance',
+    gunlance: 'gunlance', 'switch-axe': 'switchaxe', 'charge-blade': 'chargeblade',
+    'insect-glaive': 'insectglaive', 'light-gun': 'lightbowgun', 'heavy-gun': 'heavybowgun', bow: 'bow' };
+  for (const [key, slug, id, count] of [['brachy', 'brachydios', 85, 14], ['a-somna', 'aurora_somnacanth', 86, 7]]) {
+    const sets = BUILD.sets.filter(s => s.key === key);
+    assert.strictEqual(sets.length, 1, `${key} 중복/누락`);
+    const set = sets[0];
+    assert.strictEqual(set.id, id);
+    assert.strictEqual(set.u, 5);
+    assert.strictEqual(set.weapons.length, count);
+    for (const [part, suffix] of Object.entries(parts)) {
+      assert.strictEqual(set.pieces[part].name, names.armor[`${slug}_${suffix}`]);
+      assert.strictEqual(set.pieces[part].slot, 1);
+    }
+    for (const w of set.weapons) assert.strictEqual(w.name, names.weapon[`${slug}_${types[w.t]}`]);
+    const old = { ...bdNewBuild(), w: key, wt: 'great-sword',
+      helm: key, mail: key, gloves: key, belt: key, greaves: key };
+    const back = bdParse(bdShareParam(old));
+    for (const field of ['w', 'wt', ...BUILD.parts.map(p => p.k)]) assert.strictEqual(back[field], old[field]);
+    assert.ok(new Map(bdTotals(back)).get('록온') >= 1, '옛 빌드의 방어구 스킬 누락');
+  }
+  assert.ok(!BUILD.sets.some(s => ['brac', 'a-somn'].includes(s.key)), '원본 키가 중복 세트를 만들었습니다');
+});
+
+check('공식 공개된 세 스킬은 임시 번역 대신 공식 설명을 사용한다', () => {
+  for (const n of ['추가 공격【폭파】', '포술·경지', '차지 스톡']) {
+    assert.ok(!vm.runInContext('SKILLDESC_MANUAL', ctx)[n], `${n} 임시 설명 잔존`);
+    const levels = vm.runInContext('SKILLDESC', ctx)[n];
+    for (const [lv, desc] of levels) assert.strictEqual(bdSkillDesc(n, lv), desc);
   }
 });
 

@@ -304,5 +304,17 @@
   "attack": "CUT",
   "perf": "POWER",
   "bonus": "POWDER_TYPE_2"
+ },
+ "brachydios_insectglaive": {
+  "type": "SMASH",
+  "attack": "BLUNT",
+  "perf": "POWER",
+  "bonus": "SMASH_TYPE_2"
+ },
+ "aurora_somnacanth_insectglaive": {
+  "type": "POWDER",
+  "attack": "CUT",
+  "perf": "QUICK",
+  "bonus": "ENHANCEMENT_HARVEST_UP"
  }
 }

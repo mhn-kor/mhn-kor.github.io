@@ -344,7 +344,17 @@
   "velkhana_chest": "라비나메일",
   "velkhana_arms": "라비나암",
   "velkhana_waist": "라비나코일",
-  "velkhana_legs": "라비나그리브"
+  "velkhana_legs": "라비나그리브",
+  "aurora_somnacanth_head": "이소네U헬름",
+  "aurora_somnacanth_chest": "이소네U메일",
+  "aurora_somnacanth_arms": "이소네U암",
+  "aurora_somnacanth_waist": "이소네U코일",
+  "aurora_somnacanth_legs": "이소네U그리브",
+  "brachydios_head": "브라키헬름",
+  "brachydios_chest": "브라키메일",
+  "brachydios_arms": "브라키암",
+  "brachydios_waist": "브라키코일",
+  "brachydios_legs": "브라키그리브"
  },
  "weapon": {
   "ore_swordshield": "헌터나이프",
@@ -1041,6 +1051,27 @@
   "seregios_bow": "샬라알나슬",
   "shogunceanataur_bow": "블루블레이드보우",
   "velkhana_bow": "빙요 이베리아",
-  "bone_bow": "헌터보우"
+  "bone_bow": "헌터보우",
+  "brachydios_swordshield": "디오스에지",
+  "aurora_somnacanth_dualblades": "설화의스노클로",
+  "brachydios_dualblades": "디오스뱅어",
+  "aurora_somnacanth_greatsword": "설화의스노드로",
+  "brachydios_greatsword": "디오스블레이드",
+  "aurora_somnacanth_longsword": "설화의 스노포",
+  "brachydios_longsword": "디오스시미터",
+  "aurora_somnacanth_hammer": "설화의스노블로",
+  "brachydios_hammer": "디오스테일",
+  "aurora_somnacanth_huntinghorn": "설화의스노폴로",
+  "brachydios_huntinghorn": "디오스호른",
+  "brachydios_lance": "디오스할버드",
+  "brachydios_gunlance": "디오스버스터",
+  "brachydios_switchaxe": "디오스스매셔",
+  "aurora_somnacanth_chargeblade": "설화의스노베로",
+  "brachydios_chargeblade": "디오스암즈",
+  "aurora_somnacanth_insectglaive": "설화의 스노플로",
+  "brachydios_insectglaive": "디오스로드",
+  "brachydios_lightbowgun": "디오스샷",
+  "brachydios_heavybowgun": "디오스캐논",
+  "brachydios_bow": "디오스애로우"
  }
 }

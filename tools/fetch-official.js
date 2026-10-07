@@ -54,7 +54,7 @@ async function pool(items, fn) {
   await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
     while (i < items.length) {
       const k = i++;
-      try { out[k] = await fn(items[k]); } catch (e) { out[k] = { err: e.message }; }
+      try { out[k] = await fn(items[k]); } catch (e) { out[k] = { slug: items[k], err: e.message }; }
     }
   }));
   return out;
@@ -62,26 +62,34 @@ async function pool(items, fn) {
 
 async function main() {
   const all = process.argv.includes('--all');
+  const onlySets = process.argv.find(a => a.startsWith('--sets='))?.slice(7).split(',');
+  const selected = slug => !onlySets || onlySets.some(s => slug.startsWith(s + '_'));
   const file = path.join(OUT, 'official-names.json');
   const old = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { armor: {}, weapon: {} };
 
-  const names = { armor: {}, weapon: {} };
-  const skillUrls = {};
+  const names = onlySets ? { armor: { ...old.armor }, weapon: { ...old.weapon } } : { armor: {}, weapon: {} };
+  const skillUrls = onlySets
+    ? JSON.parse(fs.readFileSync(path.join(OUT, 'skill-urls.json'), 'utf8')) : {};
   let fetched = 0;
   const failed = [];
+  const relatedSkills = new Set();
 
   for (const kind of ['armor', 'weapon', 'skill']) {
+    if (onlySets && kind === 'skill') continue;
     const seg = SEG[kind];
-    const list = slugs(await get(INDEX[kind]), seg);
+    const list = slugs(await get(INDEX[kind]), seg).filter(selected);
+    if (!list.length) throw new Error(`${kind} 공식 목록이 비어 있습니다`);
     process.stderr.write(`${kind}: ${list.length}개\n`);
 
     const known = kind === 'skill' ? {} : (old[kind] || {});
-    const need = all || kind === 'skill' ? list : list.filter(s => !known[s]);
+    const need = all || onlySets || kind === 'skill' ? list : list.filter(s => !known[s]);
     if (need.length) process.stderr.write(`  이름 받는 중 ${need.length}개…\n`);
 
     const got = await pool(need, async (slug) => {
       fetched++;
-      return { slug, name: titleOf(await get(`/ko/${seg}/${slug}`)) };
+      const html = await get(`/ko/${seg}/${slug}`);
+      if (onlySets) for (const s of slugs(html, 'skills')) relatedSkills.add(s);
+      return { slug, name: titleOf(html) };
     });
     const fresh = {};
     for (const g of got) {
@@ -98,19 +106,29 @@ async function main() {
     }
   }
 
+  if (onlySets) for (const slug of relatedSkills) {
+    const url = `/ko/skills/${slug}`;
+    if (Object.values(skillUrls).includes(url)) continue;
+    const name = titleOf(await get(url));
+    if (!name) throw new Error(`공식 스킬 이름 없음: ${slug}`);
+    skillUrls[name] = url;
+  }
+  if (onlySets && failed.length) throw new Error(`공식 이름 수집 실패: ${failed.join(', ')}`);
   fs.writeFileSync(file, JSON.stringify(names, null, 1) + '\n');
   fs.writeFileSync(path.join(OUT, 'skill-urls.json'), JSON.stringify(skillUrls, null, 1) + '\n');
 
   /* 조충곤 사냥벌레. 무기 목록 페이지에 전 무기 데이터가 JSON 으로 내장돼 있고,
      조충곤에만 insectGlaiveSpec(타입·공격 계통·성능·보너스 열거값)이 붙습니다.
      mhn.quest 번들이 이 값을 틀리게 담은 적이 있어(쿠루루블레이드) 공식을 정답으로 둡니다. */
-  const kinsect = {};
+  const kinsect = onlySets
+    ? JSON.parse(fs.readFileSync(path.join(OUT, 'kinsect.json'), 'utf8')) : {};
   const wpage = (await get('/ko/weapons')).replace(/&quot;/g, '"');
   let ki = -1;
   while ((ki = wpage.indexOf('"insectGlaiveSpec":{', ki + 1)) >= 0) {
     const id = /"id":"([a-z0-9_]+)"/i.exec(wpage.slice(wpage.lastIndexOf('"id":"', ki), ki));
     const spec = JSON.parse(wpage.slice(ki + 19, wpage.indexOf('}', ki) + 1));
     if (!id || !/_INSECTGLAIVE$/.test(id[1])) continue;
+    if (!selected(id[1].toLowerCase())) continue;
     kinsect[id[1].toLowerCase()] = {
       type: spec.attackType,                                      // SMASH(공투)·PIERCE(비상)·POWDER(가루)
       attack: spec.attackAttribute.replace('ATTACK_ATTRIBUTE_', ''),   // BLUNT(타격)·CUT(절단)

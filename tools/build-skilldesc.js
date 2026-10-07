@@ -32,7 +32,9 @@ function levels(html) {
 
 async function main() {
   const urls = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-  const names = Object.keys(urls);
+  const only = process.argv.find(a => a.startsWith('--only='))?.slice(7).split(',');
+  if (only) for (const name of only) if (!urls[name]) throw new Error(`공식 스킬 주소 없음: ${name}`);
+  const names = only || Object.keys(urls);
   const desc = {};
   const failed = [];
 
@@ -53,14 +55,18 @@ async function main() {
   }));
 
   /* 이름 순이 아니라 원래 순서를 지켜 diff 가 조용하게 나오도록 합니다. */
-  const ordered = {};
+  if (only && failed.length) throw new Error(`공식 설명 수집 실패: ${failed.join(', ')}`);
+  const ordered = only ? new Function(fs.readFileSync(require('path').join(__dirname, '..', 'skill-desc.js'), 'utf8')
+    + ';return SKILLDESC;')() : {};
   for (const n of names) if (desc[n]) ordered[n] = desc[n];
 
-  process.stderr.write(`스킬 ${Object.keys(ordered).length}/${names.length}종\n`);
+  process.stderr.write(`스킬 ${Object.keys(desc).length}/${names.length}종\n`);
   if (failed.length) process.stderr.write(`못 받음 ${failed.length}: ${failed.join(', ')}\n`);
 
-  process.stdout.write('/* 공식 스킬 페이지의 레벨별 설명. tools/build-skilldesc.js 가 만듭니다. */\n');
-  process.stdout.write('const SKILLDESC = ' + JSON.stringify(ordered, null, 0) + ';\n');
+  const output = '/* 공식 스킬 페이지의 레벨별 설명. tools/build-skilldesc.js 가 만듭니다. */\n'
+    + 'const SKILLDESC = ' + JSON.stringify(ordered) + ';\n';
+  if (process.argv.includes('--write')) fs.writeFileSync(require('path').join(__dirname, '..', 'skill-desc.js'), output);
+  else process.stdout.write(output);
 }
 
 main();

@@ -129,5 +129,8 @@
  "마비 내성": "/ko/skills/paralysis_resistance",
  "수면 내성": "/ko/skills/sleep_resistance",
  "열상 내성": "/ko/skills/bleeding_resistance",
- "폭파 피해 내성": "/ko/skills/blast_resistance"
+ "폭파 피해 내성": "/ko/skills/blast_resistance",
+ "차지 스톡": "/ko/skills/charge_stock",
+ "포술·경지": "/ko/skills/artillery_secret",
+ "추가 공격【폭파】": "/ko/skills/pursuit_blast"
 }

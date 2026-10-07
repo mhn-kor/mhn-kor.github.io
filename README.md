@@ -812,6 +812,27 @@ node tools/build-test.js                                       # 무기 스킬 �
 방어구 나열 순서를 `official-names.json` 의 키 순서에서 읽습니다. `fetch-icons.js` 는
 `build-data.js` 를 보고 빠진 아이콘을 찾습니다.
 
+두 몬스터만 갱신하려면 다른 세트·가디언·표류석을 유지하는 아래 명령을 사용합니다.
+공식 이름은 홈페이지에서, 수치·스킬·슬롯은 기존 mhn.quest 원본에서 가져옵니다.
+
+```bash
+node tools/fetch-official.js --sets=brachydios,aurora_somnacanth
+node tools/build-skilldesc.js tools/data/skill-urls.json "--only=추가 공격【폭파】,포술·경지,차지 스톡" --write
+node tools/build-builddata.js --sets=brachy,a-somna --write
+node tools/build-test.js
+```
+
+스킬 인자는 공백이 있으므로 전체를 따옴표로 묶습니다.
+`--write`는 기존 파일을 읽고 생성에 성공한 뒤 저장합니다.
+부분 갱신에 `> build-data.js`나 `> skill-desc.js`를 쓰면 입력 파일부터 비워지므로 사용하지 않습니다.
+원본 키 `brac`·`a-somn`은 사이트 키 `brachy`·`a-somna`로 연결해 기존 저장 빌드와 공유 링크를 유지합니다.
+공식 설명으로 옮긴 스킬은 `skill-desc-overrides.js`에서도 제거하고, 변경 파일의 `index.html` 캐시 버전을 올립니다.
+
+가디언(`guardian`)과 트로피컬캐논(`summer-26`)은 수동 등록을 유지합니다.
+`HAND_SETS`의 값이 최신 원본보다 우선하므로 전체·부분 갱신에서도 이름·스킬·수치가 유지됩니다.
+공식 전환을 승인한 경우에만 해당 수동 항목을 제거합니다.
+생성기를 수정할 때는 `node tools/build-generator-test.js`로 수동 세트 보호도 검사하세요.
+
 > **표류석으로만 붙는 스킬은 `BUILD.maxLv` 에 안 들어옵니다.** 생성기가 「빌드에 실제로
 > 쓰이는 스킬」을 **장비와 무기에서만** 추리기 때문입니다 — 표류석 전용 12종이 그렇게 빠집니다
 > (반사 · 불퇴전 · 앙갚음 · 전화위복 · 차지 마스터 · 더블임팩트 …).
