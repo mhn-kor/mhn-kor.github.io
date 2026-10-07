@@ -852,12 +852,18 @@ function bdOpenSkill(name, lv) {
 }
 
 /* 무기 종류 — 아이콘 격자 */
+function bdTypeAllowed(b, type) {
+  const set = bdSet(b.w);
+  return BUILD.weaponTypes.some(t => t.k === type) && (!set || set.weapons.some(w => w.t === type));
+}
+
 function bdOpenType(bi) {
   bdPick = { kind: 'wt', bi };
-  const cur = bdState.builds[bi].wt;
+  const b = bdState.builds[bi], set = bdSet(b.w);
   bdOpen('무기 종류 변경',
-    `<div class="bd-grid">${BUILD.weaponTypes.map(t => `
-      <button class="bd-gi${t.k === cur ? ' on' : ''}" data-v="${t.k}">
+    `${set ? `<p class="bd-type-note">${esc(set.name)} 소재에 없는 무기군은 선택할 수 없습니다. 다른 무기군을 선택하려면 무기 소재 선택을 해제해주세요.</p>` : ''}
+    <div class="bd-grid">${BUILD.weaponTypes.map(t => `
+      <button class="bd-gi${t.k === b.wt ? ' on' : ''}" data-v="${t.k}"${bdTypeAllowed(b, t.k) ? '' : ' disabled title="선택한 소재에 없는 무기군"'}>
         <img src="assets/part/${esc(t.k)}.png" width="40" height="40" alt="">
         <span>${esc(t.n)}</span>
       </button>`).join('')}</div>`, false);
@@ -1163,8 +1169,8 @@ $('#bd-modal-body').addEventListener('click', e => {
 
   const gi = e.target.closest('.bd-gi');
   if (gi) {
+    if (bdPick.kind !== 'wt' || !bdTypeAllowed(b, gi.dataset.v) || b.wt === gi.dataset.v) return;
     b.wt = gi.dataset.v; b.st = 0;
-    if (!(bdSet(b.w) || {}).weapons?.some(w => w.t === b.wt)) b.w = null;
     bdSave(); bdRender(); return bdDlg().close();
   }
   /* 일괄선택: 스킬 뱃지 빼기. */

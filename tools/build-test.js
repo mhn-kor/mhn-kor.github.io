@@ -13,8 +13,9 @@ const root = path.join(__dirname, '..');
 /* 화면이 없으므로 요소를 흉내만 냅니다. 선택자마다 «같은» 껍데기를 돌려줘야
    bdOpen 이 써 넣은 제목·본문을 되읽어 검사할 수 있습니다. */
 const els = {};
+const handlers = {};
 const $stub = sel => (els[sel] = els[sel]
-  || { hidden: true, dataset: {}, addEventListener() {}, showModal() {}, close() {} });
+  || { hidden: true, dataset: {}, addEventListener(type, fn) { handlers[sel + ':' + type] = fn; }, showModal() {}, close() {} });
 
 const ctx = {
   console,
@@ -352,6 +353,49 @@ check('전부 인코딩된 옛 링크도 그대로 읽힌다', () => {
   const now = bdShareParam(fullBuild());
   const old = encodeURIComponent(decodeURIComponent(now));
   assert.strictEqual(JSON.stringify(bdParse(old)), JSON.stringify(bdParse(now)), '옛 형식 링크가 깨졌습니다');
+});
+
+check('무기군 비활성화 및 소재 선택 유지', () => {
+  vm.runInContext('bdState = { builds: [bdNewBuild(), bdNewBuild()], detail: false };', ctx);
+  const state = vm.runInContext('bdState', ctx);
+  const open = vm.runInContext('bdOpenType', ctx);
+  const buttons = () => els['#bd-modal-body'].innerHTML.match(/<button\b[^>]*data-v="[^"]+"[^>]*>/g);
+  open(0);
+  assert.strictEqual(buttons().length, BUILD.weaponTypes.length);
+  assert.ok(buttons().every(tag => !tag.includes(' disabled')));
+  for (const key of ['a-somna', 'halloween-24', 'mr-beast', 'ore']) {
+    const set = BUILD.sets.find(s => s.key === key);
+    state.builds[0].w = key;
+    state.builds[0].wt = set.weapons[0].t;
+    open(0);
+    for (const tag of buttons()) {
+      const type = tag.match(/data-v="([^"]+)"/)[1];
+      assert.strictEqual(!tag.includes(' disabled'), set.weapons.some(w => w.t === type), `${key}/${type}`);
+    }
+  }
+  const b = state.builds[0];
+  b.w = 'a-somna'; b.wt = 'great-sword'; b.st = 1;
+  open(0);
+  const before = JSON.stringify(state);
+  const click = type => handlers['#bd-modal-body:click']({ target: {
+    closest: sel => sel === '.bd-gi' ? { dataset: { v: type } } : null,
+  } });
+  for (const type of ['bow', 'unknown', 'great-sword']) click(type);
+  assert.strictEqual(JSON.stringify(state), before, '미지원·동일 무기군은 상태를 바꾸면 안 됩니다');
+  vm.runInContext('globalThis.typeTestSave = bdSave; globalThis.typeTestRender = bdRender; bdSave = () => {}; bdRender = () => {};', ctx);
+  try {
+    const other = JSON.stringify(state.builds[1]);
+    click('long-sword');
+    assert.strictEqual(b.w, 'a-somna');
+    assert.strictEqual(b.wt, 'long-sword');
+    assert.strictEqual(b.st, 0);
+    assert.strictEqual(JSON.stringify(state.builds[1]), other);
+    b.w = null; open(0); click('bow');
+    assert.strictEqual(b.w, null);
+    assert.strictEqual(b.wt, 'bow');
+  } finally {
+    vm.runInContext('bdSave = typeTestSave; bdRender = typeTestRender;', ctx);
+  }
 });
 
 /* 이 검사는 $ 를 바꿔치기하므로 맨 마지막에 둡니다. */
