@@ -44,10 +44,18 @@ const WEAPON_KEYS = new Set(WEAPONS.map(w => w[0]));
 const SET_KEYS = { brac: 'brachy', 'a-somn': 'a-somna' };
 const onlySets = process.argv.find(a => a.startsWith('--sets='))?.slice(7).split(',');
 
-/* 이벤트 무기 중에는 공식 목록에도 번들 비용표에도 없는 것이 있다
-   (matUnknown = 재료 미상이라 제작비용 표 자체가 없음).
-   게임에서 확인한 것만 여기 적는다. 비워 두면 종류를 못 좁혀 전 종류로 나온다. */
+/* 공식 장비 목록·공통 제작비용만으로 종류를 판단할 수 없는 이벤트 무기.
+   공식 공지로 확인한 종류·이름을 우선하고 수치·스킬은 번들 값을 쓴다. */
 const EVENT_WEAPONS = {
+  // monsterhunternow.com/ko/news/ 아래의 공식 공지 슬러그.
+  // mrbeast
+  'mr-beast': { types: ['shield-sword'], names: { 'shield-sword': 'MrBeast 소드' } },
+  // halloween-2024
+  'halloween-24': { types: ['long-sword'], names: { 'long-sword': '데스퍼레이션' } },
+  // halloween-2025
+  'halloween-25': { types: ['hunting-horn'], names: { 'hunting-horn': '스컬휘슬' } },
+  // holidays2025-2026
+  'winter-25': { types: ['dual-blades', 'bow'], names: { 'dual-blades': '트윈리스', bow: '래핑애로우' } },
   'spring-26': { types: ['light-gun'], names: { 'light-gun': '로즈어썰트' } },
 };
 
