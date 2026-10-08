@@ -69,21 +69,76 @@ function bdSlotCount(b, part) {
    조건이 붙은 스킬(«약점을 공격하면 …», «체력이 최대일 때 …»)은 상시 수치가 아니라
    빼고, 조건어가 효과 앞에 오는지로 가릅니다. */
 const BD_COND = /때|하면|되면|중에는|동안|이하|뒤|그룹 사냥|사용 시|공격 시|명중|가드|부활|포효|모으기|상태 중/;
+const BD_DAMAGE_SCOPE = {
+  '비연': '공중 공격 기준', '추격': '몬스터 부위 파괴 후', '불퇴전': '회피 없이 10초 경과',
+  '특수 스킬 위력 상승': 'SP 특수 스킬 공격 기준', '적정 거리 위력 UP': '적정 거리의 탄·화살 기준',
+  '통상탄·속성 통상탄 강화': '지정된 통상탄·속성탄 기준',
+  '참렬탄/속성 참렬탄 강화': '지정된 참렬탄·속성 참렬탄 기준',
+};
 
-function bdEffects(desc) {
-  /* «Lv5 이상의 '공격' 스킬이 발동 중일 때» 는 전투 조건이 아니라 빌드 조건이라,
-     그 스킬이 실제로 그 레벨이면 켭니다(공격·경지 등). */
-  const gate = /Lv(\d+) 이상의 '(.+?)' 스킬이 발동 중일 때/.exec(desc);
-  const need = gate ? { s: gate[2], lv: +gate[1] } : null;
-  /* 체력 게이지는 만피(BD_BASE_HP) 기준으로 봅니다. 하이 차지가 «남은 체력 게이지» 를
-     쓰는 것과 같은 전제라, «체력이 최대일 때» 조건은 늘 만족합니다(완전 충전).
-     반대로 «29% 이하» 나 «부활하면» 같은 조건은 만피에서 성립하지 않아 그대로 둡니다. */
+/* 경지 설명의 순서 차이를 흡수한다. 데이터에 설명이 추가되면 원래 스킬에 연결된다. */
+function bdSkillGate(desc) {
+  let m = /Lv(\d+) 이상의 '(.+?)' 스킬이 발동 중일 때/.exec(desc);
+  if (m) return { s: m[2], lv: +m[1], end: m.index + m[0].length };
+  m = /(?:스킬 '(.+?)'|(.+?)) Lv(\d+) 이상이 (?:발동 중일 때|활성화되어 있을 때)/.exec(desc);
+  return m ? { s: m[1] || m[2], lv: +m[3], end: m.index + m[0].length } : null;
+}
+
+function bdCombineEffects(effects) {
+  const list = [], fields = ['k', 'el', 'hpx'];
+  for (const e of effects) {
+    const same = list.find(x => fields.every(k => x[k] === e[k])
+      && ['pct', 'onCrit', 'perBaseCrit'].every(k => !!x[k] === !!e[k])
+      && Number.isFinite(x.v) && Number.isFinite(e.v));
+    if (same) same.v += e.v; else list.push({ ...e });
+  }
+  return list;
+}
+
+function bdEffects(desc, name = '', weapon = null) {
+  /* 부위 파괴 축적은 HP 대미지가 아니다. 동작 한정 효과도 일반 대미지와 구분한다. */
+  if (name.startsWith('파괴왕') || ['라스트 샷', '후발 주자', '각성의 일격', '사냥꾼의 결속'].includes(name)) return [];
+  if (BD_DAMAGE_SCOPE[name]) {
+    const m = /대미지가 (\d+)% (?:상승|증가)/.exec(desc);
+    return m ? [{ k: 'dmg', pct: 1, v: +m[1], cond: true, scope: BD_DAMAGE_SCOPE[name] }] : [];
+  }
+  if (['추가 공격【독】', '추가 공격【마비】'].includes(name)) {
+    const m = /(독|마비) 상태인 몬스터에게 주는 대미지가 (\d+)%/.exec(desc);
+    return m ? [{ k: 'dmg', pct: 1, v: +m[2], cond: true, scope: `몬스터 ${m[1]} 상태` }] : [];
+  }
+  if (name === '힘의 해방') {
+    const m = /회심률이 \+?(\d+)%/.exec(desc);
+    return m ? [{ k: 'crit', v: +m[1], cond: true, scope: '발동 조건 충족' }] : [];
+  }
+  if (name === '공격 증강【회심】') {
+    const m = /무기 회심률 1%당 공격력이 (\d+)/.exec(desc);
+    return m ? [{ k: 'atk', v: +m[1], perBaseCrit: true }] : [];
+  }
+  if (name === '용맹') {
+    const m = /공격력이 (\d+)/.exec(desc);
+    return m ? [{ k: 'atk', v: +m[1], cond: true, scope: '첫 포효 이후' }] : [];
+  }
+  if (name === '차지 마스터') {
+    const m = /무기의 속성 공격력이 (\d+)%/.exec(desc);
+    return m && ['불', '물', '번개', '얼음', '용'].includes(weapon?.e)
+      ? [{ k: 'ele', pct: 1, v: +m[1], cond: true, scope: '모으기 공격 기준' }] : [];
+  }
+  if (name === '유타·향음 강화') {
+    const m = /대미지가 (\d+)% (?:상승|증가)/.exec(desc);
+    return m && ['hammer', 'hunting-horn'].includes(weapon?.t)
+      ? [{ k: 'dmg', pct: 1, v: +m[1], cond: true,
+        scope: weapon.t === 'hammer' ? '모으기 공격 기준' : '향음 공격 기준' }] : [];
+  }
+  // 포술 계열은 별도 작업 대상이므로 기존 처리를 유지한다.
+  const gate = name === '포술·경지' ? null : bdSkillGate(desc);
+  const need = gate ? { s: gate.s, lv: gate.lv } : null;
+  /* 완전 충전도 전투 조건이므로 만피를 가정해 자동으로 켜지 않는다.
+     하이 차지용 체력 계산의 만피 가정과 조건부 스킬 체크는 별개다. */
   /* «회심 공격 시» 는 조건이 아니라 회심 그 자체입니다. 점수는 이미 회심 확률로
      기대값을 내므로 전부 켜거나 끄는 게 아니라 확률만큼 섞여야 합니다.
      문구를 떼어내고 onCrit 로 표시해 뒤에서 확률을 곱합니다. */
   const onCrit = /회심 공격 시/.test(desc);
-  const body = (gate ? desc.slice(gate.index + gate[0].length) : desc)
-    .replace(/체력이 최대일 때\s*/g, '')
+  const body = (gate ? desc.slice(gate.end) : desc)
     .replace(/회심 공격 시\s*/g, '');
   const out = [];
   const scan = (src, fn) => {
@@ -108,13 +163,15 @@ function bdEffects(desc) {
      속성 정액(D)이지만 값이 체력에 달려 있어 배수만 담아 둡니다. */
   scan('남은 체력 게이지의 (\\d+)배만큼 (\\S+?)속성 공격력이 증가',
     (m, c) => out.push({ onCrit, k: 'ele', hpx: +m[1], el: m[2], need, cond: c }));
-  return out;
+  // 흉회심은 체크 조건이 아니라 역회심 발생 확률에 포함되는 상시 기대값이다.
+  return name === '흉회심' ? out.map(e => ({ ...e, k: e.k === 'critx' ? 'negcritx' : e.k, cond: false })) : out;
 }
 
 /* 속성 % 중 이 셋만 승산(E)이고 나머지는 가산(C)입니다. 참조 글의 분류를 따릅니다. */
 const BD_ELE_MUL = new Set(['강룡의 얼음바람', '명룡의 파뢰', '환수의 벼락', '은작룡의 홍혈', '빙룡의 얼음 갑옷']);
 /* 회심은 1.25배, 마이너스 회심은 0.75배. 슈퍼회심이 있으면 1.25 자리가 올라갑니다. */
 const BD_CRIT_UP = 1.25, BD_CRIT_DOWN = 0.75;
+const BD_BRUTAL_RATE = 0.3; // 역회심 발생 중 흉회심으로 바뀌는 확률
 /* 기본 체력. 하이 차지가 «남은 체력 게이지» 를 쓰므로 만피 기준으로 잡습니다. */
 const BD_BASE_HP = 100;
 
@@ -146,24 +203,34 @@ function bdSkillDesc(name, lv) {
 function bdStats(b) {
   const w = bdWeaponOf(b);
   const base = { atk: (w && w.atk) || 0, ele: (w && w.ele) || 0, crit: (w && w.crit) || 0 };
-  let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, critX = BD_CRIT_UP, crit = base.crit;
+  let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, critX = BD_CRIT_UP, negCritX = null, crit = base.crit;
   const lvOf = new Map(bdTotals(b));
   const on = b.cond || {};
 
   /* 효과를 먼저 다 모읍니다. 조건부는 켜 둔 것만 씁니다.
      조건부 목록은 화면에서 켜고 끌 수 있도록 그대로 돌려줍니다. */
   const eff = [];
-  const conds = [];
-  for (const [name, lv] of lvOf) {
-    const list = bdEffects(bdSkillDesc(name, lv) || '');
-    if (!list.length) continue;
-    if (list.some(e => e.cond)) conds.push({ sk: name, lv, list: list.filter(e => e.cond) });
+  const entries = [...lvOf].map(([name, lv]) => ({ name, lv, list: bdEffects(bdSkillDesc(name, lv) || '', name, w) }));
+  const eligible = e => !e.need || (lvOf.get(e.need.s) || 0) >= e.need.lv;
+  const conditional = new Map();
+  for (const { name, lv, list } of entries) {
+    const active = list.filter(e => e.cond && eligible(e));
+    if (active.length) conditional.set(name, { sk: name,
+      lv: Math.min(lv, bdSkillLevels(name)?.at(-1)[0] ?? lv), list: active, applied: [] });
+  }
+  for (const { name, list } of entries) {
     for (const e of list) {
-      if (e.need && (lvOf.get(e.need.s) || 0) < e.need.lv) continue;
-      if (e.cond && !on[name]) continue;
+      if (!eligible(e)) continue;
+      const parent = e.need && conditional.get(e.need.s);
+      if (parent) {
+        parent.list.push(e);
+        if (!parent.applied.includes(name)) parent.applied.push(name);
+      }
+      if ((parent || e.cond) && !on[parent ? parent.sk : name]) continue;
       eff.push({ ...e, sk: name });
     }
   }
+  const conds = [...conditional.values()].map(c => ({ ...c, list: bdCombineEffects(c.list) }));
 
   /* 순서가 있습니다. 하이 차지가 체력을 쓰고, «회심 공격 시» 효과가 회심률을 씁니다. */
   const hp = BD_BASE_HP + eff.reduce((n, e) => n + (e.k === 'hp' ? e.v : 0), 0);
@@ -171,11 +238,14 @@ function bdStats(b) {
   const p = Math.max(0, Math.min(100, crit)) / 100;   // 마이너스 회심은 회심이 안 터집니다
 
   for (const e of eff) {
-    if (e.k === 'atk') { if (e.pct) B += e.v / 100; else A += e.v; continue; }
-    /* 회심 공격 시 터지는 배율만 받습니다. 흉회심의 «마이너스 회심 발동 시» 배율도
-       같은 k 로 오는데, critX 는 아래에서 양수 회심에만 곱해지므로 그대로 받으면
-       회심이 내려갔는데 점수가 오르는 정반대 결과가 됩니다. */
+    if (e.k === 'atk') {
+      // 스타일강화 연결 시 base.crit에 스타일 회심도 포함한다. 스킬 회심(crit)은 제외.
+      if (e.pct) B += e.v / 100; else A += e.v * (e.perBaseCrit ? Math.max(base.crit, 0) : 1);
+      continue;
+    }
+    /* 양수 회심과 흉회심의 배율을 따로 보관한다. */
     if (e.k === 'critx') { if (e.onCrit) critX = Math.max(critX, e.v / 100); continue; }
+    if (e.k === 'negcritx') { negCritX = e.v / 100; continue; }
     if (e.k === 'dmg') { F += e.v / 100; continue; }
     if (e.k === 'ele') {
       /* 속성 강화는 무기 속성이 같을 때만 붙습니다. 속성 표기가 없으면 어떤 속성이든 붙습니다. */
@@ -195,10 +265,12 @@ function bdStats(b) {
   };
   /* 회심 기대 배율. 양수면 회심이, 음수면 역회심이 그 확률만큼 섞입니다. */
   const q = Math.max(-100, Math.min(100, now.crit)) / 100;
-  const G = 1 + (q >= 0 ? q * (critX - 1) : -q * (BD_CRIT_DOWN - 1));
+  const r = Math.max(0, -q);
+  const G = q >= 0 ? 1 + q * (critX - 1) : negCritX == null ? 1 + r * (BD_CRIT_DOWN - 1)
+    : r * BD_BRUTAL_RATE * negCritX + r * (1 - BD_BRUTAL_RATE) * BD_CRIT_DOWN + (1 - r);
   const score = Math.round((now.atk + now.ele) * F * G);
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
-  return { base, now, score, hp, conds, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX } };
+  return { base, now, score, hp, conds, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX, negCritX } };
 }
 
 function bdTotals(b) {
@@ -228,10 +300,10 @@ function bdCondList(b) {
   return `<div class="bd-cond">
     <p class="bd-cdh">조건부 스킬 <b>${n}/${conds.length}</b> <i>켠 것만 점수에 들어갑니다</i></p>
     ${conds.map(c => {
-      const what = c.list.map(e => `${BD_KIND[e.k] || e.k} ${e.v > 0 ? '+' : ''}${e.v}${e.pct || e.k === 'crit' || e.k === 'critx' ? '%' : ''}`).join(' · ');
+      const what = c.list.map(e => `${e.scope ? e.scope + ' · ' : ''}${BD_KIND[e.k] || e.k} ${e.v > 0 ? '+' : ''}${e.v}${e.pct || e.k === 'crit' || e.k === 'critx' ? '%' : ''}`).join(' · ');
       return `<label class="bd-cl${on[c.sk] ? ' on' : ''}">
         <input type="checkbox" data-cond="${bi}:${esc(c.sk)}"${on[c.sk] ? ' checked' : ''}>
-        <span>${esc(c.sk)} <b>${c.lv}</b></span>
+        <span>${esc(c.sk)} <b>${c.lv}</b>${c.applied.length ? ` <small>(${esc(c.applied.join(' · '))} 적용)</small>` : ''}</span>
         <i>${esc(what)}</i>
       </label>`;
     }).join('')}
@@ -762,15 +834,19 @@ function bdCalc(b) {
   if (base.ele) {
     rows.push(`<span>속성</span><i>(${base.ele} × ${f(co.C)}${co.D ? ` + ${co.D}` : ''})${co.E !== 1 ? ` × ${f(co.E)}` : ''} = <b>${now.ele}</b></i>`);
   }
-  /* 회심은 확률이라 기대 배율로 넣습니다. 양수는 ×${critX}, 음수는 ×0.75 가 그 확률만큼 섞입니다. */
-  rows.push(`<span>회심</span><i>${now.crit}% → 기대배율 <b>${f(co.G)}</b>${now.crit >= 0 ? ` (회심 ×${f(co.critX)})` : ' (역회심 ×0.75)'}</i>`);
+  const brutal = now.crit < 0 && co.negCritX != null;
+  rows.push(`<span>회심</span><i>${now.crit}% → 기대배율 <b>${f(co.G)}</b>${now.crit >= 0 ? ` (회심 ×${f(co.critX)})` : brutal ? ' (역회심 중 30% 확률로 흉회심)' : ' (역회심 ×0.75)'}</i>`);
+  if (brutal) {
+    const r = Math.min(100, -now.crit) / 100;
+    rows.push(`<span>흉회심</span><i>${f(r)} × ${BD_BRUTAL_RATE} × ${f(co.negCritX)} + ${f(r)} × ${f(1 - BD_BRUTAL_RATE)} × ${BD_CRIT_DOWN} + ${f(1 - r)} = <b>${f(co.G)}</b></i>`);
+  }
   if (co.F !== 1) rows.push(`<span>대미지</span><i>× <b>${f(co.F)}</b></i>`);
   rows.push(`<span>점수</span><i>(${now.atk}${base.ele ? ` + ${now.ele}` : ''})${co.F !== 1 ? ` × ${f(co.F)}` : ''} × ${f(co.G)} = <b>${score}</b></i>`);
 
   return `<div class="bd-calc">
     ${rows.map(r => `<p>${r}</p>`).join('')}
     ${bdCondList(b)}
-    <p class="bd-note">체력은 만피(${BD_BASE_HP} + 체력 스킬) 기준입니다. 모션치·육질은 공격 동작과 부위마다 달라 1로 둡니다 — 빌드끼리 비교하는 상대값입니다.</p>
+    <p class="bd-note">하이 차지용 체력은 만피(${BD_BASE_HP} + 체력 스킬) 기준입니다. 조건부 스킬은 체크한 경우에만 반영합니다. 모션치·육질은 공격 동작과 부위마다 달라 1로 둡니다 — 빌드끼리 비교하는 상대값입니다.</p>
   </div>`;
 }
 

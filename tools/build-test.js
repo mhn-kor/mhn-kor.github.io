@@ -49,6 +49,272 @@ const check = (label, fn) => {
   try { fn(); } catch (e) { fail++; console.log('✗ ' + label + '\n  ' + e.message); }
 };
 
+/* 테스트 장비로 실제 스킬 합계·계산·조건 체크 표시를 함께 통과시킨다. */
+function calcSkills(skills, weapon = {}, cond = {}) {
+  const set = { key: 'calc-test', name: '계산 테스트', pieces: {},
+    weaponSkills: skills.map(([s, lv]) => ({ s, lv })),
+    weapons: [{ t: 'hammer', atk: 1000, ele: 500, crit: 0, e: '불', ...weapon }] };
+  const state = vm.runInContext('bdState', ctx);
+  const b = { ...bdNewBuild(), w: set.key, wt: set.weapons[0].t, cond };
+  BUILD.sets.push(set); state.builds.push(b); ctx.calcTestBuild = b;
+  try {
+    return { stats: vm.runInContext('bdStats(calcTestBuild)', ctx),
+      html: vm.runInContext('bdCalc(calcTestBuild)', ctx) };
+  } finally {
+    BUILD.sets.pop(); state.builds.pop(); delete ctx.calcTestBuild;
+  }
+}
+
+check('파괴왕 3종은 모든 레벨에서 대미지와 조건부 체크에 들어가지 않는다', () => {
+  const baseline = calcSkills([]).stats;
+  for (const name of ['파괴왕', '파괴왕【특수 스킬】', '파괴왕【꼬리】']) {
+    for (const [lv] of bdSkillLevels(name)) {
+      const { stats, html } = calcSkills([[name, lv]], {}, { [name]: true });
+      assert.strictEqual(stats.score, baseline.score, `${name} Lv${lv}`);
+      assert.strictEqual(stats.co.F, 1);
+      assert.ok(!stats.conds.some(c => c.sk === name));
+      assert.ok(!html.includes(`data-cond=`));
+      assert.ok(bdSkillDesc(name, lv), '설명은 유지해야 합니다');
+    }
+  }
+});
+
+check('차지 마스터는 체크한 모으기 공격의 실제 속성만 증가시킨다', () => {
+  const name = '차지 마스터', rates = [10, 25, 40, 55, 70];
+  for (const element of ['불', '물', '번개', '얼음', '용']) for (let lv = 1; lv <= 5; lv++) {
+    const off = calcSkills([[name, lv]], { e: element });
+    const on = calcSkills([[name, lv]], { e: element }, { [name]: true });
+    assert.strictEqual(off.stats.now.ele, 500);
+    assert.strictEqual(on.stats.now.ele, Math.round(500 * (1 + rates[lv - 1] / 100)));
+    assert.strictEqual(on.stats.now.atk, 1000);
+    assert.strictEqual(on.stats.co.F, 1);
+    assert.ok(off.stats.conds.some(c => c.sk === name));
+    assert.ok(on.html.includes('모으기 공격 기준') && on.html.includes(' checked'));
+    assert.ok(!on.html.includes('상태 이상 축적'));
+  }
+  for (const element of ['독', '마비', '수면', '폭파', null]) {
+    const weapon = { e: element, ele: element ? 500 : 0 };
+    const baseline = calcSkills([], weapon).stats;
+    const { stats, html } = calcSkills([[name, 5]], weapon, { [name]: true });
+    assert.strictEqual(stats.score, baseline.score);
+    assert.ok(!stats.conds.some(c => c.sk === name));
+    assert.ok(!html.includes('data-cond='));
+  }
+});
+
+check('유타·향음 강화는 해머·수렵피리만 조건 체크로 계산한다', () => {
+  const name = '유타·향음 강화', rates = [15, 25, 40, 55, 70];
+  for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {
+    const off = calcSkills([[name, lv]], { t: type });
+    const on = calcSkills([[name, lv]], { t: type }, { [name]: true });
+    const allowed = ['hammer', 'hunting-horn'].includes(type);
+    assert.strictEqual(off.stats.co.F, 1);
+    assert.strictEqual(on.stats.co.F, allowed ? 1 + rates[lv - 1] / 100 : 1);
+    assert.strictEqual(on.stats.conds.some(c => c.sk === name), allowed);
+    assert.strictEqual(on.stats.now.atk, 1000);
+    assert.strictEqual(on.stats.now.ele, 500);
+    if (allowed) assert.ok(on.html.includes(type === 'hammer' ? '모으기 공격 기준' : '향음 공격 기준'));
+    else assert.ok(!on.html.includes('data-cond='));
+  }
+});
+
+check('용맹은 첫 포효 조건 체크 시 공격력 정액만 더한다', () => {
+  const name = '용맹', values = [400, 550, 700, 850, 1000];
+  for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {
+    const off = calcSkills([[name, lv]], { t: type });
+    const on = calcSkills([[name, lv]], { t: type }, { [name]: true });
+    assert.strictEqual(off.stats.now.atk, 1000);
+    assert.strictEqual(off.stats.score, 1500);
+    assert.strictEqual(on.stats.now.atk, 1000 + values[lv - 1]);
+    assert.strictEqual(on.stats.score, 1500 + values[lv - 1]);
+    assert.strictEqual(on.stats.co.A, values[lv - 1]);
+    assert.strictEqual(on.stats.co.B, 1);
+    assert.strictEqual(on.stats.co.F, 1);
+    assert.strictEqual(on.stats.now.ele, 500);
+    assert.ok(off.stats.conds.some(c => c.sk === name));
+    assert.ok(on.html.includes('첫 포효 이후') && on.html.includes(' checked'));
+    assert.ok(!on.html.includes('특수 게이지'));
+  }
+  const combined = calcSkills([[name, 3], ['공격', 3], ['공격 활성', 1]], {}, { [name]: true }).stats;
+  assert.strictEqual(combined.now.atk, 1950, '기본 공격력 × 1.1 + 공격 150 + 용맹 700');
+  assert.ok(bdSkillDesc(name, 5).includes('특수 게이지'), '스킬 설명은 그대로 유지');
+});
+
+check('추가 공격 독·마비는 몬스터 상태 조건 체크 시에만 대미지를 높인다', () => {
+  for (const [name, values, status] of [
+    ['추가 공격【독】', [30, 45, 60, 80, 100], '독'],
+    ['추가 공격【마비】', [50, 75, 100, 130, 160], '마비'],
+  ]) for (let lv = 1; lv <= 5; lv++) for (const element of [null, '불', '독', '마비']) {
+    const weapon = { e: element, ele: element ? 500 : 0 };
+    const off = calcSkills([[name, lv]], weapon);
+    const on = calcSkills([[name, lv]], weapon, { [name]: true });
+    assert.strictEqual(off.stats.co.F, 1);
+    assert.strictEqual(on.stats.co.F, 1 + values[lv - 1] / 100);
+    assert.strictEqual(off.stats.now.atk, on.stats.now.atk);
+    assert.strictEqual(off.stats.now.ele, on.stats.now.ele);
+    assert.strictEqual(on.stats.score, Math.round((1000 + weapon.ele) * on.stats.co.F));
+    assert.ok(off.stats.conds.some(c => c.sk === name));
+    assert.ok(off.html.includes(`몬스터 ${status} 상태`));
+    assert.ok(!off.html.includes(' checked'));
+    assert.ok(on.html.includes(' checked'));
+  }
+});
+
+check('추가 지정한 일곱 스킬은 조건 체크 시에만 대미지를 높인다', () => {
+  for (const name of ['비연', '추격', '불퇴전', '특수 스킬 위력 상승', '적정 거리 위력 UP',
+    '통상탄·속성 통상탄 강화', '참렬탄/속성 참렬탄 강화']) {
+    for (const [lv, desc] of bdSkillLevels(name)) {
+      const percent = +/대미지가 (\d+)%/.exec(desc)[1];
+      const off = calcSkills([[name, lv]]), on = calcSkills([[name, lv]], {}, { [name]: true });
+      assert.strictEqual(off.stats.co.F, 1, `${name} Lv${lv} 끔`);
+      assert.strictEqual(on.stats.co.F, 1 + percent / 100, `${name} Lv${lv} 켬`);
+      assert.ok(off.stats.conds.some(c => c.sk === name));
+      assert.ok(!off.html.includes(' checked') && on.html.includes(' checked'));
+    }
+  }
+  for (const name of ['라스트 샷', '후발 주자', '각성의 일격', '사냥꾼의 결속']) {
+    const { stats } = calcSkills([[name, 1]], {}, { [name]: true });
+    assert.strictEqual(stats.score, 1500);
+    assert.ok(!stats.conds.some(c => c.sk === name));
+  }
+  assert.strictEqual(calcSkills([['포술', 1]]).stats.co.F, 1.1, '포술은 이번 변경에서 제외');
+});
+
+check('연격 경지는 원래 체크에 병합하고 조건부 레벨·수치를 상한으로 표시한다', () => {
+  for (const lv of [4, 5, 7]) for (const advanced of [0, 1, 2, 3]) {
+    const skills = [['연격', lv], ...(advanced ? [['연격·경지', advanced]] : [])];
+    const percent = lv < 5 ? 20 : 30 + Math.min(advanced, 2) * 5;
+    const applied = lv >= 5 && advanced > 0;
+    const off = calcSkills(skills, {}, { '연격·경지': true });
+    const on = calcSkills(skills, {}, { '연격': true });
+    assert.strictEqual(off.stats.co.B, 1, '경지 단독 체크로 활성화하면 안 됨');
+    assert.ok(Math.abs(on.stats.co.B - (1 + percent / 100)) < 1e-12);
+    const row = on.stats.conds.find(c => c.sk === '연격');
+    assert.strictEqual(row.lv, Math.min(lv, 5));
+    assert.strictEqual(row.list.length, 1);
+    assert.strictEqual(row.list[0].v, percent);
+    assert.strictEqual(on.stats.conds.length, 1, '경지 별도 체크·중복 효과 금지');
+    assert.ok(on.html.includes(`연격 <b>${Math.min(lv, 5)}</b>`));
+    assert.strictEqual(on.html.includes('(연격·경지 적용)'), applied);
+    assert.ok(on.html.includes(`공격력 +${percent}%`));
+  }
+  assert.strictEqual(calcSkills([['연격·경지', 2]]).stats.co.B, 1, '연격 없이 경지 적용 금지');
+  assert.strictEqual(calcSkills([['공격', 5], ['공격·경지', 1]]).stats.co.A, 450, '상시 스킬 경지는 레벨 조건으로 자동 적용');
+});
+
+check('특수 스킬 위력 상승 경지도 부모 체크와 합산 수치를 사용한다', () => {
+  const gateOf = vm.runInContext('bdSkillGate', ctx);
+  for (const desc of [
+    "Lv5 이상의 '연격' 스킬이 발동 중일 때, 공격력이 5% 증가한다.",
+    "스킬 '연격' Lv5 이상이 발동 중일 때 공격력이 5% 증가한다.",
+    '연격 Lv5 이상이 활성화되어 있을 때, 공격력이 5% 증가한다.',
+  ]) {
+    const gate = gateOf(desc);
+    assert.strictEqual(gate.s, '연격');
+    assert.strictEqual(gate.lv, 5);
+    assert.ok(desc.slice(gate.end).includes('공격력이 5%'));
+  }
+  for (const lv of [4, 5, 6]) for (const advanced of [1, 2]) {
+    const name = '특수 스킬 위력 상승', skills = [[name, lv], [name + '·경지', advanced]];
+    const base = +/대미지가 (\d+)%/.exec(bdSkillDesc(name, lv))[1];
+    const percent = base + (lv >= 5 ? advanced * 20 : 0);
+    const off = calcSkills(skills), on = calcSkills(skills, {}, { [name]: true });
+    assert.strictEqual(off.stats.co.F, 1);
+    assert.ok(Math.abs(on.stats.co.F - (1 + percent / 100)) < 1e-12);
+    assert.strictEqual(on.stats.conds.length, 1);
+    assert.strictEqual(on.stats.conds[0].list[0].v, percent);
+    assert.ok(on.html.includes(`대미지 +${percent}%`));
+    assert.strictEqual(on.html.includes('(특수 스킬 위력 상승·경지 적용)'), lv >= 5);
+  }
+  assert.strictEqual(calcSkills([['특수 스킬 위력 상승·경지', 1]]).stats.co.F, 1);
+  const effects = vm.runInContext('bdEffects("Lv5 이상의 \'파괴왕\' 스킬이 발동 중일 때, 누적 대미지가 20% 증가한다.", "파괴왕·경지")', ctx);
+  assert.strictEqual(effects.length, 0, '향후 파괴왕 경지도 HP 대미지에서 제외');
+});
+
+check('힘의 해방은 체크 시 회심 증가분만 적용한다', () => {
+  const name = '힘의 해방', values = [20, 30, 40, 50, 60];
+  for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {
+    const off = calcSkills([[name, lv]], { t: type });
+    const on = calcSkills([[name, lv]], { t: type }, { [name]: true });
+    assert.strictEqual(off.stats.now.crit, 0);
+    assert.strictEqual(on.stats.now.crit, values[lv - 1]);
+    assert.strictEqual(on.stats.co.G, 1 + values[lv - 1] / 100 * 0.25);
+    assert.strictEqual(on.stats.now.atk, 1000);
+    assert.strictEqual(on.stats.now.ele, 500);
+    assert.ok(off.stats.conds.some(c => c.sk === name));
+    assert.ok(on.html.includes('발동 조건 충족') && on.html.includes(' checked'));
+    assert.ok(!on.html.includes('SP 게이지'));
+  }
+  const combined = calcSkills([[name, 5], ['공격 증강【회심】', 1]], { crit: -20 }, { [name]: true }).stats;
+  assert.strictEqual(combined.now.crit, 40);
+  assert.strictEqual(combined.co.A, 0, '힘의 해방은 무기 기본 회심을 바꾸지 않음');
+});
+
+check('완전 충전은 빌드에 있어도 체크하지 않으면 공격력을 더하지 않는다', () => {
+  const name = '완전 충전';
+  for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {
+    const off = calcSkills([[name, lv]], { t: type });
+    const on = calcSkills([[name, lv]], { t: type }, { [name]: true });
+    assert.strictEqual(off.stats.now.atk, 1000);
+    assert.strictEqual(off.stats.co.A, 0);
+    assert.strictEqual(on.stats.now.atk, 1000 + lv * 100);
+    assert.strictEqual(on.stats.co.A, lv * 100);
+    assert.strictEqual(on.stats.now.crit, 0);
+    assert.ok(off.stats.conds.some(c => c.sk === name));
+    assert.ok(on.html.includes(' checked'));
+  }
+  const both = calcSkills([[name, 5], ['힘의 해방', 1]], {}, { [name]: true, '힘의 해방': true }).stats;
+  assert.strictEqual(both.now.atk, 1500);
+  assert.strictEqual(both.now.crit, 20);
+  assert.strictEqual(both.score, 2100);
+});
+
+check('공격 증강【회심】은 양수 무기 기본 회심 1%당 공격력 8을 더한다', () => {
+  const name = '공격 증강【회심】';
+  for (const crit of [-20, 0, 10, 30, 60]) {
+    const { stats, html } = calcSkills([[name, 1]], { crit });
+    assert.strictEqual(stats.co.A, Math.max(crit, 0) * 8);
+    assert.strictEqual(stats.now.atk, 1000 + Math.max(crit, 0) * 8);
+    assert.strictEqual(stats.now.crit, crit);
+    assert.ok(!stats.conds.some(c => c.sk === name));
+    assert.ok(!html.includes('data-cond='));
+  }
+  const increased = calcSkills([[name, 1], ['간파', 5]], { crit: -20 }).stats;
+  assert.ok(increased.now.crit > 0);
+  assert.strictEqual(increased.co.A, 0, '간파로 양수가 되어도 기본 역회심이면 +0');
+  const decreased = calcSkills([[name, 1], ['흉회심', 5]], { crit: 30 }).stats;
+  assert.strictEqual(decreased.now.crit, 0);
+  assert.strictEqual(decreased.co.A, 240, '흉회심으로 감소해도 무기 기본 회심 30% 기준');
+  const combined = calcSkills([[name, 1], ['공격', 3], ['공격 활성', 1]], { crit: 30 }).stats;
+  assert.strictEqual(combined.now.atk, 1490, '기본 공격력 × 1.1 + 공격 150 + 회심 증강 240');
+  const serg = BUILD.sets.find(s => s.key === 'serg');
+  const actual = calcSkills([...serg.weaponSkills, ...serg.pieces.helm.skills].map(x => [x.s, x.lv]), serg.weapons[0]).stats;
+  assert.strictEqual(actual.co.A, 240, '셀레기오스 무기 + 레기오스헬름');
+});
+
+check('흉회심은 최종 역회심 확률의 30%를 자동 기대값에 반영한다', () => {
+  const name = '흉회심', reductions = [10, 15, 20, 25, 30];
+  const multipliers = [1.5, 1.75, 2, 2.25, 2.5];
+  for (let lv = 1; lv <= 5; lv++) for (const crit of [-200, -30, 0, 30, 50, 200]) {
+    const { stats, html } = calcSkills([[name, lv]], { crit });
+    const final = crit - reductions[lv - 1], q = Math.max(-100, Math.min(100, final)) / 100;
+    const r = Math.max(0, -q);
+    const expected = q >= 0 ? 1 + q * 0.25 : r * 0.3 * multipliers[lv - 1] + r * 0.7 * 0.75 + (1 - r);
+    assert.strictEqual(stats.now.crit, final);
+    assert.ok(Math.abs(stats.co.G - expected) < 1e-12, `${crit}%/Lv${lv}`);
+    assert.strictEqual(stats.score, Math.round(1500 * expected));
+    assert.ok(!stats.conds.some(c => c.sk === name));
+    assert.ok(!html.includes('data-cond='));
+    assert.strictEqual(html.includes('역회심 중 30%'), final < 0);
+    if (final < 0) assert.ok(html.includes(' × 0.3 × ') && html.includes(' × 0.7 × 0.75'));
+    assert.strictEqual(calcSkills([[name, lv]], { crit }, { [name]: true }).stats.score, stats.score);
+  }
+  const ordinary = calcSkills([], { crit: -20 }).stats;
+  assert.strictEqual(ordinary.co.G, 0.95, '흉회심 없는 역회심 배율');
+  assert.strictEqual(calcSkills([], { crit: 20 }).stats.co.G, 1.05, '기존 양수 회심 배율');
+  assert.strictEqual(calcSkills([['공격', 3]]).stats.now.atk, 1150, '기존 공격 스킬');
+});
+
 check('신규 스킬 설명과 이소네미쿠니 아종 허리', () => {
   const max = { '점프 철인': 1, '특수 스킬 위력 상승·경지': 2, '추가 공격【폭파】': 5, '포술·경지': 2, '차지 스톡': 3 };
   for (const [name, lv] of Object.entries(max)) {
