@@ -398,6 +398,47 @@ check('무기군 비활성화 및 소재 선택 유지', () => {
   }
 });
 
+check('장비 선택창은 공식 방어구 순번을 공유하고 검색·아이콘 표시에도 유지한다', () => {
+  const sorted = [...BUILD.sets].sort((a, b) => a.o - b.o || a.g - b.g || a.u - b.u || a.id - b.id);
+  const keys = list => list.map(s => s.key).join(',');
+  const before = JSON.stringify(BUILD);
+  assert.strictEqual(keys(vm.runInContext('bdOrderedSets()', ctx)), keys(sorted));
+  const save = vm.runInContext('({ state: bdState, pick: bdPick, sk: bdGearSk, wf: bdGearWf, bulkSk: bdBulkSk })', ctx);
+  ctx.orderTestSave = save;
+  try {
+    vm.runInContext('bdState = { builds: [bdNewBuild()] }; bdGearWf = null; bdBulkSk = [];', ctx);
+    const armor = sorted.filter(s => Object.keys(s.pieces).length);
+    assert.strictEqual(keys(bdBulkRows('').map(r => r.s)), keys(armor));
+    // 스킬 일치 개수가 같으면 공식 순서, 다르면 일치 개수를 우선한다.
+    vm.runInContext('bdBulkSk = [{ s: "록온", c: "a" }, { s: "반동 경감", c: "b" }];', ctx);
+    const skillRows = bdBulkRows('');
+    assert.ok(skillRows.length);
+    for (let i = 1; i < skillRows.length; i++) {
+      const a = skillRows[i - 1], b = skillRows[i];
+      assert.ok(a.n >= b.n);
+      if (a.n === b.n) assert.ok(sorted.indexOf(a.s) < sorted.indexOf(b.s));
+    }
+    for (const target of ['weapon', ...BUILD.parts.map(p => p.k)]) {
+      for (const type of target === 'weapon' ? BUILD.weaponTypes.map(w => w.k) : ['shield-sword']) {
+        const expected = sorted.filter(s => target === 'weapon' ? s.weapons.some(w => w.t === type) : s.pieces[target]);
+        for (const on of [true, false]) {
+          vm.runInContext(`bdPick = { kind: "gear", bi: 0, target: ${JSON.stringify(target)} }; bdState.builds[0].wt = ${JSON.stringify(type)}; bdGearSk = ${on}; bdFillGear("");`, ctx);
+          const rendered = () => [...els['#bd-modal-body'].innerHTML.matchAll(/data-v="([^"]+)"/g)].map(m => m[1]);
+          assert.strictEqual(rendered().join(','), keys(expected), `${target}/${type}/${on}`);
+          vm.runInContext('bdFillGear("리오")', ctx);
+          const filtered = rendered();
+          assert.ok(filtered.length);
+          assert.deepStrictEqual(filtered, expected.filter(s => filtered.includes(s.key)).map(s => s.key));
+        }
+      }
+    }
+    assert.strictEqual(JSON.stringify(BUILD), before, '정렬하면서 원본 데이터 변경');
+  } finally {
+    vm.runInContext('bdState = orderTestSave.state; bdPick = orderTestSave.pick; bdGearSk = orderTestSave.sk; bdGearWf = orderTestSave.wf; bdBulkSk = orderTestSave.bulkSk;', ctx);
+    delete ctx.orderTestSave;
+  }
+});
+
 /* 이 검사는 $ 를 바꿔치기하므로 맨 마지막에 둡니다. */
 check('스킬 표시를 끄면 같은 목록이 아이콘 격자가 된다', () => {
   const out = {};

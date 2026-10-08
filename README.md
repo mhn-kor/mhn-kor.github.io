@@ -776,6 +776,31 @@ node tools/update.js          # 이거 하나면 됩니다
 
 ### 무엇이 어디서 오는가
 
+#### 스타일20 수집 데이터 (화면·계산에는 아직 미연결)
+
+`node --use-system-ca tools/build-styledata.js --fetch`로 mhn.quest와 나우칼 공개 원본을 수집합니다.
+`node tools/build-styledata.js`는 저장된 원본만 사용해 같은 결과를 재생성합니다.
+`node tools/build-styledata-test.js`로 검증합니다.
+
+- `tools/data/style-source.json`: 원본 테이블 스냅샷, 수집 시각(UTC), 번들 URL·SHA256.
+- `tools/data/style-nowcalc-source.json`: 나우칼 무기별 기본 수치·스타일 원본, 수집 시각·URL·응답 SHA256.
+- `tools/data/weapon-style-data.json`: 현재 사이트의 소재×무기군별 10-5 기본 스펙,
+  파라미터를 제외한 스타일20 스펙 및 지원 여부(`supported/unsupported/unknown`).
+- `profiles[무기의 style.profile]`: 스타일20 자동 상승분(`bonus20`)과
+  Lv10·15·20 각각의 선택지(`parameters`). 회심 값은 퍼센트포인트입니다.
+- `baseSource`가 `build-data.js`이면 원본 수치 확인이 안 돼 기존 수치만 보관한 항목입니다.
+  확인된 기본값은 mhn.quest 원본을 사용하되 기존 `build-data.js`를 수정하지 않습니다.
+- `issues`에 미확인 이유 및 기존 사이트 기본 수치와의 불일치를 기록합니다.
+  `unsupported`는 현재 수집 범위에서 스타일20 대상으로 지정되지 않았다는 뜻입니다.
+- 기본 스펙은 mhn.quest 10-5, 자동상승분과 Lv10·15·20 선택지는 나우칼을 사용합니다.
+  라도발킨 한손검 기본 공격력은 1,912(나우칼의 1,596은 10-1), 로즈어썰트 선택지는 각 단계 공격력 +100만 유지합니다.
+- `comparisons`에 무기별 교차검증 결과와 불일치 원본을 남기고 `meta.sourcePolicy`에 채택 기준을 기록합니다.
+  나우칼 대응 장비나 수치가 불완전하면 `unknown`으로 처리하며 mhn.quest 상승값으로 대체하지 않습니다.
+  `nowcalc:` 접두사의 프로필이 실제 채택값이며, 기존 mhn.quest 프로필은 비교용으로 보관합니다.
+  이 자료는 실제 대미지·추가 스킬·스타일 동작의 효과를 계산하지 않습니다.
+
+수동 이벤트 장비·기존 빌드·표시·공유 형식은 변경하지 않습니다.
+
 | 자료 | 출처 | 만드는 것 |
 |---|---|---|
 | 장비 스킬·표류석 칸·공격력 곡선 | mhn.quest 번들 | `build-data.js` |

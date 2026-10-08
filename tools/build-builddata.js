@@ -521,4 +521,6 @@ async function main() {
   else process.stdout.write(output);
 }
 
-main().catch(e => { process.stderr.write('실패: ' + e.message + '\n'); process.exit(1); });
+/* CLI 실행 */
+module.exports = { exportedObj, SET_KEYS };
+if (require.main === module) main().catch(e => { process.stderr.write('실패: ' + e.message + '\n'); process.exit(1); });

@@ -2,7 +2,7 @@
    node tools/build-generator-test.js */
 const fs = require('fs'), path = require('path'), assert = require('assert');
 const root = path.join(__dirname, '..');
-const source = fs.readFileSync(path.join(__dirname, 'build-builddata.js'), 'utf8').split('main().catch')[0];
+const source = fs.readFileSync(path.join(__dirname, 'build-builddata.js'), 'utf8').split('/* CLI 실행 */')[0];
 const current = new Function(fs.readFileSync(path.join(root, 'build-data.js'), 'utf8') + ';return BUILD;')();
 const keys = ['guardian', 'summer-26'];
 

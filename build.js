@@ -39,6 +39,9 @@ const bdNewBuild = () => ({
 let bdState = { builds: [bdNewBuild()], detail: false };
 
 const bdSet = key => BUILD.sets.find(s => s.key === key);
+/* 모든 장비 선택창은 저장된 공식 방어구 순번을 공유한다. 미등록 세트는 뒤로 둔다. */
+const bdOrderedSets = () => [...BUILD.sets].sort((a, b) =>
+  (a.o ?? 999) - (b.o ?? 999) || a.g - b.g || a.u - b.u || a.id - b.id);
 const bdWeaponOf = b => {
   const s = bdSet(b.w);
   return s ? s.weapons.find(w => w.t === b.wt) || null : null;
@@ -271,8 +274,7 @@ function bdOpenBulk(bi) {
 
 /* 공식 방어구 페이지 순서(o)대로 세우고, 이벤트 장비는 뒤로 갑니다. */
 function bdBulkSets() {
-  return BUILD.sets.filter(s => Object.keys(s.pieces).length)
-    .sort((a, b) => a.o - b.o || a.g - b.g || a.u - b.u || a.id - b.id);
+  return bdOrderedSets().filter(s => Object.keys(s.pieces).length);
 }
 
 /* 검색은 세트가 아니라 부위 단위로 겁니다. 세트만 걸러 다섯 칸을 다 보여 주면
@@ -985,7 +987,7 @@ function bdFillGear(q) {
   const needle = norm(q);
   const chosen = isW ? b.w : b[target];
 
-  const list = BUILD.sets.filter(s => (isW ? s.weapons.some(w => w.t === b.wt) : s.pieces[target]));
+  const list = bdOrderedSets().filter(s => (isW ? s.weapons.some(w => w.t === b.wt) : s.pieces[target]));
   const rows = list.filter(s => {
     const item = isW ? s.weapons.find(w => w.t === b.wt) : s.pieces[target];
     /* 상세 필터 칩(벌레 타입·탄 종류 등)이 걸려 있으면 부가정보가 맞는 무기만 남깁니다. */
