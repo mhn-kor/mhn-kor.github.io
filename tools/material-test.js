@@ -109,5 +109,58 @@ assert.ok(merged.list.some(x => x.id === 'armor_refining_parts'));
 assert.strictEqual(validFavorites([null, { ...fav, mon: 'unknown' }, { ...fav, count: -1 }, { ...fav, count: 1.5 }, { ...fav, to: fav.from }]).length, 0);
 assert.strictEqual(favoriteTotals([]).zenny, 0);
 
-console.log(fail ? `실패 ${fail}건` : `통과 — 표본 ${GOLDEN.length}건, 몬스터 ${MATERIAL.monsters.length}마리, 즐겨찾기 배수·무기/방어구 합산`);
+/* 신규 몬스터도 희소종 레시피와 무기/방어구 전용 소재를 각각 적용해야 합니다. */
+for (const [id, common] of [['brachydios', 'iron_ore'], ['aurorasomnacanth', 'monster_bone_s']]) {
+  const mon = MATERIAL.monsters.find(m => m.id === id);
+  assert.ok(mon, id + ' 누락');
+  for (const gear of ['weapon', 'armor']) {
+    const weapon = gear === 'weapon', got = matTotals(mon, gear, '5_1', '5_2');
+    assert.strictEqual(got.zenny, 500);
+    assert.strictEqual(got.steps, 1);
+    assert.strictEqual(got.list.find(x => x.id === common).qty, weapon ? 16 : 11);
+    assert.strictEqual(got.list.find(x => x.id === id + '_r1_' + (weapon ? 'w' : 'a')).qty, weapon ? 6 : 4);
+    const row = { mon: id, gear, from: '0_0', to: '10_5', count: 2 };
+    const full = matTotals(mon, gear, row.from, row.to), sum = favoriteTotals([fav, row]);
+    assert.strictEqual(validFavorites([fav, row]).length, 2);
+    assert.strictEqual(sum.zenny, single.zenny + full.zenny * 2);
+  }
+}
+
+/* 부파 오류가 재수집 때 되돌아가지 않도록 독립 표본을 고정합니다(R2부터 R6). */
+const BREAK_GOLDEN = {
+  brachydios: ['꼬리 (절단만)', '머리', '왼쪽 앞다리, 오른쪽 앞다리', '머리', '머리'],
+  tzitzi_ya_ku: ['', '머리(1회), 머리(2회)', '머리(1회), 머리(2회)', '머리(1회), 머리(2회)', '머리(1회), 머리(2회)'],
+  beotodus: ['뒷다리', '머리', '몸통', '뒷다리', '머리'],
+  aurorasomnacanth: ['왼쪽 앞다리, 오른쪽 앞다리', '머리', '꼬리', '머리', '머리'],
+};
+for (const [id, expected] of Object.entries(BREAK_GOLDEN)) {
+  assert.deepStrictEqual(Array.from(MATERIAL.monsters.find(m => m.id === id).break), expected, id + ' 부파 보상');
+}
+for (const [id, rare] of [['chatacabra', 3], ['great_wroggi', 2], ['seregios', 2]]) {
+  assert.strictEqual(MATERIAL.monsters.find(m => m.id === id).break[rare - 2], '');
+}
+assert.strictEqual(MATERIAL.names.tzitzi_ya_ku_r2, '현조의 발톱');
+assert.strictEqual(MATERIAL.names.beotodus_r4, '동어룡의 상급 비늘');
+assert.strictEqual(MATERIAL.names.khezu_r3, '알비노 늑골');
+assert.strictEqual(MATERIAL.monsters.find(m => m.id === 'rajang').break[4], '꼬리 (분노 상태)');
+assert.strictEqual(MATERIAL.monsters.find(m => m.id === 'nergigante').break[4], '왼쪽 뿔 (2차 파괴)');
+for (const mon of MATERIAL.monsters) for (const part of [...mon.break, mon.bloodBreak || ''].flatMap(s => s.split(',').map(x => x.trim()).filter(Boolean))) {
+  assert.ok(mon.breakable.some(p => part === p || part.startsWith(p + ' (')) || part === '목 주머니', mon.id + ' 공식 부위에 없음: ' + part);
+}
+
+/* 모든 유효 시작 등급에서 최종 강화까지 재료 이름·아이콘·수량 누락 검사. */
+const levels = vm.runInContext('MAT_LEVELS', ctx);
+for (const mon of MATERIAL.monsters) for (const gear of ['weapon', 'armor']) {
+  for (const from of ['0_0', ...levels.slice(levels.indexOf(mon.grade + '_1'), -1)]) {
+    const got = matTotals(mon, gear, from, '10_5');
+    assert.ok(Number.isSafeInteger(got.zenny) && got.zenny >= 0, mon.id + ': ' + gear + ' ' + from);
+    for (const x of got.list) {
+      assert.ok(Number.isSafeInteger(x.qty) && x.qty > 0, mon.id + ': ' + x.id);
+      assert.ok(MATERIAL.names[x.id], '재료 이름 누락: ' + x.id);
+      assert.ok(fs.existsSync(path.join(root, 'assets/material', x.icon + '.png')), '재료 아이콘 누락: ' + x.icon);
+    }
+  }
+}
+
+console.log(fail ? `실패 ${fail}건` : `통과 — 표본 ${GOLDEN.length}건, 몬스터 ${MATERIAL.monsters.length}마리 전체 구간, 신규 몬스터·즐겨찾기 배수·무기/방어구 합산`);
 process.exit(fail ? 1 : 0);

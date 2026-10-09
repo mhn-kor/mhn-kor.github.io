@@ -268,7 +268,8 @@ function drawMatResult() {
   const cards = list.map(m => {
     // 파괴 부위는 R2 부터 한 칸씩 밀려 들어갑니다. 용옥 조각(R6)도 부위 영향을 받습니다.
     const own = m.id.startsWith(matMon.id + '_r');
-    const parts = !matAllFavorites && (own || m.rare === 6) ? (matMon.break[m.rare - 2] || '') : '';
+    const parts = matAllFavorites ? '' : m.id === 'elder_dragon_blood' ? (matMon.bloodBreak || '')
+      : (own || m.id === 'wyvern_gem_shard') ? (matMon.break[m.rare - 2] || '') : '';
     const badge = parts.split(',').map(p => p.trim()).filter(Boolean)
       .map(p => `<i>${esc(MATERIAL.parts[p] || p)}</i>`).join('');
     const name = MATERIAL.names[m.id] || m.id;

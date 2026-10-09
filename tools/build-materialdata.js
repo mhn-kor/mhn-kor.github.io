@@ -3,7 +3,7 @@
    mhnow.me/material 의 스크립트는 난독화되어 있지만 데이터는 그냥 상수라, 브라우저 흉내를 낸
    샌드박스에서 실행하면 그대로 꺼낼 수 있습니다. 게임이 패치되어 몬스터가 늘면 이걸 다시 돌리세요.
    돌린 뒤에는 반드시 `node tools/material-test.js` 로 계산이 안 깨졌는지 확인하고,
-   새 몬스터가 있으면 아래 ICON_FIX 에 저장소 아이콘 키를 채워주세요.
+   새 몬스터가 있으면 ICON_FIX(기존 아이콘) 또는 FETCH_MONSTER(다운로드), QUEST_KEY 를 확인하세요.
 
    의존성 없음 (node 18+ 의 fetch 와 zlib 만 씁니다). 아이콘은 200px 원본을 64px 로 줄여 담습니다 —
    원본 그대로면 147개가 4MB 를 넘습니다. */
@@ -20,14 +20,16 @@ const MAX_PX = 64;
 const NAME_FIX = { 쿠루루야쿠: '쿠루루야크', 치치야쿠: '치치야크', 푸르푸르: '푸루푸루', 랑그로트라: '랑그로토라', 가란고름: '가란고르무', 오오나즈치: '오나즈치' };
 /* 저장소에 아이콘이 없어 mhnow.me 에서 받아오는 몬스터 (고룡은 표류석을 안 줘서 표류연성 탭에 없습니다). */
 const FETCH_MONSTER = ['kushala_daora', 'teostra', 'nergigante', 'kirin', 'chameleos', 'namielle', 'malzeno', 'velkhana'];
+const ICON_FIX = { aurorasomnacanth: 'a-somna', brachydios: 'brachy' };
 /* 출현 구역은 mhn.quest 에서 옵니다. 몬스터 키가 표류연성 탭 아이콘 키와 같아서 그대로 이어지는데,
-   고룡만 저장소 쪽이 mhnow.me id 라 여기서 짝을 지어줍니다. */
+   키가 다른 몬스터는 여기서 짝을 지어줍니다. */
 const QUEST_KEY = {
   kushala_daora: 'kush', teostra: 'teos', nergigante: 'nerg', kirin: 'kiri',
   chameleos: 'cham', namielle: 'nami', malzeno: 'malz', velkhana: 'velk',
+  aurorasomnacanth: 'a-somn', brachydios: 'brac',
 };
-/* 설원(tundra)은 mhnow.me 의 i18n 에 없습니다. 공식 한국어 표기를 그대로 씁니다. */
-const BIOME_KO = { tundra: '설원' };
+/* mhnow.me 번역에 없는 출현 구역 이름. */
+const BIOME_KO = { tundra: '설원', volcano: '화산' };
 
 /* ── mhnow.me 에서 데이터 꺼내기 ────────────────────────────────── */
 async function pull() {
@@ -65,43 +67,89 @@ async function pull() {
   return out;
 }
 
-/* ── mhn.quest 에서 출현 구역 꺼내기 ───────────────────────────────
-   mhnow.me 에는 출현 구역 정보가 없습니다. mhn.quest 묶음(minify 된 Svelte 앱)에
-   `anja:{biome:["forest","desert"],…}` 형태로 들어 있어, 실행하지 않고 항목만 떠서 읽습니다.
-   묶음 파일명에 해시가 붙으므로 첫 화면 HTML 에서 현재 이름을 찾아 옵니다. */
-async function pullBiome() {
+/* mhn.quest guide 객체: 출현 구역과 재료별 부파 보상을 함께 읽습니다.
+   본체를 실행하지 않고 해당 객체만 격리된 VM에서 해석합니다. */
+async function pullQuest() {
   const home = await (await fetch(QUEST)).text();
   const file = (home.match(/src="(\/assets\/index-[^"]+\.js)"/) || [])[1];
   if (!file) throw new Error('mhn.quest 묶음 파일을 못 찾았습니다. 첫 화면 구조가 바뀐 듯합니다.');
-  const src = await (await fetch(QUEST.replace(/\/$/, '') + file)).text();
+  const index = await (await fetch(new URL(file, QUEST))).text();
+  const chunk = index.match(/import\("\.\/(data-[^"]+\.js)"\)/)?.[1];
+  const src = chunk ? await (await fetch(new URL('/assets/' + chunk, QUEST))).text() : index;
 
-  const out = {};
-  const re = /biome:\[/g;
-  let m;
-  while ((m = re.exec(src))) {
-    // 값: 대괄호 균형이 맞는 곳까지
-    const from = m.index + m[0].length - 1;
-    let d = 0, end = -1;
-    for (let k = from; k < src.length; k++) {
-      if (src[k] === '[') d++;
-      else if (src[k] === ']') { d--; if (!d) { end = k; break; } }
-    }
-    if (end < 0) continue;
-    // 키: 이 항목을 여는 `키:{` 까지 뒤로 되짚습니다 (중첩 깊이가 0 이 되는 자리).
-    let d2 = 0, start = -1;
-    for (let k = m.index; k >= 0; k--) {
-      const c = src[k];
-      if (c === '}' || c === ']') d2++;
-      else if (c === '{' || c === '[') { if (!d2) { start = k; break; } d2--; }
-    }
-    if (start < 0) continue;
-    const key = /(?:"([\w-]+)"|([\w$-]+)):$/.exec(src.slice(Math.max(0, start - 40), start));
-    if (!key) continue;
-    out[key[1] || key[2]] = src.slice(from + 1, end)
-      .split(',').map(x => x.trim().replace(/^"|"$/g, '')).filter(Boolean);
+  const alias = src.match(/export\{([^}]*)\}/)?.[1].match(/(?:^|,)\s*([\w$]+) as guide\s*(?:,|$)/)?.[1];
+  if (!alias) throw new Error('mhn.quest guide 내보내기를 찾지 못했습니다.');
+  const decl = new RegExp('[,;]' + alias + '=\\{').exec(src);
+  if (!decl) throw new Error('mhn.quest guide 객체를 찾지 못했습니다.');
+  const start = decl.index + decl[0].length - 1;
+  let depth = 0, quote = null, end;
+  for (let i = start; i < src.length; i++) {
+    const c = src[i];
+    if (quote) { if (c === '\\') i++; else if (c === quote) quote = null; }
+    else if (c === '"' || c === "'") quote = c;
+    else if (c === '{') depth++;
+    else if (c === '}' && !--depth) { end = i + 1; break; }
   }
-  if (Object.keys(out).length < 50) throw new Error('출현 구역을 ' + Object.keys(out).length + '마리만 읽었습니다 — 형식이 바뀐 듯합니다.');
+  if (!end) throw new Error('mhn.quest guide 객체가 닫히지 않았습니다.');
+  const out = vm.runInNewContext('(' + src.slice(start, end) + ')', {}, { timeout: 1000 });
+  if (Object.keys(out).length < 50) throw new Error('mhn.quest 몬스터 목록이 부족합니다.');
   return out;
+}
+
+/* 공식 부위명·소재명만 사용합니다. 보상 부위 연결은 공식 페이지에 없어 quest와 분리합니다. */
+async function pullOfficial(names) {
+  const base = 'https://monsterhunternow.com';
+  const home = await (await fetch(base + '/ko/monsters/beotodus')).text();
+  const links = Object.fromEntries([...home.matchAll(/href="(\/ko\/monsters\/[^"?#]+)"><mh-sidebar-item data-content="([^"]+)"/g)].map(m => [m[2], m[1]]));
+  const out = {}, queue = names.slice();
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (queue.length) {
+      const name = queue.shift();
+      if (!links[name]) throw new Error('공식 몬스터 링크 없음: ' + name);
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const r = await fetch(base + links[name]);
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          const html = await r.text();
+          const raw = html.match(/component="ObtainableMaterials" props="([^"]+)"/)?.[1];
+          if (!raw) throw new Error('공식 소재 데이터 없음');
+          const d = JSON.parse(raw.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&#39;/g, "'"));
+          const section = html.split('파괴 가능 부위</h3>')[1]?.split('</ul>')[0];
+          if (!section) throw new Error('공식 파괴 가능 부위 없음');
+          out[name] = {
+            parts: [...section.matchAll(/<li>(.*?)<\/li>/g)].map(m => m[1].replace(/<[^>]+>/g, '')),
+            materials: d.monster.itemData.filter(x => !x.driftMaterial && x.name !== 'WYVERN_PRIME_GEM')
+              .map(x => ({ r: x.itemRarity, name: d.guideTranslations[x.name] })),
+          };
+          break;
+        } catch (e) { if (attempt === 2) throw new Error(name + ': ' + e.message); }
+      }
+    }
+  }));
+  return out;
+}
+
+function rewardParts(guide, official, rarity, monsterId) {
+  const tokens = {
+    head: '머리', body: '몸통', forelegs: monsterId === 'nargacuga' ? '칼날개' : '앞다리',
+    hindlegs: '뒷다리', tail: '꼬리', back: '등', wings: '날개', horn: '뿔', horns: '뿔',
+    stomach: '배', spikes: '가시', claws: '발톱', 'arm-blades': '칼날발톱', shell: '갑각',
+    'left-foreleg': '왼쪽 앞다리', 'right-foreleg': '오른쪽 앞다리',
+    'left-horn': '왼쪽 뿔', 'right-horn': '오른쪽 뿔', 'neck-pouch': '목 주머니',
+  };
+  const letter = String.fromCharCode(96 + rarity), result = [];
+  for (const [raw, values] of Object.entries(guide.physiology)) {
+    if (!values[4]?.includes(letter)) continue;
+    const key = raw.replace(/^[*^→]/, ''), token = tokens[key];
+    if (!token) throw new Error('모르는 부파 부위: ' + monsterId + ' ' + raw);
+    let labels = official.parts.filter(p => p.replace(/\s/g, '').includes(token.replace(/\s/g, '')));
+    if (!labels.length && key === 'neck-pouch') labels = ['목 주머니'];
+    if (!labels.length) throw new Error('공식 부위 연결 실패: ' + monsterId + ' ' + raw);
+    const condition = raw.startsWith('^') || monsterId === 'espinas' ? '분노 상태'
+      : raw.startsWith('*') ? '파괴 후' : raw.startsWith('→') ? '2차 파괴' : '';
+    result.push(...labels.map(p => condition ? p + ' (' + condition + ')' : p));
+  }
+  return [...new Set(result)].join(', ');
 }
 
 /* ── PNG 축소 (ImageMagick 없이) ───────────────────────────────── */
@@ -246,7 +294,7 @@ async function saveIcon(url, dest) {
 /* ── 본작업 ────────────────────────────────────────────────────── */
 (async () => {
   const { MONSTER_MAP, MATERIAL_CATALOG, UPGRADE_RECIPES, i18n, suit } = await pull();
-  const questBiome = await pullBiome();
+  const quest = await pullQuest();
   const ko = o => {
     let s = (o && (o.ko || (o.name && o.name.ko))) || null;
     if (s) for (const [from, to] of Object.entries(NAME_FIX)) s = s.split(from).join(to);
@@ -255,6 +303,7 @@ async function saveIcon(url, dest) {
 
   // 사이트가 실제로 보여주는 순서·목록 그대로 (commons 가 없는 몬스터는 재료 표가 없습니다).
   const order = Object.keys(suit).filter(k => MONSTER_MAP[k] && MONSTER_MAP[k].commons);
+  const official = await pullOfficial(order.map(k => ko(i18n.monsters[MONSTER_MAP[k].id])));
 
   // 표류연성 탭이 쓰는 아이콘을 한국어 이름으로 이어줍니다.
   const smelt = {}; vm.createContext(smelt);
@@ -287,17 +336,30 @@ async function saveIcon(url, dest) {
       const r = i + 1, two = e && typeof e === 'object';
       (two || r === 1 ? [`${m.id}_r${r}_w`, `${m.id}_r${r}_a`] : [`${m.id}_r${r}`]).forEach(put);
     });
-    const icon = iconByName[name] || (FETCH_MONSTER.includes(m.id) ? m.id : null);
+    const icon = ICON_FIX[m.id] || iconByName[name] || (FETCH_MONSTER.includes(m.id) ? m.id : null);
     if (!icon) console.log(`! ${m.id}(${name}) 아이콘을 못 찾았습니다 — NAME_FIX 나 FETCH_MONSTER 에 넣어주세요`);
     /* 출현 구역. 아이콘 키가 곧 mhn.quest 키입니다(고룡만 QUEST_KEY 로 이어줍니다).
        고룡은 특정 구역에 안 나오므로 빈 배열이 정상 — 화면에서 '없음' 으로 걸립니다. */
     const qk = QUEST_KEY[m.id] || icon;
-    if (!questBiome[qk]) console.log(`! ${m.id}(${name}) 출현 구역을 못 찾았습니다 — QUEST_KEY 를 확인해주세요 (키: ${qk})`);
+    const guide = quest[qk], verified = official[name];
+    if (!guide) throw new Error('mhn.quest 몬스터 연결 실패: ' + m.id);
+    for (const r of new Set(verified.materials.map(x => x.r))) {
+      const items = verified.materials.filter(x => x.r === r);
+      if (r === 4 && m.recipeGroup === 'elder') { names.elder_dragon_blood = items[0].name; continue; }
+      const two = r === 1 || typeof m.exclusive[r - 1] === 'object';
+      if (two && items.length !== 2) throw new Error('공식 무기/방어구 소재 수 확인 필요: ' + m.id + ' R' + r);
+      if (two) { names[m.id + '_r' + r + '_w'] = items[0].name; names[m.id + '_r' + r + '_a'] = items[1].name; }
+      else if (names[m.id + '_r' + r]) names[m.id + '_r' + r] = items[0].name;
+      else if (r === 6 && items[0].name === '용옥 조각') names.wyvern_gem_shard = items[0].name;
+    }
     const o = {
       id: m.id, name, icon: icon || m.id, grade: m.grade || 1,
-      biome: questBiome[qk] || [],
-      commons: m.commons, exclusive: m.exclusive, break: m.material_break || [],
+      biome: guide.biome,
+      commons: m.commons, exclusive: m.exclusive,
+      break: [2, 3, 4, 5, 6].map(r => rewardParts(guide, verified, r, m.id)),
+      breakable: verified.parts,
     };
+    if (m.recipeGroup === 'elder') o.bloodBreak = rewardParts(guide, verified, 4, m.id);
     if (m.recipeGroup) o.group = m.recipeGroup;
     return o;
   });
@@ -312,7 +374,7 @@ async function saveIcon(url, dest) {
 
   /* 출현 구역 이름. 여기 적힌 순서가 곧 필터 칩 순서라 공식 사이트와 같게 둡니다. */
   const biomes = {};
-  for (const b of ['forest', 'desert', 'swamp', 'tundra']) {
+  for (const b of ['forest', 'desert', 'swamp', 'tundra', 'volcano']) {
     biomes[b] = ko((i18n.habitats || {})[b]) || BIOME_KO[b] || b;
   }
   for (const b of new Set(monsters.flatMap(m => m.biome))) {
@@ -321,7 +383,7 @@ async function saveIcon(url, dest) {
 
   const data = { monsters, catalog, parts, biomes, names, recipes: { weapon: UPGRADE_RECIPES.weapon.level, armor: UPGRADE_RECIPES.armor.level } };
   fs.writeFileSync(path.join(ROOT, 'material-data.js'),
-    `/* 몬스터헌터 나우 강화 재료 — mhnow.me/material 의 공개 데이터에서 추출.\n`
+    `/* 강화 재료 수량: mhnow.me/material · 부파 보상: mhn.quest · 소재/부위명: monsterhunternow.com/ko.\n`
     + `   갱신: node tools/build-materialdata.js → node tools/material-test.js */\n`
     + `const MATERIAL = ${JSON.stringify(data)};\n`);
 

@@ -52,6 +52,20 @@ const path = require('path'), { pathToFileURL } = require('url');
       await page.locator('[data-mat-fav-delete="0"]').click();
       await page.locator('[data-mat-fav-delete="0"]').click();
       assert.strictEqual(await page.locator('[data-mat-all]').isDisabled(), true);
+      for (const [id, rare, expected] of [
+        ['brachydios', 3, '머리'], ['brachydios', 4, '왼쪽 앞다리'],
+        ['brachydios', 6, '머리'], ['tzitzi_ya_ku', 2, ''],
+        ['tzitzi_ya_ku', 6, '머리(2회)'], ['beotodus', 4, '몸통'],
+        ['rajang', 6, '분노 상태'], ['nergigante', 6, '2차 파괴'],
+        ['kushala_daora', 4, '머리'],
+      ]) {
+        const index = await page.evaluate(id => MATERIAL.monsters.findIndex(m => m.id === id), id);
+        await page.locator(`[data-mon="${index}"]`).click();
+        const badges = page.locator(`#mt-result .mt-item.r${rare} .mt-brk`);
+        if (expected) assert.ok((await badges.allTextContents()).join(' ').includes(expected), id);
+        else assert.strictEqual(await badges.count(), 0, id);
+        assert.strictEqual(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, id);
+      }
       assert.deepStrictEqual(errors, []);
       await page.close();
     }
