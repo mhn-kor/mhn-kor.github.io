@@ -85,12 +85,72 @@ let matGear = 'weapon';
 let matFrom = '0_0';
 let matTo = '10_5';
 let matDrawn = false;
+const MAT_FAVORITES_KEY = 'mhnkr.material-favorites';
+let matFavorites = [], matAllFavorites = false;
+
+function matValidFavorites(rows) {
+  if (!Array.isArray(rows)) return [];
+  const grouped = new Map();
+  for (const row of rows) {
+    const mon = row && MATERIAL.monsters.find(m => m.id === row.mon);
+    const from = MAT_LEVELS.indexOf(row?.from), to = MAT_LEVELS.indexOf(row?.to);
+    if (!mon || !['weapon', 'armor'].includes(row.gear) || from < 0 || to <= from
+      || to < MAT_LEVELS.indexOf(mon.grade + '_1') || (from > 0 && from < MAT_LEVELS.indexOf(mon.grade + '_1'))
+      || !Number.isSafeInteger(row.count) || row.count < 1) continue;
+    const key = [row.mon, row.gear, row.from, row.to].join(':');
+    const old = grouped.get(key);
+    if (old) { if (Number.isSafeInteger(old.count + row.count)) old.count += row.count; }
+    else grouped.set(key, { mon: row.mon, gear: row.gear, from: row.from, to: row.to, count: row.count });
+  }
+  return [...grouped.values()];
+}
+
+function matFavoriteTotals(rows) {
+  const items = new Map();
+  let zenny = 0, steps = 0;
+  for (const row of matValidFavorites(rows)) {
+    const mon = MATERIAL.monsters.find(m => m.id === row.mon);
+    const total = matTotals(mon, row.gear, row.from, row.to);
+    zenny += total.zenny * row.count; steps += total.steps * row.count;
+    for (const item of total.list) {
+      const old = items.get(item.id);
+      if (old) old.qty += item.qty * row.count;
+      else items.set(item.id, { ...item, qty: item.qty * row.count });
+    }
+  }
+  return { list: [...items.values()].sort((a, b) => a.rare - b.rare || a.id.localeCompare(b.id)), zenny, steps };
+}
+
+function matSaveFavorites() {
+  try { localStorage.setItem(MAT_FAVORITES_KEY, JSON.stringify(matFavorites)); }
+  catch { if (typeof toast === 'function') toast('즐겨찾기를 저장할 수 없어 이번 방문에서만 유지됩니다'); }
+}
+
+function matAddFavorite() {
+  if (!matMon || !matTotals(matMon, matGear, matFrom, matTo).list.length) return;
+  matFavorites = matValidFavorites([...matFavorites, { mon: matMon.id, gear: matGear, from: matFrom, to: matTo, count: 1 }]);
+  matSaveFavorites(); drawMatResult();
+}
+
+function drawMatFavorites() {
+  const container = $('#mt-favorites'), open = container.querySelector('details')?.open ?? true;
+  const count = matFavorites.reduce((sum, row) => sum + row.count, 0);
+  container.innerHTML = `<details class="mt-favorites"${open ? ' open' : ''}><summary>즐겨찾기 ${count}개</summary>
+    <button class="btn ghost" data-mat-all${count ? '' : ' disabled'}>${matAllFavorites ? '개별 조회로 돌아가기' : '전체 재료 보기'}</button>
+    ${matFavorites.length ? `<ul>${matFavorites.map((row, i) => {
+      const mon = MATERIAL.monsters.find(m => m.id === row.mon);
+      return `<li><button class="mt-fav-go" data-mat-fav-go="${i}">${esc(mon.name)} · ${row.gear === 'weapon' ? '무기' : '방어구'}<small>${matLabel(row.from)} → ${matLabel(row.to)}</small></button>
+        <span class="mt-fav-count"><button data-mat-fav-count="${i}:-1" aria-label="수량 1개 줄이기">−</button><b>×${row.count}</b><button data-mat-fav-count="${i}:1" aria-label="수량 1개 늘리기">＋</button><button data-mat-fav-delete="${i}" aria-label="${esc(mon.name)} 즐겨찾기 삭제">×</button></span></li>`;
+    }).join('')}</ul>` : '<p class="state">재료 조회 결과에서 즐겨찾기를 추가해 주세요.</p>'}</details>`;
+}
 
 const matLabel = p => (p === '0_0' ? '제작 전' : 'G' + p.replace('_', '-'));
 
 function drawMaterial() {
   if (matDrawn || typeof MATERIAL === 'undefined') return;
   matDrawn = true;
+  try { matFavorites = matValidFavorites(JSON.parse(localStorage.getItem(MAT_FAVORITES_KEY) || '[]')); }
+  catch { matFavorites = []; }
 
   /* 출현 구역 필터. 여러 개 고르면 그중 하나라도 겹치는 몬스터를 보여줍니다.
      고룡은 특정 구역에 안 나와서 구역이 비어 있으므로 '없음' 칩으로 따로 걸립니다. */
@@ -153,6 +213,7 @@ function filterMonsters() {
 }
 
 function pickMonster(i) {
+  matAllFavorites = false;
   matMon = MATERIAL.monsters[i];
   matFrom = '0_0';
   matTo = '10_5';
@@ -198,7 +259,8 @@ function drawMatControls() {
 }
 
 function drawMatResult() {
-  const { list, zenny, steps } = matTotals(matMon, matGear, matFrom, matTo);
+  if (!matFavorites.length) matAllFavorites = false;
+  const { list, zenny, steps } = matAllFavorites ? matFavoriteTotals(matFavorites) : matTotals(matMon, matGear, matFrom, matTo);
   const gearTxt = matGear === 'weapon' ? '무기' : '방어구';
 
   /* 인게임 아이템 칸과 같은 배치: 희귀도 색으로 두른 아이콘 + 아래 RARE 띠,
@@ -206,7 +268,7 @@ function drawMatResult() {
   const cards = list.map(m => {
     // 파괴 부위는 R2 부터 한 칸씩 밀려 들어갑니다. 용옥 조각(R6)도 부위 영향을 받습니다.
     const own = m.id.startsWith(matMon.id + '_r');
-    const parts = (own || m.rare === 6) ? (matMon.break[m.rare - 2] || '') : '';
+    const parts = !matAllFavorites && (own || m.rare === 6) ? (matMon.break[m.rare - 2] || '') : '';
     const badge = parts.split(',').map(p => p.trim()).filter(Boolean)
       .map(p => `<i>${esc(MATERIAL.parts[p] || p)}</i>`).join('');
     const name = MATERIAL.names[m.id] || m.id;
@@ -235,15 +297,38 @@ function drawMatResult() {
       </li>`;
 
   $('#mt-result').innerHTML = list.length ? `
-    <p class="stone-label">${gearTxt} ${matLabel(matFrom)} → ${matLabel(matTo)} <i>강화 ${steps}회</i></p>
+    <div class="mt-result-head"><p class="stone-label">${matAllFavorites ? `즐겨찾기 전체 재료 · 장비 ${matFavorites.reduce((n, r) => n + r.count, 0)}개` : `${gearTxt} ${matLabel(matFrom)} → ${matLabel(matTo)}`} <i>강화 ${steps}회</i></p>
+      ${matAllFavorites ? '' : '<button class="btn ghost" data-mat-fav-add>☆ 즐겨찾기 추가</button>'}</div>
     <ul class="mt-list">${cards}${money}</ul>`
     : '<p class="state">이 구간에는 필요한 재료가 없습니다.</p>';
+  drawMatFavorites();
 }
 
 /* 클릭 한 곳에서 처리. 버튼이 매번 새로 그려지므로 위임이 안전합니다. */
 document.addEventListener('click', e => {
   const panel = e.target.closest('#panel-material');
   if (!panel) return;
+
+  if (e.target.closest('[data-mat-fav-add]')) return matAddFavorite();
+  if (e.target.closest('[data-mat-all]')) { matAllFavorites = !matAllFavorites; drawMatResult(); return; }
+  const favGo = e.target.closest('[data-mat-fav-go]');
+  if (favGo) {
+    const row = matFavorites[+favGo.dataset.matFavGo];
+    if (!row) return;
+    pickMonster(MATERIAL.monsters.findIndex(m => m.id === row.mon));
+    matGear = row.gear; matFrom = row.from; matTo = row.to;
+    drawMatControls(); drawMatResult(); $('#mt-ctl').scrollIntoView({ block: 'start' }); return;
+  }
+  const favCount = e.target.closest('[data-mat-fav-count]');
+  const favDelete = e.target.closest('[data-mat-fav-delete]');
+  if (favCount || favDelete) {
+    const [i, delta] = favCount ? favCount.dataset.matFavCount.split(':').map(Number) : [+favDelete.dataset.matFavDelete, 0];
+    const row = matFavorites[i];
+    if (!row) return;
+    if (favDelete || row.count + delta < 1) matFavorites.splice(i, 1);
+    else if (Number.isSafeInteger(row.count + delta)) row.count += delta;
+    matSaveFavorites(); drawMatResult(); return;
+  }
 
   const mon = e.target.closest('[data-mon]');
   if (mon) {
@@ -266,6 +351,7 @@ document.addEventListener('click', e => {
 
   const gear = e.target.closest('[data-gear]');
   if (gear) {
+    matAllFavorites = false;
     matGear = gear.dataset.gear;
     drawMatControls();
     drawMatResult();
@@ -274,6 +360,7 @@ document.addEventListener('click', e => {
 
   const lv = e.target.closest('[data-set]');
   if (lv) {
+    matAllFavorites = false;
     setMatLevel(lv.dataset.set, lv.dataset.kind, Number(lv.dataset.v));
     drawMatControls();
     drawMatResult();

@@ -37,6 +37,8 @@ const bdNewBuild = () => ({
 });
 
 let bdState = { builds: [bdNewBuild()], detail: false };
+let bdWeaponFilter = ''; // 화면만 거른다. 카드 이벤트는 원래 빌드 첨자를 사용한다.
+const bdVisibleBuilds = () => bdState.builds.map((b, bi) => ({ b, bi })).filter(({ b }) => !bdWeaponFilter || b.wt === bdWeaponFilter);
 
 const bdSet = key => BUILD.sets.find(s => s.key === key);
 /* 모든 장비 선택창은 저장된 공식 방어구 순번을 공유한다. 미등록 세트는 뒤로 둔다. */
@@ -853,7 +855,7 @@ function bdCard(b, bi) {
   const picked = (b.w ? 1 : 0) + BD_PARTS().filter(({ k }) => b[k]).length;
 
   return `
-    <article class="bd-card">
+    <article class="bd-card" data-build-index="${bi}" tabindex="-1">
       <header class="bd-ch">
         <input class="bd-title" data-name="${bi}" value="${esc(b.n)}" placeholder="빌드 ${bi + 1}" maxlength="24" aria-label="빌드 이름">
         <span class="bd-cnt">${picked}/6</span>
@@ -970,11 +972,34 @@ function bdTotalRow(name, lv) {
 }
 
 function bdRender() {
-  $('#bd-cards').innerHTML = bdState.builds.map(bdCard).join('');
+  if (bdWeaponFilter && !bdState.builds.some(b => b.wt === bdWeaponFilter)) bdWeaponFilter = '';
+  const visible = bdVisibleBuilds();
+  $('#bd-cards').innerHTML = visible.map(({ b, bi }) => bdCard(b, bi)).join('');
+  $('#bd-weapon-filter').innerHTML = `<button data-build-filter="" aria-pressed="${!bdWeaponFilter}">전체</button>`
+    + BUILD.weaponTypes.map(t => {
+      const count = bdState.builds.filter(b => b.wt === t.k).length;
+      return `<button data-build-filter="${t.k}" aria-pressed="${bdWeaponFilter === t.k}" title="${esc(t.n)} ${count}개" aria-label="${esc(t.n)} ${count}개"${count ? '' : ' disabled'}><img src="assets/part/${t.k}.png" width="26" height="26" alt=""><small>${count}</small></button>`;
+    }).join('');
   $('#bd-detail').setAttribute('aria-pressed', String(bdState.detail));
   $('#bd-add').disabled = bdState.builds.length >= BD_MAX;
-  $('#bd-count').textContent = `빌드 ${bdState.builds.length}개`;
+  $('#bd-count').textContent = bdWeaponFilter ? `${BUILD.weaponTypes.find(t => t.k === bdWeaponFilter).n} ${visible.length}개 / 전체 ${bdState.builds.length}개` : `빌드 ${bdState.builds.length}개`;
 }
+
+function bdFocusBuild(bi) {
+  const b = bdState.builds[bi];
+  if (!b) return;
+  if (bdWeaponFilter && bdWeaponFilter !== b.wt) bdWeaponFilter = b.wt;
+  bdDlg().close(); bdRender();
+  const card = $(`[data-build-index="${bi}"]`);
+  card.focus({ preventScroll: true }); card.scrollIntoView({ block: 'start' });
+}
+
+$('#bd-weapon-filter').addEventListener('click', e => {
+  const button = e.target.closest('[data-build-filter]');
+  if (!button || button.disabled) return;
+  bdWeaponFilter = bdWeaponFilter === button.dataset.buildFilter ? '' : button.dataset.buildFilter;
+  bdRender();
+});
 
 /* ── 선택 모달 ─────────────────────────────────────────────────── */
 let bdPick = null;             // { bi, target } 또는 { bi, part, slot } 등
@@ -1049,12 +1074,12 @@ function bdFillList() {
     const styleName = b.st ? bdStylesOf(b.wt)[b.st - 1] : null;
     return `
     <li class="bd-brow">
-      <span class="bd-lb">
+      <button class="bd-lb" data-build-go="${i}" aria-label="${esc((b.n || '').trim() || `빌드 ${i + 1}`)}로 이동">
         <span class="bd-bn"><img src="assets/part/${esc(b.wt)}.png" width="18" height="18" alt="">
           ${esc((b.n || '').trim() || `빌드 ${i + 1}`)}
           ${styleName ? `<i class="bd-lst">${esc(styleName)}</i>` : ''}</span>
         ${bdIconRow(b)}
-      </span>
+      </button>
       <span class="bd-bp">
         <button class="bd-ic" data-move="${i}:-1" title="위로" aria-label="위로"${i === 0 ? ' disabled' : ''}>${BD_I.up}</button>
         <button class="bd-ic" data-move="${i}:1" title="아래로" aria-label="아래로"${i === bdState.builds.length - 1 ? ' disabled' : ''}>${BD_I.down}</button>
@@ -1354,6 +1379,8 @@ $('#bd-cards').addEventListener('input', e => {
 $('#bd-modal-body').addEventListener('click', e => {
   if (bdDlg().dataset.owner !== 'build') return;      // 리더보드가 연 모달이면 record.js 담당
   const b = bdState.builds[bdPick.bi];
+  const go = e.target.closest('[data-build-go]');
+  if (go && bdPick.kind === 'list') return bdFocusBuild(+go.dataset.buildGo);
 
   const param = e.target.closest('[data-param-choice]');
   if (param && bdPick.kind === 'param' && bdStyleInfo(b).active) {
@@ -1488,7 +1515,8 @@ $('#bd-modal-close').addEventListener('click', () => bdDlg().close());
 $('#bd-add').addEventListener('click', () => {
   if (bdState.builds.length >= BD_MAX) return toast(`빌드는 ${BD_MAX}개까지입니다`);
   /* 새 빌드는 맨 앞에 — 만들자마자 만지는 것이 새 빌드라, 스크롤 없이 바로 보이게. */
-  bdState.builds.unshift(bdNewBuild());
+  bdState.builds.unshift({ ...bdNewBuild(), wt: bdWeaponFilter || 'shield-sword' });
+  bdWeaponFilter = '';
   bdSave(); bdRender();
 });
 $('#bd-detail').addEventListener('click', () => {
@@ -1646,7 +1674,8 @@ function bdAdopt(param, title) {
      뭉뚱그리면, 개수가 꽉 찬 것뿐인데 빌드가 깨진 줄로 읽습니다. */
   if (!b) return toast('빌드를 읽지 못했습니다'), false;
   if (bdState.builds.length >= BD_MAX) return toast(`빌드는 ${BD_MAX}개까지입니다`), false;
-  bdState.builds.push(b);
+  bdState.builds.unshift(b);
+  bdWeaponFilter = '';
   bdSave(); bdRender();
   return true;
 }

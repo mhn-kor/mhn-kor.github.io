@@ -92,5 +92,22 @@ for (const [what, run] of cases) {
 }
 pick();
 
-console.log(fail ? `실패 ${fail}건` : `통과 — 표본 ${GOLDEN.length}건, 몬스터 ${MATERIAL.monsters.length}마리`);
+const favoriteTotals = vm.runInContext('matFavoriteTotals', ctx), validFavorites = vm.runInContext('matValidFavorites', ctx);
+const fav = { mon: 'great_jagras', gear: 'weapon', from: '5_1', to: '10_5', count: 1 };
+const single = favoriteTotals([fav]);
+const twice = favoriteTotals([fav, fav]);
+assert.strictEqual(twice.zenny, single.zenny * 2);
+for (const item of single.list) assert.strictEqual(twice.list.find(x => x.id === item.id).qty, item.qty * 2);
+assert.strictEqual(validFavorites([fav, fav])[0].count, 2);
+const armor = { ...fav, gear: 'armor' }, a = favoriteTotals([armor]), merged = favoriteTotals([fav, armor]);
+assert.strictEqual(validFavorites([fav, armor]).length, 2);
+assert.strictEqual(merged.zenny, single.zenny + a.zenny);
+for (const item of merged.list) assert.strictEqual(item.qty,
+  (single.list.find(x => x.id === item.id)?.qty || 0) + (a.list.find(x => x.id === item.id)?.qty || 0));
+assert.ok(merged.list.some(x => x.id === 'weapon_refining_parts'));
+assert.ok(merged.list.some(x => x.id === 'armor_refining_parts'));
+assert.strictEqual(validFavorites([null, { ...fav, mon: 'unknown' }, { ...fav, count: -1 }, { ...fav, count: 1.5 }, { ...fav, to: fav.from }]).length, 0);
+assert.strictEqual(favoriteTotals([]).zenny, 0);
+
+console.log(fail ? `실패 ${fail}건` : `통과 — 표본 ${GOLDEN.length}건, 몬스터 ${MATERIAL.monsters.length}마리, 즐겨찾기 배수·무기/방어구 합산`);
 process.exit(fail ? 1 : 0);

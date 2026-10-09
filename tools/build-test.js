@@ -875,5 +875,51 @@ check('기본 회심 필드가 없는 무기도 강화 회심은 상단에 표�
   } finally { state.detail = detail; delete ctx.critDisplayBuild; }
 });
 
+check('무기군 필터는 원래 빌드 첨자와 전체 저장 목록을 보존한다', () => {
+  const before = vm.runInContext('bdState', ctx);
+  const previousSelector = ctx.$;
+  ctx.$ = sel => { const el = $stub(sel); el.setAttribute = () => {}; return el; };
+  try {
+    vm.runInContext('bdState = { builds: [bdNewBuild(), { ...bdNewBuild(), wt: "bow" }, { ...bdNewBuild(), wt: "hammer" }, { ...bdNewBuild(), wt: "bow" }], detail: false }; bdWeaponFilter = "bow";', ctx);
+    assert.strictEqual(JSON.stringify(vm.runInContext('bdVisibleBuilds().map(x => x.bi)', ctx)), '[1,3]');
+    vm.runInContext('bdRender()', ctx);
+    assert.ok(els['#bd-cards'].innerHTML.includes('data-build-index="3"'));
+    assert.ok(!els['#bd-cards'].innerHTML.includes('data-build-index="0"'));
+    assert.strictEqual(vm.runInContext('bdState.builds.length', ctx), 4);
+    vm.runInContext('bdFillList()', ctx);
+    assert.strictEqual((els['#bd-modal-body'].innerHTML.match(/data-build-go=/g) || []).length, 4);
+  } finally { ctx.$ = previousSelector; ctx.previousBuildState = before; vm.runInContext('bdState = previousBuildState; bdWeaponFilter = "";', ctx); delete ctx.previousBuildState; }
+});
+
+check('필터 상태에서 빌드 추가 시 기존 무기군으로 만들고 전체로 전환한다', () => {
+  const before = vm.runInContext('bdState', ctx), previousSelector = ctx.$;
+  ctx.$ = sel => { const el = $stub(sel); el.setAttribute = () => {}; return el; };
+  try {
+    vm.runInContext('bdState = { builds: [bdNewBuild(), { ...bdNewBuild(), wt: "bow" }], detail: false }; bdWeaponFilter = "bow";', ctx);
+    handlers['#bd-add:click']();
+    assert.strictEqual(vm.runInContext('bdState.builds[0].wt', ctx), 'bow');
+    assert.strictEqual(vm.runInContext('bdWeaponFilter', ctx), '');
+    assert.strictEqual((els['#bd-cards'].innerHTML.match(/data-build-index=/g) || []).length, 3);
+  } finally { ctx.$ = previousSelector; ctx.previousBuildState = before; vm.runInContext('bdState = previousBuildState; bdWeaponFilter = "";', ctx); delete ctx.previousBuildState; }
+});
+
+check('추천빌드 가져오기는 맨 앞에 추가하고 필터를 해제한다', () => {
+  const before = vm.runInContext('bdState', ctx), drawn = vm.runInContext('bdDrawn', ctx), previousSelector = ctx.$;
+  ctx.$ = sel => { const el = $stub(sel); el.setAttribute = () => {}; return el; };
+  try {
+    vm.runInContext('bdDrawn = true; bdState = { builds: [{ ...bdNewBuild(), n: "기존 빌드" }], detail: false }; bdWeaponFilter = "shield-sword";', ctx);
+    ctx.importParam = bdShareParam({ ...bdNewBuild(), wt: 'bow' });
+    assert.strictEqual(vm.runInContext('bdAdopt(importParam, "가져온 추천빌드")', ctx), true);
+    assert.strictEqual(vm.runInContext('bdState.builds[0].n', ctx), '가져온 추천빌드');
+    assert.strictEqual(vm.runInContext('bdState.builds[1].n', ctx), '기존 빌드');
+    assert.strictEqual(vm.runInContext('bdWeaponFilter', ctx), '');
+    assert.strictEqual((els['#bd-cards'].innerHTML.match(/data-build-index=/g) || []).length, 2);
+  } finally {
+    ctx.$ = previousSelector; ctx.previousBuildState = before; ctx.previousDrawn = drawn;
+    vm.runInContext('bdState = previousBuildState; bdDrawn = previousDrawn; bdWeaponFilter = "";', ctx);
+    delete ctx.previousBuildState; delete ctx.previousDrawn; delete ctx.importParam;
+  }
+});
+
 console.log(fail ? `실패 ${fail}건` : '모두 통과');
 process.exit(fail ? 1 : 0);

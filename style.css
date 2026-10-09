@@ -919,7 +919,16 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 
 /* 빌드 목록 창(bdOpenList). 줄 구조는 일괄선택 목록(.bd-brow)을 그대로 쓰고,
    장비 여섯 칸은 추천빌드 카드의 .bd-row6 을 그대로 씁니다. */
-.bd-lb { flex: 1; min-width: 0; padding: 3px 0; }
+.bd-lb { flex: 1; min-width: 0; padding: 3px 0; border: 0; background: none; text-align: left; color: var(--bone); font: inherit; cursor: pointer; }
+.bd-lb:hover .bd-bn { color: var(--amber-hi); }
+.bd-weapon-filter { display: flex; gap: 5px; overflow-x: auto; margin: 12px 0 18px; padding-bottom: 5px; }
+.bd-weapon-filter button { display: flex; align-items: center; justify-content: center; gap: 3px; flex: none; min-width: 43px; min-height: 40px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--bone); cursor: pointer; }
+.bd-weapon-filter button[aria-pressed="true"] { border-color: var(--amber); background: rgba(233,161,59,.15); }
+.bd-weapon-filter button:disabled { opacity: .3; cursor: default; }
+.bd-weapon-filter small { font-size: .6rem; }
+.bd-card { scroll-margin-top: 118px; }
+.bd-card:focus { outline: 2px solid var(--amber); outline-offset: 3px; }
+@media (max-width: 640px) { .bd-card { scroll-margin-top: 74px; } }
 .bd-lb .bd-bn { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 5px; }
 .bd-lb .bd-row6 { margin-bottom: 0; }
 /* 무기 스타일 뱃지 — 카드의 .bd-style.on 과 같은 보라 알약, 읽기 전용이라 작게. */
@@ -1188,6 +1197,17 @@ dialog menu { display: flex; gap: 8px; justify-content: flex-end; margin: 4px 0 
 }
 
 /* 무기 / 방어구 전환 */
+.mt-favorites { margin: 15px 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); }
+.mt-favorites summary { cursor: pointer; color: var(--amber); font-size: .85rem; margin-bottom: 8px; }
+.mt-favorites ul { list-style: none; margin: 8px 0 0; padding: 0; }
+.mt-favorites li { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 7px 0; border-top: 1px solid var(--line); }
+.mt-fav-go { flex: 1; min-width: 140px; border: 0; background: none; text-align: left; color: var(--bone); cursor: pointer; font: inherit; font-size: .79rem; }
+.mt-fav-go small { display: block; color: var(--muted); margin-top: 3px; }
+.mt-fav-count { display: flex; align-items: center; gap: 6px; font-size: .76rem; }
+.mt-fav-count button { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 5px; background: none; color: var(--bone); cursor: pointer; }
+.mt-result-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.mt-result-head .stone-label { margin: 0; }
+.mt-result-head .btn { font-size: .75rem; padding: 7px 10px; }
 .mt-gear { display: flex; align-items: center; gap: 6px; margin: 22px 0 14px; }
 .mt-gear button {
   font: inherit; font-size: .86rem; font-weight: 700; padding: 7px 18px; cursor: pointer;
