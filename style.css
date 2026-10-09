@@ -543,6 +543,23 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
   color: var(--muted); background: var(--surface-2); border: 1px solid var(--line);
 }
 .bd-style.on { color: #CBA6F7; background: rgba(160,120,230,.16); border-color: rgba(160,120,230,.45); }
+.bd-style:disabled { opacity: .4; cursor: default; }
+.bd-weapon-line .bd-pick { flex: 1; overflow: hidden; }
+.bd-weapon-line .bd-nm { overflow: hidden; text-overflow: ellipsis; }
+.bd-weapon-line .bd-style { margin-left: 0; }
+.bd-params { display: flex; flex: none; gap: 1px; }
+.bd-gem { position: relative; isolation: isolate; width: 24px; height: 28px; border: 0; padding: 0; background: none; color: var(--bone); font-size: .65rem; cursor: pointer; }
+.bd-gem::before { content: ''; position: absolute; z-index: -1; inset: 7px 5px; transform: rotate(45deg); border: 1px solid var(--muted); border-radius: 2px; background: var(--c, transparent); }
+.bd-gem.atk, .bd-param-dot.atk { --c: #e35c58; }
+.bd-gem.crit, .bd-param-dot.crit { --c: #539aea; }
+.bd-gem.ele, .bd-param-dot.ele { --c: #aa6be0; }
+.bd-gem:disabled { opacity: .35; cursor: default; }
+.bd-gem:focus-visible { outline: 1px solid var(--amber); border-radius: 4px; }
+.bd-param-dot { display: inline-block; width: 10px; height: 10px; margin-right: 10px; transform: rotate(45deg); background: var(--c); }
+.bd-style-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; font-size: .68rem; color: var(--muted); }
+.bd-style-controls label { display: inline-flex; align-items: center; gap: 4px; }
+.bd-style-controls input { width: 13px; height: 13px; margin: 0; accent-color: var(--amber); }
+.bd-style-controls label:has(input:disabled) { opacity: .5; }
 
 .bd-stat {
   display: flex; gap: 5px 11px; flex-wrap: wrap; align-items: baseline;

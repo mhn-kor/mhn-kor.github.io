@@ -34,7 +34,7 @@ vm.createContext(ctx);
 /* 표류석은 smelt-data.js 에서 옵니다 — 공유 링크 길이의 대부분이 표류석입니다.
    skill-desc.js 도 실어야 브라우저와 같은 조건이 됩니다. 빼면 SKILLDESC 가 없어서
    bdSkillDesc 가 늘 표류연성 쪽으로 떨어지고, 진짜로 빠진 스킬이 무엇인지 가려집니다. */
-for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build-styles.js', 'build.js']) {
+for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build-styles.js', 'build-style-data.js', 'build.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 }
 /* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
@@ -788,6 +788,91 @@ check('활 보정은 첫 Lv4와 집중을 별도로 계산하고 저장·공유�
   } finally {
     BUILD.sets.pop(); state.builds.pop(); delete ctx.bowTestBuild;
   }
+});
+
+check('스타일20 지원 무기 전체의 자동 상승·파라미터·해제·공유', () => {
+  const data = vm.runInContext('BD_STYLE_DATA', ctx);
+  const stats = b => { ctx.styleTestBuild = b; return vm.runInContext('bdStats(styleTestBuild)', ctx); };
+  try {
+    for (const [key, record] of Object.entries(data.weapons)) {
+      if (record.status !== 'supported') continue;
+      const [set, type] = key.split(':'), profile = data.profiles[record.profile];
+      const b = { ...bdNewBuild(), w: set, wt: type, st: 1, style20: true };
+      for (const stat of ['atk', 'ele', 'crit']) {
+        b.params = [10, 15, 20].map(lv => profile.parameters[lv].some(p => p.stat === stat) ? stat : null);
+        const got = stats(b).base;
+        for (const k of ['atk', 'ele', 'crit']) assert.strictEqual(got[k], record.base[k] + profile.bonus20[k]
+          + [10, 15, 20].reduce((sum, lv, i) => sum + (b.params[i] === k ? profile.parameters[lv].find(p => p.stat === k).value : 0), 0), key + ' ' + k);
+      }
+      const shared = bdParse(bdShareParam(b));
+      assert.strictEqual(shared.style20, true);
+      assert.strictEqual(JSON.stringify(shared.params), JSON.stringify(b.params));
+      b.style20 = false;
+      const off = stats(b).base, w = BUILD.sets.find(s => s.key === set).weapons.find(w => w.t === type);
+      assert.deepStrictEqual(JSON.parse(JSON.stringify(off)), { atk: w.atk, ele: w.ele || 0, crit: w.crit || 0 });
+      b.style20 = true; b.st = 0;
+      assert.strictEqual(JSON.stringify(stats(b).base), JSON.stringify(off));
+    }
+    const b = { ...bdNewBuild(), w: 'spring-26', wt: 'light-gun', st: 1, style20: true, params: ['atk', 'crit', 'ele'] };
+    stats(b); vm.runInContext('bdNormalizeParams(styleTestBuild)', ctx);
+    assert.strictEqual(JSON.stringify(b.params), '["atk",null,null]');
+    const old = bdParse(bdShareParam(bdNewBuild()));
+    assert.strictEqual(old.style20, false);
+    assert.strictEqual(JSON.stringify(old.params), '[null,null,null]');
+  } finally { delete ctx.styleTestBuild; }
+});
+
+check('스타일 회심은 공격 증강【회심】에 포함되고 스킬 회심은 제외', () => {
+  const data = vm.runInContext('BD_STYLE_DATA', ctx), state = vm.runInContext('bdState', ctx);
+  const record = data.weapons['puke:shield-sword'];
+  const set = { key: 'style-crit-test', name: '스타일 회심 테스트', pieces: {},
+    weaponSkills: [{ s: '공격 증강【회심】', lv: 1 }, { s: '간파', lv: 5 }],
+    weapons: [{ t: 'shield-sword', atk: 1912, ele: 417, crit: 0, e: '독' }] };
+  BUILD.sets.push(set); data.weapons[set.key + ':shield-sword'] = record;
+  const b = { ...bdNewBuild(), w: set.key, st: 1, style20: true, params: ['crit', 'crit', 'crit'] };
+  state.builds.push(b); ctx.styleCritBuild = b;
+  try {
+    const got = vm.runInContext('bdStats(styleCritBuild)', ctx);
+    assert.strictEqual(got.base.crit, 30);
+    assert.strictEqual(got.co.A, 30 * 8);
+    assert.strictEqual(got.now.crit, 70);
+    b.params = ['atk', 'atk', 'atk'];
+    assert.strictEqual(vm.runInContext('bdStats(styleCritBuild).co.A', ctx), 0);
+  } finally { BUILD.sets.pop(); state.builds.pop(); delete data.weapons[set.key + ':shield-sword']; delete ctx.styleCritBuild; }
+});
+
+check('스타일 미지원·미확인 무기는 버튼과 직접 선택 경로를 막는다', () => {
+  const data = vm.runInContext('BD_STYLE_DATA', ctx), state = vm.runInContext('bdState', ctx);
+  for (const status of ['unsupported', 'unknown']) {
+    const [key] = Object.entries(data.weapons).find(([, r]) => r.status === status);
+    const [set, type] = key.split(':'), b = { ...bdNewBuild(), w: set, wt: type, st: 1 };
+    state.builds.push(b); ctx.unsupportedBuild = b;
+    try {
+      const html = vm.runInContext('bdCard(unsupportedBuild, 0)', ctx);
+      assert.ok(/data-style="0" disabled/.test(html));
+      const before = vm.runInContext('bdPick', ctx);
+      vm.runInContext('bdOpenStyle(bdState.builds.length - 1)', ctx);
+      assert.strictEqual(vm.runInContext('bdPick', ctx), before);
+      vm.runInContext('bdNormalizeParams(unsupportedBuild)', ctx);
+      assert.strictEqual(b.st, 0);
+      assert.strictEqual(bdParse(bdShareParam({ ...b, st: 2 })).st, 0);
+    } finally { state.builds.pop(); delete ctx.unsupportedBuild; }
+  }
+});
+
+check('기본 회심 필드가 없는 무기도 강화 회심은 상단에 표시한다', () => {
+  const state = vm.runInContext('bdState', ctx), detail = state.detail;
+  const b = { ...bdNewBuild(), w: 'puke', wt: 'shield-sword', st: 1,
+    style20: true, params: ['crit', 'crit', 'crit'] };
+  state.detail = true; ctx.critDisplayBuild = b;
+  try {
+    const html = vm.runInContext('bdCard(critDisplayBuild, 0)', ctx);
+    assert.ok(/class="cr"[^]*?<b>\+30%<\/b>/.test(html));
+    b.style20 = false;
+    const off = vm.runInContext('bdCard(critDisplayBuild, 0)', ctx);
+    assert.ok(!off.includes('<b>+30%</b>'));
+    assert.strictEqual(vm.runInContext('bdStats(critDisplayBuild).base.crit', ctx), 0);
+  } finally { state.detail = detail; delete ctx.critDisplayBuild; }
 });
 
 console.log(fail ? `실패 ${fail}건` : '모두 통과');

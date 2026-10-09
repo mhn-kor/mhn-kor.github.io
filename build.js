@@ -33,7 +33,7 @@ const bdNewBuild = () => ({
   helm: null, mail: null, gloves: null, belt: null, greaves: null,
   ds: { helm: [], mail: [], gloves: [], belt: [], greaves: [] },
   /* 켜 둔 조건부 스킬 이름. 기본은 전부 꺼짐입니다. */
-  cond: {}, bowEfficiency: false,
+  cond: {}, bowEfficiency: false, style20: false, params: [null, null, null],
 });
 
 let bdState = { builds: [bdNewBuild()], detail: false };
@@ -51,6 +51,47 @@ const bdWeaponOf = b => {
 const bdWSkills = (s, w) => (w && w.sk) || (s ? s.weaponSkills : []);
 const bdStylesOf = wt => (typeof BD_STYLES !== 'undefined' && BD_STYLES[wt]) || [];
 const bdSpOf = wt => (typeof BD_SP !== 'undefined' && BD_SP[wt]) || null;
+
+const BD_PARAM_LEVELS = [10, 15, 20];
+const BD_PARAM_NAMES = { atk: '공격력', crit: '회심률', ele: '속성' };
+function bdStyleInfo(b) {
+  const record = typeof BD_STYLE_DATA !== 'undefined' && BD_STYLE_DATA.weapons[b.w + ':' + b.wt];
+  const profile = record?.status === 'supported' ? BD_STYLE_DATA.profiles[record.profile] : null;
+  const params = BD_PARAM_LEVELS.map((lv, i) => profile?.parameters[lv]?.find(p => p.stat === b.params?.[i]) || null);
+  const selected = !!bdStylesOf(b.wt)[b.st - 1];
+  return { record, profile, params, available: !!profile && selected, active: !!profile && selected && !!b.style20 };
+}
+
+function bdWeaponBase(b) {
+  const w = bdWeaponOf(b), info = bdStyleInfo(b);
+  const base = { atk: w?.atk || 0, ele: w?.ele || 0, crit: w?.crit || 0 };
+  if (!info.active) return base;
+  for (const stat of ['atk', 'ele', 'crit']) base[stat] = info.record.base[stat] + info.profile.bonus20[stat]
+    + info.params.reduce((sum, p) => sum + (p?.stat === stat ? p.value : 0), 0);
+  return base;
+}
+
+function bdNormalizeParams(b) {
+  const info = bdStyleInfo(b);
+  b.params = info.params.map(p => p?.stat || null);
+  if (!info.profile) b.st = 0;
+}
+
+function bdParamSlots(b, bi) {
+  const info = bdStyleInfo(b);
+  return `<span class="bd-params">${info.params.map((p, i) => {
+    const label = `Lv${BD_PARAM_LEVELS[i]} 파라미터: ${p ? BD_PARAM_NAMES[p.stat] + ' +' + p.value + (p.stat === 'crit' ? '%' : '') : '미선택'}`;
+    return `<button class="bd-gem ${p?.stat || 'empty'}" data-param="${bi}:${i}" title="${esc(label)}" aria-label="${esc(label)}"${info.active ? '' : ' disabled'}>${p ? { atk: '+', crit: '✦', ele: '◆' }[p.stat] : ''}</button>`;
+  }).join('')}</span>`;
+}
+
+function bdStyleControl(b, bi) {
+  if (!bdWeaponOf(b)) return '';
+  const info = bdStyleInfo(b);
+  const reason = !info.profile ? info.record?.status === 'unsupported' ? '강화 미지원' : '강화 정보 미확인' : !info.available ? '스타일 선택 필요' : '';
+  return `<span class="bd-style-controls"><label><input type="checkbox" data-style20="${bi}"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
+    ${reason ? `<small>${reason}</small>` : ''}</span>`;
+}
 
 function bdSave() {
   /* 저장이 막힌 브라우저(사파리 «모든 쿠키 차단», 쿼터 초과)에서도 화면까지 죽이지
@@ -221,7 +262,7 @@ function bdSkillDesc(name, lv) {
    모션치·육질은 공격 동작과 부위마다 달라 빌드만으로는 정할 수 없어 1 로 둡니다. */
 function bdStats(b) {
   const w = bdWeaponOf(b);
-  const base = { atk: (w && w.atk) || 0, ele: (w && w.ele) || 0, crit: (w && w.crit) || 0 };
+  const base = bdWeaponBase(b);
   let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, critX = BD_CRIT_UP, negCritX = null, crit = base.crit;
   const lvOf = new Map(bdTotals(b));
   const on = b.cond || {};
@@ -528,7 +569,8 @@ function bdShareParam(b) {
   const p = [`w=${b.w || ''}`, `wt=${b.wt}`, b.st ? `st=${b.st}` : '', ds.length ? `ds=${ds.join(';')}` : '',
     cond.length ? `c=${cond.join(';')}` : '']
     .concat(BD_PARTS().map(({ k }) => `${k}=${b[k] || ''}`)).filter(Boolean).join(',');
-  return bdEscape(p + (b.bowEfficiency ? ',bf=1' : ''));
+  return bdEscape(p + (b.bowEfficiency ? ',bf=1' : '') + (b.style20 ? ',se=1' : '')
+    + (b.params?.some(Boolean) ? ',sp=' + b.params.map(p => p || '').join(';') : ''));
 }
 /* 링크 복사는 지금 보고 있는 주소를 씁니다(로컬에서 붙여넣어 확인할 수 있게).
    카카오·공유 시트로 나가는 링크는 받는 사람이 열 수 있어야 하므로 배포 절대 주소를 씁니다.
@@ -744,7 +786,9 @@ function bdCard(b, bi) {
   const styles = bdStylesOf(b.wt);
   const sp = bdSpOf(b.wt);
   const wsk = ws ? bdWSkills(ws, w) : [];
-  const styleName = b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
+  const styleSupported = !!w && !!bdStyleInfo(b).profile;
+  const styleName = styleSupported && b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
+  const weaponBase = bdWeaponBase(b);
   const type = BUILD.weaponTypes.find(t => t.k === b.wt);
   const D = bdState.detail;
 
@@ -757,23 +801,25 @@ function bdCard(b, bi) {
         <img src="assets/part/${esc(b.wt)}.png" width="24" height="24" alt="${esc(type.n)}">
       </button>
       <span class="bd-body">
-        <span class="bd-line">
+        <span class="bd-line bd-weapon-line">
           <button class="bd-pick" data-pick="${bi}:weapon">
             ${ws ? bdMon(ws.key) + `<span class="bd-nm">${esc(ws.name)}</span>`
                  : '<span class="bd-nm empty">무기 선택</span>'}
           </button>
-          ${styles.length ? `<button class="bd-style${b.st ? ' on' : ''}" data-style="${bi}">${esc(styleName || '스타일 없음')}</button>` : ''}
+          ${w ? bdParamSlots(b, bi) : ''}
+          ${styles.length ? `<button class="bd-style${styleName ? ' on' : ''}" data-style="${bi}"${styleSupported ? '' : ' disabled title="선택한 무기의 스타일 강화가 지원되지 않거나 확인되지 않았습니다."'}>${esc(styleName || '스타일 없음')}</button>` : ''}
         </span>
+        ${bdStyleControl(b, bi)}
         ${wsk.length ? `<span class="bd-inline">${bdChips(wsk)}</span>` : ''}
       </span>
     </div>
     ${D && w ? `<div class="bd-stat">
         <b class="wn">${esc(w.name)}</b>
-        ${w.atk ? `<span>${BD_SI.atk}<b>${w.atk}</b></span>` : ''}
+        ${w.atk ? `<span>${BD_SI.atk}<b>${weaponBase.atk}</b></span>` : ''}
         ${w.e && BD_EI[w.e]
-          ? `<span class="el" title="${esc(w.e)}속성">${bdIco(`assets/element/${BD_EI[w.e]}.png`)}${w.ele != null ? `<b>${w.ele}</b>` : ''}</span>`
+          ? `<span class="el" title="${esc(w.e)}속성">${bdIco(`assets/element/${BD_EI[w.e]}.png`)}${w.ele != null ? `<b>${weaponBase.ele}</b>` : ''}</span>`
           : '<span class="el">무속성</span>'}
-        ${w.crit != null ? `<span class="cr${w.crit < 0 ? ' minus' : ''}">${BD_SI.crit}<b>${w.crit > 0 ? '+' : ''}${w.crit}%</b></span>` : ''}
+        ${w.crit != null || weaponBase.crit !== 0 ? `<span class="cr${weaponBase.crit < 0 ? ' minus' : ''}">${BD_SI.crit}<b>${weaponBase.crit > 0 ? '+' : ''}${weaponBase.crit}%</b></span>` : ''}
         ${sp ? `<span class="sp">SP ${esc(styleName || sp)}</span>` : ''}
         ${wx ? wx.map(t => `<span class="wx">${esc(t)}</span>`).join('') : ''}
       </div>` : ''}`;
@@ -1025,14 +1071,25 @@ function bdOpenList() {
 
 /* 스타일 강화 */
 function bdOpenStyle(bi) {
-  bdPick = { kind: 'st', bi };
   const b = bdState.builds[bi];
+  if (!b || !bdWeaponOf(b) || !bdStyleInfo(b).profile) return;
+  bdPick = { kind: 'st', bi };
   const styles = bdStylesOf(b.wt);
   bdOpen('스타일 강화',
     `<ul class="bd-list">
       <li><button class="bd-lr${b.st === 0 ? ' on' : ''}" data-v="0">스타일 강화 없음</button></li>
       ${styles.map((s, i) => `<li><button class="bd-lr${b.st === i + 1 ? ' on' : ''}" data-v="${i + 1}">${esc(s)}</button></li>`).join('')}
     </ul>`, false);
+}
+
+function bdOpenParam(bi, slot) {
+  const b = bdState.builds[bi], info = bdStyleInfo(b);
+  if (!info.active || !BD_PARAM_LEVELS[slot]) return;
+  bdPick = { kind: 'param', bi, slot };
+  const lv = BD_PARAM_LEVELS[slot];
+  bdOpen(`Lv${lv} 파라미터 선택`, `<ul class="bd-list">
+    ${info.profile.parameters[lv].map(p => `<li><button class="bd-lr${b.params?.[slot] === p.stat ? ' on' : ''}" data-param-choice="${p.stat}"><span class="bd-param-dot ${p.stat}"></span>${BD_PARAM_NAMES[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}</button></li>`).join('')}
+    <li><button class="bd-lr" data-param-choice="">선택 해제</button></li></ul>`, false);
 }
 
 /* 장비 (무기 소재 / 방어구 세트) */
@@ -1227,6 +1284,8 @@ $('#bd-cards').addEventListener('click', e => {
   if (wt) return bdOpenType(+wt.dataset.wt);
   const st = t.closest('[data-style]');
   if (st) return bdOpenStyle(+st.dataset.style);
+  const param = t.closest('[data-param]');
+  if (param) { const [bi, slot] = param.dataset.param.split(':').map(Number); return bdOpenParam(bi, slot); }
   const ds = t.closest('[data-ds]');
   if (ds) { const [bi, part, slot] = ds.dataset.ds.split(':'); return bdOpenStone(+bi, part, +slot); }
 
@@ -1263,6 +1322,12 @@ $('#rc-view-gear')?.addEventListener('click', e => {
 });
 
 $('#bd-cards').addEventListener('change', e => {
+  const style20 = e.target.closest('[data-style20]');
+  if (style20) {
+    const b = bdState.builds[+style20.dataset.style20];
+    if (b && bdStyleInfo(b).available) { b.style20 = style20.checked; bdSave(); bdRender(); }
+    return;
+  }
   const bow = e.target.closest('[data-bow-eff]');
   if (bow) {
     const b = bdState.builds[+bow.dataset.bowEff];
@@ -1290,6 +1355,14 @@ $('#bd-modal-body').addEventListener('click', e => {
   if (bdDlg().dataset.owner !== 'build') return;      // 리더보드가 연 모달이면 record.js 담당
   const b = bdState.builds[bdPick.bi];
 
+  const param = e.target.closest('[data-param-choice]');
+  if (param && bdPick.kind === 'param' && bdStyleInfo(b).active) {
+    b.params = bdStyleInfo(b).params.map(p => p?.stat || null);
+    const choices = bdStyleInfo(b).profile.parameters[BD_PARAM_LEVELS[bdPick.slot]];
+    b.params[bdPick.slot] = choices.some(p => p.stat === param.dataset.paramChoice) ? param.dataset.paramChoice : null;
+    bdSave(); bdRender(); return bdDlg().close();
+  }
+
   /* 빌드 목록: ▲▼로 이웃과 자리를 바꿉니다. 창은 열어 둔 채 뒤의 카드도 같이 다시 그립니다. */
   const mv = e.target.closest('[data-move]');
   if (mv) {
@@ -1302,7 +1375,7 @@ $('#bd-modal-body').addEventListener('click', e => {
   const gi = e.target.closest('.bd-gi');
   if (gi) {
     if (bdPick.kind !== 'wt' || !bdTypeAllowed(b, gi.dataset.v) || b.wt === gi.dataset.v) return;
-    b.wt = gi.dataset.v; b.st = 0;
+    b.wt = gi.dataset.v; b.st = 0; bdNormalizeParams(b);
     bdSave(); bdRender(); return bdDlg().close();
   }
   /* 일괄선택: 스킬 뱃지 빼기. */
@@ -1328,10 +1401,13 @@ $('#bd-modal-body').addEventListener('click', e => {
   }
   const lr = e.target.closest('.bd-lr');
   if (!lr) return;
-  if (bdPick.kind === 'st') { b.st = +lr.dataset.v; bdSave(); bdRender(); return bdDlg().close(); }
+  if (bdPick.kind === 'st') {
+    if (!bdStyleInfo(b).profile) return;
+    b.st = +lr.dataset.v; bdSave(); bdRender(); return bdDlg().close();
+  }
   if (bdPick.kind === 'gear') {
     const v = lr.dataset.v || null;
-    if (bdPick.target === 'weapon') b.w = v;
+    if (bdPick.target === 'weapon') { b.w = v; bdNormalizeParams(b); }
     else { b[bdPick.target] = v; b.ds[bdPick.target] = []; }   // 세트가 바뀌면 슬롯 수도 바뀝니다
     bdSave(); bdRender(); return bdDlg().close();
   }
@@ -1542,6 +1618,9 @@ function bdParse(param, title) {
   if (bdSet(kv.w)) b.w = kv.w;
   b.st = Math.max(0, Math.min(bdStylesOf(b.wt).length, parseInt(kv.st, 10) || 0));
   b.bowEfficiency = kv.bf === '1';
+  b.style20 = kv.se === '1';
+  b.params = String(kv.sp || '').split(';').slice(0, 3);
+  bdNormalizeParams(b);
   for (const { k } of BUILD.parts) if (bdSet(kv[k]) && bdSet(kv[k]).pieces[k]) b[k] = kv[k];
   /* 방어구를 먼저 채운 뒤에 표류석을 끼웁니다. 칸 수가 방어구에 달려 있습니다. */
   for (const e of String(kv.ds || '').split(';')) {
@@ -1679,6 +1758,7 @@ function drawBuild() {
       const saved = JSON.parse(localStorage.getItem(BD_KEY) || 'null');
       if (saved && Array.isArray(saved.builds) && saved.builds.length) {
         bdState = { detail: !!saved.detail, builds: saved.builds.map(x => ({ ...bdNewBuild(), ...x, ds: { ...bdNewBuild().ds, ...(x.ds || {}) }, cond: { ...(x.cond || {}) } })) };
+        bdState.builds.forEach(bdNormalizeParams);
         hasSaved = true;
       }
     } catch (e) { /* 저장값이 깨졌으면 기본값으로 */ }
