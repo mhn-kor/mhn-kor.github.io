@@ -33,7 +33,7 @@ const bdNewBuild = () => ({
   helm: null, mail: null, gloves: null, belt: null, greaves: null,
   ds: { helm: [], mail: [], gloves: [], belt: [], greaves: [] },
   /* 켜 둔 조건부 스킬 이름. 기본은 전부 꺼짐입니다. */
-  cond: {},
+  cond: {}, bowEfficiency: false,
 });
 
 let bdState = { builds: [bdNewBuild()], detail: false };
@@ -175,6 +175,25 @@ const BD_BRUTAL_RATE = 0.3; // 역회심 발생 중 흉회심으로 바뀌는 �
 /* 기본 체력. 하이 차지가 «남은 체력 게이지» 를 쓰므로 만피 기준으로 잡습니다. */
 const BD_BASE_HP = 100;
 
+/* 첫 칸은 0차지. 일반은 과거 60fps 실측, 강연사는 사용자 실측 3차지 9초.
+   스타일별 집중0·3차지가 비교 기준이며, 공격 동작은 각각 1초로 가정한다. */
+function bdBowCycle(b, lvOf) {
+  const w = bdWeaponOf(b);
+  if (w?.t !== 'bow') return null;
+  const style = b.st ? bdStylesOf('bow')[b.st - 1] : '일반';
+  if (!['일반', '강연사'].includes(style)) return { reason: '이 스타일은 모으기 시간 보정을 지원하지 않습니다.' };
+  const arrows = w.x?.slice(0, 4);
+  const charge = arrows?.findIndex(x => /^Lv4\s+(연사|관통|확산)$/.test(x)) ?? -1;
+  if (charge < 0) return { reason: '첫 Lv4 화살 정보를 확인할 수 없습니다.' };
+  const focus = Math.max(0, Math.min(5, lvOf.get('집중') || 0));
+  const reduction = [0, .05, .1, .15, .2, .3][focus];
+  const step = style === '강연사' ? 3 : 70 / 60, actions = style === '강연사' ? 3 : 2;
+  const chargeTime = step * charge, current = chargeTime * (1 - reduction) + actions;
+  const reference = step * 3 + actions;
+  return { style, charge, arrow: arrows[charge].replace(/^Lv4\s+/, '') + ' Lv4', focus,
+    reduction, chargeTime, actions, current, reference, multiplier: reference / current };
+}
+
 /* 스킬 설명은 레벨별로 값이 달라, 합산된 레벨의 문장을 씁니다.
    상한을 넘겨 찍혔으면 표에 있는 마지막 레벨로 자릅니다. */
 /* 한 스킬의 레벨별 설명 전부. 공식 스킬 페이지(SKILLDESC)가 원본이고, 거기 없으면
@@ -268,9 +287,11 @@ function bdStats(b) {
   const r = Math.max(0, -q);
   const G = q >= 0 ? 1 + q * (critX - 1) : negCritX == null ? 1 + r * (BD_CRIT_DOWN - 1)
     : r * BD_BRUTAL_RATE * negCritX + r * (1 - BD_BRUTAL_RATE) * BD_CRIT_DOWN + (1 - r);
-  const score = Math.round((now.atk + now.ele) * F * G);
+  const baseScore = Math.round((now.atk + now.ele) * F * G);
+  const bowCycle = bdBowCycle(b, lvOf);
+  const score = b.bowEfficiency && bowCycle?.multiplier ? Math.round(baseScore * bowCycle.multiplier) : baseScore;
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
-  return { base, now, score, hp, conds, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX, negCritX } };
+  return { base, now, score, baseScore, bowCycle, hp, conds, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX, negCritX } };
 }
 
 function bdTotals(b) {
@@ -307,6 +328,31 @@ function bdCondList(b) {
         <i>${esc(what)}</i>
       </label>`;
     }).join('')}
+  </div>`;
+}
+
+function bdBowEfficiency(b, stats) {
+  const c = stats.bowCycle;
+  if (!c) return '';
+  const bi = bdState.builds.indexOf(b), enabled = !c.reason, on = enabled && b.bowEfficiency;
+  const f = n => String(Math.round(n * 1000) / 1000);
+  return `<div class="bd-bow-eff">
+    <label class="bd-bow-check"><input type="checkbox" data-bow-eff="${bi}"${on ? ' checked' : ''}${!enabled || bi < 0 ? ' disabled' : ''}>
+      집중·차지 효율 보정${on ? ` <b>×${f(c.multiplier)}</b>` : ''}</label>
+    ${!enabled ? `<small>${esc(c.reason)}</small>` : !on ? '' : `
+    <details><summary><span class="bd-bow-result">${c.charge}차지 Lv4 · 집중${c.focus} · <b>${stats.baseScore} → ${stats.score}점</b></span><span>계산 근거</span></summary>
+      <p><strong>스타일:</strong> ${esc(c.style)}</p>
+      <p><strong>주 사용 화살:</strong> ${c.charge}차지 · ${esc(c.arrow)}</p>
+      <p>집중 Lv${c.focus}: 모으기 시간 ${f(c.reduction * 100)}% 단축</p>
+      <p>모으기: ${f(c.chargeTime)}초 × ${f(1 - c.reduction)} = ${f(c.chargeTime * (1 - c.reduction))}초</p>
+      <p>공격 동작: 발사 1초＋강사 1초${c.style === '강연사' ? '＋강연사 1초' : ''} = ${c.actions}초</p>
+      <p>현재 사이클: ${f(c.current)}초 / 기준: 같은 스타일의 집중 0 · 3차지 ${f(c.reference)}초</p>
+      <p>보정배율: ${f(c.reference)} ÷ ${f(c.current)} = <b>×${f(c.multiplier)}</b></p>
+      <p>기존 점수 ${stats.baseScore} × 보정배율 = <b>${stats.score}점</b></p>
+      <p class="bd-bow-note">첫 번째 Lv4 화살을 사용하고 공격을 끊임없이 한다는 가정입니다.<br>
+        공격 동작은 각각 1초로 가정합니다.<br>
+        비교는 일반적인 1/2/3/4랩의 동일 스타일의 활과 비교한 값입니다.</p>
+    </details>`}
   </div>`;
 }
 
@@ -482,7 +528,7 @@ function bdShareParam(b) {
   const p = [`w=${b.w || ''}`, `wt=${b.wt}`, b.st ? `st=${b.st}` : '', ds.length ? `ds=${ds.join(';')}` : '',
     cond.length ? `c=${cond.join(';')}` : '']
     .concat(BD_PARTS().map(({ k }) => `${k}=${b[k] || ''}`)).filter(Boolean).join(',');
-  return bdEscape(p);
+  return bdEscape(p + (b.bowEfficiency ? ',bf=1' : ''));
 }
 /* 링크 복사는 지금 보고 있는 주소를 씁니다(로컬에서 붙여넣어 확인할 수 있게).
    카카오·공유 시트로 나가는 링크는 받는 사람이 열 수 있어야 하므로 배포 절대 주소를 씁니다.
@@ -824,7 +870,8 @@ function bdStatBar(b) {
 function bdCalc(b) {
   const w = bdWeaponOf(b);
   if (!w) return '';
-  const { base, now, score, hp, co } = bdStats(b);
+  const stats = bdStats(b);
+  const { base, now, baseScore: score, hp, co } = stats;
   const f = n => (Math.round(n * 1000) / 1000).toString();
   const rows = [];
 
@@ -846,6 +893,7 @@ function bdCalc(b) {
   return `<div class="bd-calc">
     ${rows.map(r => `<p>${r}</p>`).join('')}
     ${bdCondList(b)}
+    ${bdBowEfficiency(b, stats)}
     <p class="bd-note">하이 차지용 체력은 만피(${BD_BASE_HP} + 체력 스킬) 기준입니다. 조건부 스킬은 체크한 경우에만 반영합니다. 모션치·육질은 공격 동작과 부위마다 달라 1로 둡니다 — 빌드끼리 비교하는 상대값입니다.</p>
   </div>`;
 }
@@ -1215,6 +1263,12 @@ $('#rc-view-gear')?.addEventListener('click', e => {
 });
 
 $('#bd-cards').addEventListener('change', e => {
+  const bow = e.target.closest('[data-bow-eff]');
+  if (bow) {
+    const b = bdState.builds[+bow.dataset.bowEff];
+    if (b) { b.bowEfficiency = bow.checked; bdSave(); bdRender(); }
+    return;
+  }
   const c = e.target.closest('[data-cond]');
   if (!c) return;
   const [bi, sk] = c.dataset.cond.split(/:(.+)/);
@@ -1487,6 +1541,7 @@ function bdParse(param, title) {
   b.wt = kv.wt;
   if (bdSet(kv.w)) b.w = kv.w;
   b.st = Math.max(0, Math.min(bdStylesOf(b.wt).length, parseInt(kv.st, 10) || 0));
+  b.bowEfficiency = kv.bf === '1';
   for (const { k } of BUILD.parts) if (bdSet(kv[k]) && bdSet(kv[k]).pieces[k]) b[k] = kv[k];
   /* 방어구를 먼저 채운 뒤에 표류석을 끼웁니다. 칸 수가 방어구에 달려 있습니다. */
   for (const e of String(kv.ds || '').split(';')) {

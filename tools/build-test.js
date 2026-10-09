@@ -34,7 +34,7 @@ vm.createContext(ctx);
 /* 표류석은 smelt-data.js 에서 옵니다 — 공유 링크 길이의 대부분이 표류석입니다.
    skill-desc.js 도 실어야 브라우저와 같은 조건이 됩니다. 빼면 SKILLDESC 가 없어서
    bdSkillDesc 가 늘 표류연성 쪽으로 떨어지고, 진짜로 빠진 스킬이 무엇인지 가려집니다. */
-for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build.js']) {
+for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build-styles.js', 'build.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 }
 /* const 선언은 컨텍스트 객체에 얹히지 않아 이름으로 꺼내야 합니다. */
@@ -727,6 +727,67 @@ check('스킬 표시를 끄면 같은 목록이 아이콘 격자가 된다', () 
   assert.ok(off.includes('bd-list grid') && !off.includes('bd-ls'), '스킬 끔이 아이콘 격자가 아닙니다');
   /* 격자는 소재 구분 없이 통으로 봅니다 — 머리글이 줄을 끊으면 한 화면에 덜 들어갑니다. */
   assert.ok(on.includes('bd-gh') && !off.includes('bd-gh'), '격자에 소재 머리글이 남아 있습니다');
+});
+
+check('활 보정은 첫 Lv4와 집중을 별도로 계산하고 저장·공유한다', () => {
+  const state = vm.runInContext('bdState', ctx);
+  const set = { key: 'bow-eff-test', name: '활 테스트', pieces: {}, weaponSkills: [],
+    weapons: [{ t: 'bow', atk: 3000, ele: 0, crit: 0, e: null,
+      x: ['Lv1 관통', 'Lv1 관통', 'Lv4 연사', 'Lv4 연사'] }] };
+  const b = { ...bdNewBuild(), w: set.key, wt: 'bow', st: 2 };
+  BUILD.sets.push(set); state.builds.push(b); ctx.bowTestBuild = b;
+  const stats = () => vm.runInContext('bdStats(bowTestBuild)', ctx);
+  try {
+    assert.strictEqual(b.bowEfficiency, false);
+    assert.strictEqual(stats().score, 3000);
+    assert.strictEqual(stats().bowCycle.charge, 2);
+    assert.strictEqual(stats().bowCycle.current, 9);
+    assert.strictEqual(stats().bowCycle.multiplier, 12 / 9);
+    b.bowEfficiency = true;
+    const rates = [0, .05, .1, .15, .2, .3];
+    for (let lv = 0; lv <= 6; lv++) {
+      set.weaponSkills = lv ? [{ s: '집중', lv }] : [];
+      const s = stats(), rate = rates[Math.min(5, lv)];
+      assert.strictEqual(s.bowCycle.current, 6 * (1 - rate) + 3);
+      assert.strictEqual(s.score, Math.round(3000 * 12 / s.bowCycle.current));
+      assert.strictEqual(s.co.F, 1);
+      assert.ok(!s.conds.some(c => c.sk === '집중'));
+    }
+    const html = vm.runInContext('bdCalc(bowTestBuild)', ctx);
+    assert.ok(html.includes('<details><summary>') && html.includes('계산 근거</span>') && !html.includes('<details open'));
+    assert.ok(html.includes('스타일:</strong> 강연사') && html.includes('2차지 · 연사 Lv4'));
+    assert.ok(html.includes('×1.667') && html.includes('3000 → 5000점'));
+    assert.strictEqual(bdParse(bdShareParam(b)).bowEfficiency, true);
+    b.bowEfficiency = false;
+    assert.strictEqual(bdParse(bdShareParam(b)).bowEfficiency, false);
+    assert.strictEqual(stats().score, 3000);
+    assert.ok(!vm.runInContext('bdCalc(bowTestBuild)', ctx).includes('<details>'));
+    b.bowEfficiency = true; b.st = 0; set.weaponSkills = [];
+    assert.strictEqual(stats().bowCycle.reference, 5.5);
+    set.weapons[0].x = ['Lv1 연사', 'Lv2 연사', 'Lv3 연사', 'Lv4 확산'];
+    assert.strictEqual(stats().bowCycle.charge, 3);
+    assert.strictEqual(stats().score, 3000);
+    b.st = 2;
+    assert.strictEqual(stats().bowCycle.current, 12);
+    assert.strictEqual(stats().score, 3000);
+    set.weapons[0].x = ['Lv4 확산', 'Lv4 확산', 'Lv4 확산', 'Lv4 확산'];
+    assert.strictEqual(stats().bowCycle.charge, 0);
+    assert.strictEqual(stats().bowCycle.current, 3);
+    b.st = 1;
+    assert.ok(stats().bowCycle.reason);
+    assert.strictEqual(stats().score, 3000);
+    assert.ok(vm.runInContext('bdCalc(bowTestBuild)', ctx).includes(' disabled'));
+    b.st = 2; set.weapons[0].x = ['Lv1 연사', 'Lv2 연사', 'Lv3 연사', 'Lv3 연사'];
+    assert.ok(stats().bowCycle.reason);
+    assert.strictEqual(stats().score, 3000);
+    delete set.weapons[0].x;
+    assert.ok(stats().bowCycle.reason);
+    b.wt = 'hammer'; set.weapons[0].t = 'hammer';
+    assert.strictEqual(stats().bowCycle, null);
+    assert.ok(!vm.runInContext('bdCalc(bowTestBuild)', ctx).includes('bd-bow-eff'));
+  } finally {
+    BUILD.sets.pop(); state.builds.pop(); delete ctx.bowTestBuild;
+  }
 });
 
 console.log(fail ? `실패 ${fail}건` : '모두 통과');
