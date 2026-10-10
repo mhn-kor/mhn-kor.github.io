@@ -125,6 +125,18 @@ const BD_DAMAGE_SCOPE = {
   '통상탄·속성 통상탄 강화': '지정된 통상탄·속성탄 기준',
   '참렬탄/속성 참렬탄 강화': '지정된 참렬탄·속성 참렬탄 기준',
 };
+/* 탄 강화는 보우건의 실제 보유 탄종에만 적용한다. 관통/산탄/철갑을 통상탄으로 보지 않는다. */
+const BD_AMMO_BOOST = {
+  '통상탄·속성 통상탄 강화': /^(통상탄|화염탄|수냉탄|전격탄|빙결탄|멸룡탄)$/,
+  '참렬탄/속성 참렬탄 강화': /^참렬(화염|수냉|전격|빙결|멸룡)?탄$/,
+};
+/* 동작 전용 스킬의 무기 제한. 장비 스킬 목록은 유지하고 계산 효과만 제한한다. */
+const BD_SKILL_WEAPONS = { '변형 공격 강화': ['switch-axe', 'charge-blade'] };
+const BD_STATUS_BOOST = { '추가 공격【독】': '독', '추가 공격【마비】': '마비', '추가 공격【폭파】': '폭파' };
+const bdStatusBoostApplies = (name, w) => w?.e === BD_STATUS_BOOST[name]
+  || (w?.t === 'switch-axe' && (w.x || []).includes(BD_STATUS_BOOST[name] + '병'));
+const bdAmmoBoostApplies = (name, w) => ['light-gun', 'heavy-gun'].includes(w?.t)
+  && (w.x || []).some(x => BD_AMMO_BOOST[name].test(x.trim().split(/\s+/)[0]));
 
 /* 경지 설명의 순서 차이를 흡수한다. 데이터에 설명이 추가되면 원래 스킬에 연결된다. */
 function bdSkillGate(desc) {
@@ -146,6 +158,9 @@ function bdCombineEffects(effects) {
 }
 
 function bdEffects(desc, name = '', weapon = null) {
+  if (BD_STATUS_BOOST[name] && !bdStatusBoostApplies(name, weapon)) return [];
+  if (BD_SKILL_WEAPONS[name] && !BD_SKILL_WEAPONS[name].includes(weapon?.t)) return [];
+  if (BD_AMMO_BOOST[name] && !bdAmmoBoostApplies(name, weapon)) return [];
   if (weapon?.t === 'gunlance' && ['포술', '포술·경지'].includes(name)) return [];
   /* 부위 파괴 축적은 HP 대미지가 아니다. 동작 한정 효과도 일반 대미지와 구분한다. */
   if (name.startsWith('파괴왕') || ['라스트 샷', '후발 주자', '각성의 일격', '사냥꾼의 결속'].includes(name)) return [];
@@ -218,7 +233,7 @@ function bdEffects(desc, name = '', weapon = null) {
   return name === '흉회심' ? out.map(e => ({ ...e, k: e.k === 'critx' ? 'negcritx' : e.k, cond: false })) : out;
 }
 
-/* 속성 % 중 이 셋만 승산(E)이고 나머지는 가산(C)입니다. 참조 글의 분류를 따릅니다. */
+/* 고룡 5종만 고정 증가분까지 포함하는 승산(E). 나머지 속성 %는 가산(C). */
 const BD_ELE_MUL = new Set(['강룡의 얼음바람', '명룡의 파뢰', '환수의 벼락', '은작룡의 홍혈', '빙룡의 얼음 갑옷']);
 /* 회심은 1.25배, 마이너스 회심은 0.75배. 슈퍼회심이 있으면 1.25 자리가 올라갑니다. */
 const BD_CRIT_UP = 1.25, BD_CRIT_DOWN = 0.75;
@@ -265,16 +280,15 @@ function bdSkillDesc(name, lv) {
   return hit ? hit[1] : null;
 }
 
-/* 참조 글(디시 몬헌나우 갤러리)의 대미지 공식을 모션치·육질 없이 계산합니다.
-     무속성  = 무기공격력×B + A
-     속성    = 위 + (무기속성치×C + D)×E
-     점수    = (공격력 + 속성공격력) × F × G
-   B·C·F 는 가산(1+합), E·G 는 승산(곱). 회심은 기대값으로 G 에 넣습니다.
-   모션치·육질은 공격 동작과 부위마다 달라 빌드만으로는 정할 수 없어 1 로 둡니다. */
+/* 나우칼 간이 계산식 https://mhnowcalc.com/calc/damage_calc.php?lang=ko
+   공격 파라미터는 일반 공격 배율 뒤에 더하고, 공격 활성은 고정 증가분까지 곱한다.
+   회심격은 회심 분기에만 C로 가산. 일반/회심 대미지를 구한 후 확률로 평균한다.
+   모션치·육질은 1, 상태이상 수치의 기존 점수 취급은 별도 검토까지 유지한다. */
 function bdStats(b) {
   const w = bdWeaponOf(b);
   const base = bdWeaponBase(b);
-  let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, critX = BD_CRIT_UP, negCritX = null, crit = base.crit;
+  const info = bdStyleInfo(b), P = info.active ? info.params.reduce((n, x) => n + (x?.stat === 'atk' ? x.value : 0), 0) : 0;
+  let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, T = 1, R = 0, critX = BD_CRIT_UP, negCritX = null, crit = base.crit;
   const lvOf = new Map(bdTotals(b));
   const on = b.cond || {};
 
@@ -311,7 +325,8 @@ function bdStats(b) {
   for (const e of eff) {
     if (e.k === 'atk') {
       // 스타일강화 연결 시 base.crit에 스타일 회심도 포함한다. 스킬 회심(crit)은 제외.
-      if (e.pct) B += e.v / 100; else A += e.v * (e.perBaseCrit ? Math.max(base.crit, 0) : 1);
+      if (e.pct && e.sk === '공격 활성') T += e.v / 100;
+      else if (e.pct) B += e.v / 100; else A += e.v * (e.perBaseCrit ? Math.max(base.crit, 0) : 1);
       continue;
     }
     /* 양수 회심과 흉회심의 배율을 따로 보관한다. */
@@ -324,14 +339,18 @@ function bdStats(b) {
       if (e.el && w.e !== e.el) continue;
       if (e.hpx) { D += hp * e.hpx; continue; }                       // 하이 차지
       if (!e.pct) { D += e.v; continue; }
-      /* 회심 시에만 붙는 속성 증가는 회심 확률만큼만 섞습니다(회심격【속성】). */
-      const v = e.onCrit ? (e.v / 100) * p : e.v / 100;
-      if (BD_ELE_MUL.has(e.sk) || e.onCrit) E *= 1 + v; else C += v;
+      /* 회심격 증가분은 회심 분기에만 합산한다. 평균값끼리 곱하지 않는다. */
+      if (e.onCrit) { R += e.v / 100; continue; }
+      const v = e.v / 100;
+      if (BD_ELE_MUL.has(e.sk)) E *= 1 + v; else C += v;
     }
   }
+  const attack = ((base.atk - P) * B + A + P) * T;
+  const normalEle = base.ele ? (base.ele * C + D) * E : 0;
+  const criticalEle = base.ele ? (base.ele * (C + R) + D) * E : 0;
   const now = {
-    atk: Math.round(base.atk * B + A),
-    ele: base.ele ? Math.round((base.ele * C + D) * E) : 0,
+    atk: Math.round(attack),
+    ele: Math.round(normalEle * (1 - p) + criticalEle * p),
     crit: Math.round(crit),
   };
   /* 회심 기대 배율. 양수면 회심이, 음수면 역회심이 그 확률만큼 섞입니다. */
@@ -339,11 +358,14 @@ function bdStats(b) {
   const r = Math.max(0, -q);
   const G = q >= 0 ? 1 + q * (critX - 1) : negCritX == null ? 1 + r * (BD_CRIT_DOWN - 1)
     : r * BD_BRUTAL_RATE * negCritX + r * (1 - BD_BRUTAL_RATE) * BD_CRIT_DOWN + (1 - r);
-  const baseScore = Math.round((now.atk + now.ele) * F * G);
+  const normal = (attack + normalEle) * F, critical = (attack + criticalEle) * F * critX;
+  const baseScore = Math.round(R && p > 0 ? normal * (1 - p) + critical * p : normal * G);
   const bowCycle = bdBowCycle(b, lvOf);
   const score = b.bowEfficiency && bowCycle?.multiplier ? Math.round(baseScore * bowCycle.multiplier) : baseScore;
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
-  return { base, now, score, baseScore, bowCycle, hp, conds, damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX, negCritX } };
+  return { base, now, score, baseScore, bowCycle, hp, conds, branches: { normal, critical, p, normalEle, criticalEle },
+    damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null,
+    co: { A, B, C, D, E, F, G, P, T, R, critX, negCritX } };
 }
 
 function bdTotals(b) {
@@ -978,19 +1000,32 @@ function bdStatBar(b) {
 
 /* 점수가 어떻게 나왔는지 한 줄씩 보여 줍니다(상세 수치 ON).
    B·C·F 는 가산(1+합), E·G 는 승산(곱)이라 곱해지는 자리가 다릅니다. */
+const bdCalcNumber = n => (Math.round(n * 1000) / 1000).toString();
+function bdScoreFormula(stats) {
+  const { now, co, branches: x, baseScore } = stats, f = bdCalcNumber;
+  return co.R && x.p > 0
+    ? `${f(x.normal)} × ${f(1 - x.p)} + ${f(x.critical)} × ${f(x.p)} ≈ ${baseScore}`
+    : `(${now.atk}${stats.base.ele ? ` + ${now.ele}` : ''}) × ${f(co.F)} × ${f(co.G)} ≈ ${baseScore}`;
+}
 function bdCalc(b) {
   const w = bdWeaponOf(b);
   if (!w) return '';
   const stats = bdStats(b);
-  const { base, now, baseScore: score, hp, co } = stats;
-  const f = n => (Math.round(n * 1000) / 1000).toString();
+  const { base, now, hp, co } = stats;
+  const f = bdCalcNumber;
   const rows = [];
 
   /* 하이 차지가 체력을 쓰므로, 체력이 기본값과 다르면 어디서 왔는지 보여 줍니다. */
   if (hp !== BD_BASE_HP) rows.push(`<span>체력</span><i>${BD_BASE_HP} + ${hp - BD_BASE_HP} = <b>${hp}</b></i>`);
-  rows.push(`<span>공격력</span><i>${base.atk} × ${f(co.B)}${co.A ? ` + ${co.A}` : ''} = <b>${now.atk}</b></i>`);
+  const attack = `${base.atk - co.P} × ${f(co.B)}${co.A ? ` + ${co.A}` : ''}${co.P ? ` + ${co.P} (파라미터)` : ''}`;
+  rows.push(`<span>공격력</span><i>${co.T !== 1 ? `(${attack}) × ${f(co.T)} (공격 활성)` : attack} ≈ <b>${now.atk}</b></i>`);
   if (base.ele) {
-    rows.push(`<span>속성</span><i>(${base.ele} × ${f(co.C)}${co.D ? ` + ${co.D}` : ''})${co.E !== 1 ? ` × ${f(co.E)}` : ''} = <b>${now.ele}</b></i>`);
+    const element = c => `(${base.ele} × ${f(c)}${co.D ? ` + ${co.D}` : ''})${co.E !== 1 ? ` × ${f(co.E)}` : ''}`;
+    if (co.R && stats.branches.p > 0) {
+      rows.push(`<span>속성·일반</span><i>${element(co.C)} = ${f(stats.branches.normalEle)}</i>`);
+      rows.push(`<span>속성·회심</span><i>${element(co.C + co.R)} = ${f(stats.branches.criticalEle)}</i>`);
+      rows.push(`<span>속성 평균</span><i>회심률 ${f(stats.branches.p * 100)}% 반영 ≈ <b>${now.ele}</b></i>`);
+    } else rows.push(`<span>속성</span><i>${element(co.C)} ≈ <b>${now.ele}</b></i>`);
   }
   const brutal = now.crit < 0 && co.negCritX != null;
   rows.push(`<span>회심</span><i>${now.crit}% → 기대배율 <b>${f(co.G)}</b>${now.crit >= 0 ? ` (회심 ×${f(co.critX)})` : brutal ? ' (역회심 중 30% 확률로 흉회심)' : ' (역회심 ×0.75)'}</i>`);
@@ -999,13 +1034,17 @@ function bdCalc(b) {
     rows.push(`<span>흉회심</span><i>${f(r)} × ${BD_BRUTAL_RATE} × ${f(co.negCritX)} + ${f(r)} × ${f(1 - BD_BRUTAL_RATE)} × ${BD_CRIT_DOWN} + ${f(1 - r)} = <b>${f(co.G)}</b></i>`);
   }
   if (co.F !== 1) rows.push(`<span>대미지</span><i>× <b>${f(co.F)}</b></i>`);
-  rows.push(`<span>점수</span><i>(${now.atk}${base.ele ? ` + ${now.ele}` : ''})${co.F !== 1 ? ` × ${f(co.F)}` : ''} × ${f(co.G)} = <b>${score}</b></i>`);
+  if (co.R && stats.branches.p > 0) {
+    rows.push(`<span>일반 공격</span><i>대미지 배율 반영 = ${f(stats.branches.normal)}</i>`);
+    rows.push(`<span>회심 공격</span><i>대미지 배율 · 회심 ×${f(co.critX)} 반영 = ${f(stats.branches.critical)}</i>`);
+  }
+  rows.push(`<span>점수</span><i>${bdScoreFormula(stats)}</i>`);
 
   return `<div class="bd-calc">
     ${rows.map(r => `<p>${r}</p>`).join('')}
     ${bdCondList(b)}
     ${bdBowEfficiency(b, stats)}
-    <p class="bd-note">하이 차지용 체력은 만피(${BD_BASE_HP} + 체력 스킬) 기준입니다. 조건부 스킬은 체크한 경우에만 반영합니다. 모션치·육질은 공격 동작과 부위마다 달라 1로 둡니다 — 빌드끼리 비교하는 상대값입니다.</p>
+    <p class="bd-note">하이 차지용 체력은 만피(${BD_BASE_HP} + 체력 스킬) 기준입니다. 조건부 스킬은 체크한 경우에만 반영합니다. 회심격은 일반·회심 공격을 나눠 기대값을 계산합니다. 표시 수치는 반올림하며 점수는 반올림 전 값으로 계산합니다. 모션치·육질은 1로 둡니다 — 빌드 비교용 상대값입니다.</p>
   </div>`;
 }
 

@@ -136,8 +136,36 @@ check('용맹은 첫 포효 조건 체크 시 공격력 정액만 더한다', ()
     assert.ok(!on.html.includes('특수 게이지'));
   }
   const combined = calcSkills([[name, 3], ['공격', 3], ['공격 활성', 1]], {}, { [name]: true }).stats;
-  assert.strictEqual(combined.now.atk, 1950, '기본 공격력 × 1.1 + 공격 150 + 용맹 700');
+  assert.strictEqual(combined.now.atk, 2035, '(기본 공격력 + 공격 150 + 용맹 700) × 공격 활성 1.1');
   assert.ok(bdSkillDesc(name, 5).includes('특수 게이지'), '스킬 설명은 그대로 유지');
+});
+
+check('회심격은 일반 속성 C에 합산하고 고룡 E만 고정 증가분까지 증폭한다', () => {
+  const weapon = { t: 'long-sword', atk: 1427, ele: 1532, crit: 50, e: '물' };
+  const skills = [['물속성 공격 강화', 5], ['물속성 공격 강화·경지', 1], ['슈퍼회심', 3],
+    ['회심격【속성】', 3], ['명룡의 파뢰', 2], ['힘의 해방', 1], ['저스트 교격', 2]];
+  const cond = { '힘의 해방': true, '저스트 교격': true };
+  const stats = calcSkills(skills, weapon, cond).stats;
+  assert.strictEqual(stats.co.C, 1);
+  assert.strictEqual(stats.co.R, .5);
+  assert.strictEqual(stats.co.D, 700);
+  assert.strictEqual(stats.co.E, 1.15);
+  assert.strictEqual(stats.now.ele, 3183);
+  assert.strictEqual(stats.score, 7768);
+  assert.ok(Math.abs(stats.branches.normal - 5191.94) < 1e-9);
+  assert.ok(Math.abs(stats.branches.critical - 8871.954) < 1e-9);
+  const html = calcSkills(skills, weapon, cond).html;
+  assert.ok(html.includes('속성·일반') && html.includes('속성·회심'));
+  assert.ok(html.includes('5191.94 × 0.3 + 8871.954 × 0.7 ≈ 7768'));
+  const noElder = calcSkills(skills.filter(([s]) => s !== '명룡의 파뢰'), weapon, cond).stats;
+  assert.strictEqual(noElder.co.E, 1);
+  assert.strictEqual(noElder.now.ele, Math.round(1532 * 1.35 + 700));
+  const charged = calcSkills([...skills, ['차지 마스터', 1]], weapon,
+    { ...cond, '차지 마스터': true }).stats;
+  assert.strictEqual(charged.co.C, 1.1);
+  assert.strictEqual(charged.co.R, .5);
+  assert.strictEqual(charged.co.E, 1.15);
+  assert.strictEqual(charged.now.ele, Math.round((1532 * 1.45 + 700) * 1.15));
 });
 
 check('추가 공격 독·마비는 몬스터 상태 조건 체크 시에만 대미지를 높인다', () => {
@@ -149,14 +177,68 @@ check('추가 공격 독·마비는 몬스터 상태 조건 체크 시에만 대
     const off = calcSkills([[name, lv]], weapon);
     const on = calcSkills([[name, lv]], weapon, { [name]: true });
     assert.strictEqual(off.stats.co.F, 1);
-    assert.strictEqual(on.stats.co.F, 1 + values[lv - 1] / 100);
+    const valid = element === status;
+    assert.strictEqual(on.stats.co.F, valid ? 1 + values[lv - 1] / 100 : 1);
     assert.strictEqual(off.stats.now.atk, on.stats.now.atk);
     assert.strictEqual(off.stats.now.ele, on.stats.now.ele);
     assert.strictEqual(on.stats.score, Math.round((1000 + weapon.ele) * on.stats.co.F));
-    assert.ok(off.stats.conds.some(c => c.sk === name));
-    assert.ok(off.html.includes(`몬스터 ${status} 상태`));
+    assert.strictEqual(off.stats.conds.some(c => c.sk === name), valid);
+    assert.strictEqual(off.html.includes(`몬스터 ${status} 상태`), valid);
     assert.ok(!off.html.includes(' checked'));
-    assert.ok(on.html.includes(' checked'));
+    assert.strictEqual(on.html.includes(' checked'), valid);
+  }
+});
+
+check('일반·회심 분기는 회심률 0/100 및 역회심에서도 중복 배율 없이 계산한다', () => {
+  for (const crit of [-20, 0, 25, 70, 100, 150]) for (const lv of [1, 3, 5]) {
+    const ratio = [0, .3, .4, .5, .6, .8][lv], p = Math.max(0, Math.min(100, crit)) / 100;
+    const { stats } = calcSkills([['회심격【속성】', lv], ['슈퍼회심', 3], ['물속성 공격 강화', 5]],
+      { atk: 1000, ele: 500, e: '물', crit });
+    const normal = 2000, critical = (1000 + 500 * (1 + ratio) + 500) * 1.4;
+    assert.strictEqual(stats.score, Math.round(crit < 0 ? normal * .95 : normal * (1 - p) + critical * p));
+    assert.strictEqual(stats.now.ele, Math.round(500 * (1 + ratio * p) + 500));
+  }
+});
+
+check('공격 파라미터는 일반 배율 뒤, 공격 활성은 고정 증가분·파라미터 뒤에 적용한다', () => {
+  const data = vm.runInContext('BD_STYLE_DATA', ctx), state = vm.runInContext('bdState', ctx);
+  const set = { key: 'style-order-test', name: '적용 순서 검수', pieces: {},
+    weapons: [{ t: 'shield-sword', atk: 1912, ele: 417, crit: 0, e: '독' }],
+    weaponSkills: [{ s: '공격', lv: 3 }, { s: '연격', lv: 5 }, { s: '공격 활성', lv: 3 }] };
+  BUILD.sets.push(set); data.weapons[set.key + ':shield-sword'] = data.weapons['puke:shield-sword'];
+  const b = { ...bdNewBuild(), w: set.key, st: 1, style20: true, params: ['atk', 'atk', 'atk'], cond: { '연격': true } };
+  ctx.styleOrderBuild = b; state.builds.push(b);
+  try {
+    const stats = vm.runInContext('bdStats(styleOrderBuild)', ctx);
+    assert.strictEqual(stats.co.P, 300);
+    assert.strictEqual(stats.co.B, 1.3);
+    assert.strictEqual(stats.co.T, 1.25);
+    assert.strictEqual(stats.now.atk, Math.round(((stats.base.atk - 300) * 1.3 + 150 + 300) * 1.25));
+    const html = vm.runInContext('bdCalc(styleOrderBuild)', ctx);
+    assert.ok(html.includes('+ 300 (파라미터)') && html.includes('× 1.25 (공격 활성)'));
+    b.style20 = false;
+    const off = vm.runInContext('bdStats(styleOrderBuild)', ctx);
+    assert.strictEqual(off.co.P, 0);
+    assert.strictEqual(off.now.atk, Math.round((1912 * 1.3 + 150) * 1.25));
+  } finally {
+    BUILD.sets.pop(); state.builds.pop(); delete data.weapons[set.key + ':shield-sword']; delete ctx.styleOrderBuild;
+  }
+});
+
+check('추가 공격 3종은 상태이상 일치 또는 슬래시액스의 해당 병에서만 계산한다', () => {
+  for (const status of ['독', '마비', '폭파']) {
+    const name = `추가 공격【${status}】`;
+    for (const { k: type } of BUILD.weaponTypes) for (const element of [null, '물', '독', '마비', '폭파']) {
+      for (const phial of ['', '독병', '마비병', '강격병']) for (const [lv] of bdSkillLevels(name)) {
+        const weapon = { t: type, e: element, ele: element ? 500 : 0, x: phial ? [phial] : null };
+        const valid = element === status || (type === 'switch-axe' && phial === status + '병');
+        const off = calcSkills([[name, lv]], weapon), on = calcSkills([[name, lv]], weapon, { [name]: true });
+        assert.strictEqual(on.stats.conds.some(c => c.sk === name), valid, `${name}/${type}/${element}/${phial}`);
+        assert.strictEqual(off.stats.score, calcSkills([], weapon).stats.score);
+        if (valid) assert.ok(on.stats.score > off.stats.score);
+        else assert.strictEqual(on.stats.score, off.stats.score);
+      }
+    }
   }
 });
 
@@ -165,7 +247,8 @@ check('추가 지정한 일곱 스킬은 조건 체크 시에만 대미지를 �
     '통상탄·속성 통상탄 강화', '참렬탄/속성 참렬탄 강화']) {
     for (const [lv, desc] of bdSkillLevels(name)) {
       const percent = +/대미지가 (\d+)%/.exec(desc)[1];
-      const off = calcSkills([[name, lv]]), on = calcSkills([[name, lv]], {}, { [name]: true });
+      const weapon = name.includes('탄 강화') ? { t: 'light-gun', x: ['통상탄 5', '참렬수냉탄 3'] } : {};
+      const off = calcSkills([[name, lv]], weapon), on = calcSkills([[name, lv]], weapon, { [name]: true });
       assert.strictEqual(off.stats.co.F, 1, `${name} Lv${lv} 끔`);
       assert.strictEqual(on.stats.co.F, 1 + percent / 100, `${name} Lv${lv} 켬`);
       assert.ok(off.stats.conds.some(c => c.sk === name));
@@ -178,6 +261,54 @@ check('추가 지정한 일곱 스킬은 조건 체크 시에만 대미지를 �
     assert.ok(!stats.conds.some(c => c.sk === name));
   }
   assert.strictEqual(calcSkills([['포술', 1]]).stats.co.F, 1.1, '포술은 이번 변경에서 제외');
+});
+
+check('탄 강화는 보우건과 해당 보유 탄종에서만 조건부로 계산한다', () => {
+  const normal = '통상탄·속성 통상탄 강화', slicing = '참렬탄/속성 참렬탄 강화';
+  const normalAmmo = ['통상탄', '화염탄', '수냉탄', '전격탄', '빙결탄', '멸룡탄'];
+  const slicingAmmo = ['참렬탄', '참렬화염탄', '참렬수냉탄', '참렬전격탄', '참렬빙결탄', '참렬멸룡탄'];
+  for (const name of [normal, slicing]) for (const type of BUILD.weaponTypes.map(t => t.k)) {
+    const accepted = name === normal ? normalAmmo : slicingAmmo;
+    const rejected = ['관통탄', '관통수냉탄', '화염산탄', '수냉철갑유탄', '용격탄', '빙결확산탄', '독탄',
+      ...(name === normal ? slicingAmmo : normalAmmo)];
+    for (const ammo of [...accepted, ...rejected, '']) {
+      const weapon = { t: type, x: ammo ? [`${ammo} 5`] : null };
+      const valid = ['light-gun', 'heavy-gun'].includes(type) && accepted.includes(ammo);
+      for (const [lv, desc] of bdSkillLevels(name)) {
+        const percent = +/대미지가 (\d+)%/.exec(desc)[1];
+        const off = calcSkills([[name, lv]], weapon);
+        const on = calcSkills([[name, lv]], weapon, { [name]: true });
+        assert.strictEqual(off.stats.co.F, 1);
+        assert.strictEqual(on.stats.co.F, valid ? 1 + percent / 100 : 1, `${name}/${type}/${ammo}/Lv${lv}`);
+        assert.strictEqual(on.stats.conds.some(c => c.sk === name), valid);
+        if (!valid) assert.strictEqual(on.stats.score, calcSkills([], weapon).stats.score);
+      }
+    }
+  }
+  const both = [normal, slicing].map(s => [s, 1]);
+  assert.strictEqual(calcSkills(both, {t:'heavy-gun',x:['水冷弾 5']}, {[normal]:true,[slicing]:true}).stats.co.F, 1);
+  const mixed = calcSkills(both, {t:'heavy-gun',x:['수냉탄 5','참렬수냉탄 3']}, {[normal]:true,[slicing]:true});
+  assert.strictEqual(mixed.stats.conds.length, 2);
+  assert.ok(mixed.stats.co.F > 1);
+});
+
+check('변형 공격 강화는 슬래시액스·차지액스의 변형 공격에서만 적용한다', () => {
+  const name = '변형 공격 강화';
+  assert.strictEqual(bdSkillLevels(name).length, 3);
+  for (const { k: type } of BUILD.weaponTypes) for (const [lv, desc] of bdSkillLevels(name)) {
+    const weapon = { t: type }, valid = ['switch-axe', 'charge-blade'].includes(type);
+    const off = calcSkills([[name, lv]], weapon), on = calcSkills([[name, lv]], weapon, { [name]: true });
+    const baseline = calcSkills([], weapon).stats;
+    assert.strictEqual(off.stats.score, baseline.score);
+    assert.strictEqual(on.stats.conds.some(c => c.sk === name), valid);
+    assert.strictEqual(on.stats.co.F, valid ? 1 + +/대미지가 (\d+)%/.exec(desc)[1] / 100 : 1);
+    if (valid) {
+      const effects = on.stats.conds.find(c => c.sk === name).list;
+      assert.ok(effects.every(e => e.cond));
+      assert.strictEqual(effects.find(e => e.k === 'crit').v, +/회심률이 (\d+)%/.exec(desc)[1]);
+      assert.ok(on.stats.score > baseline.score);
+    } else assert.strictEqual(on.stats.score, baseline.score);
+  }
 });
 
 check('연격 경지는 원래 체크에 병합하고 조건부 레벨·수치를 상한으로 표시한다', () => {
@@ -403,7 +534,7 @@ check('공격 증강【회심】은 양수 무기 기본 회심 1%당 공격력 
   assert.strictEqual(decreased.now.crit, 0);
   assert.strictEqual(decreased.co.A, 240, '흉회심으로 감소해도 무기 기본 회심 30% 기준');
   const combined = calcSkills([[name, 1], ['공격', 3], ['공격 활성', 1]], { crit: 30 }).stats;
-  assert.strictEqual(combined.now.atk, 1490, '기본 공격력 × 1.1 + 공격 150 + 회심 증강 240');
+  assert.strictEqual(combined.now.atk, 1529, '(기본 공격력 + 공격 150 + 회심 증강 240) × 공격 활성 1.1');
   const serg = BUILD.sets.find(s => s.key === 'serg');
   const actual = calcSkills([...serg.weaponSkills, ...serg.pieces.helm.skills].map(x => [x.s, x.lv]), serg.weapons[0]).stats;
   assert.strictEqual(actual.co.A, 240, '셀레기오스 무기 + 레기오스헬름');
