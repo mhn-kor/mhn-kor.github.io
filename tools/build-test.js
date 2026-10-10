@@ -273,6 +273,81 @@ check('리오레우스 아종은 스타일20에서만 경지 Lv1을 얻고 기�
   } finally { BUILD.sets.pop(); state.builds.pop(); delete ctx.unlockBuild; }
 });
 
+check('건랜스 포격 시안은 G10·포술·장탄수로 계산하고 기존 점수와 분리한다', () => {
+  const b = { ...bdNewBuild(), w: 'tobi', wt: 'gunlance' };
+  ctx.shellBuild = b;
+  const armor = { key: 'shell-test', name: '테스트', weaponSkills: [], weapons: [],
+    pieces: { helm: { name: '테스트', skills: [{ s: '포술', lv: 0 }], slot: 0 } } };
+  BUILD.sets.push(armor); b.helm = armor.key;
+  try {
+    const shell = () => vm.runInContext('bdShellStats(shellBuild)', ctx);
+    assert.strictEqual(shell().mode, 'charged');
+    assert.strictEqual(shell().damage, 2522);
+    armor.pieces.helm.skills[0].lv = 5;
+    assert.strictEqual(shell().damage, 3531);
+    const mainScore = vm.runInContext('bdStats(shellBuild).score', ctx);
+    armor.pieces.helm.skills.push({ s: '포술·경지', lv: 1 });
+    assert.strictEqual(shell().mastery, 1);
+    assert.strictEqual(shell().damage, Math.ceil(1596 * 1.58 * 1.55));
+    assert.strictEqual(vm.runInContext('bdStats(shellBuild).score', ctx), mainScore);
+    assert.ok(vm.runInContext('bdStats(shellBuild).conds.every(c => !["포술", "포술·경지"].includes(c.sk))', ctx));
+    armor.pieces.helm.skills[1].lv = 2;
+    assert.strictEqual(shell().damage, Math.ceil(1596 * 1.58 * 1.7));
+    armor.pieces.helm.skills[0].lv = 4;
+    assert.strictEqual(shell().mastery, 0);
+    armor.pieces.helm.skills[0].lv = 6;
+    assert.strictEqual(shell().mastery, 2);
+    armor.pieces.helm.skills.pop(); armor.pieces.helm.skills[0].lv = 5;
+    b.w = 'g-jagr'; b.shellMode = null;
+    assert.strictEqual(shell().mode, 'burst');
+    assert.strictEqual(shell().ammo, 6);
+    assert.strictEqual(shell().damage, Math.ceil(1596 * .55 * 1.4) * 6);
+    armor.pieces.helm.skills[0].lv = 3;
+    assert.strictEqual(shell().ammo, 6);
+    armor.pieces.helm.skills[0].lv = 2;
+    assert.strictEqual(shell().ammo, 5);
+    b.w = 'puke'; b.shellMode = null; armor.pieces.helm.skills[0].lv = 0;
+    assert.strictEqual(shell().mode, 'normal');
+    assert.strictEqual(shell().damage, 1309);
+    b.shellMode = 'charged';
+    assert.strictEqual(bdParse(bdShareParam(b)).shellMode, 'charged');
+    b.shellMode = 'invalid';
+    assert.strictEqual(shell().mode, 'normal');
+    const score = vm.runInContext('bdStats(shellBuild).score', ctx);
+    b.shellMode = 'burst';
+    assert.strictEqual(vm.runInContext('bdStats(shellBuild).score', ctx), score);
+    b.style20 = true; b.st = 1; b.params = ['atk', 'crit', 'ele'];
+    assert.strictEqual(shell().damage, Math.ceil(1596 * .72) * 2);
+    b.style20 = false; b.shellMode = 'normal'; b.w = 'tobi';
+    armor.pieces.helm.skills = [{ s: '기습', lv: 1 }, { s: '공격', lv: 5 }, { s: '특수 스킬 위력 상승', lv: 5 }];
+    const plain = shell().damage;
+    b.cond = { '특수 스킬 위력 상승': true };
+    assert.strictEqual(shell().damage, plain, 'SP 효과·공격력 증가는 일반 포격에 적용하지 않음');
+    b.cond['기습'] = true;
+    assert.ok(shell().damage > plain);
+    assert.deepStrictEqual(Array.from(shell().damageEffects, e => e.sk), ['기습']);
+    b.cond['기습'] = false;
+    assert.strictEqual(shell().damage, plain);
+    const compact = vm.runInContext('bdShellUI(shellBuild)', ctx);
+    assert.ok(/bd-shell-result"><b>[^<]+<\/b><\/div>/.test(compact));
+    armor.pieces.helm.skills.push({ s: '진가 발휘', lv: 1 }, { s: '돌파구', lv: 1 });
+    b.cond['진가 발휘'] = true; b.cond['돌파구'] = true;
+    const buffs = shell();
+    assert.ok(buffs.damageEffects.length >= 2);
+    const grouped = vm.runInContext('bdShellUI(shellBuild)', ctx);
+    assert.strictEqual((grouped.match(/class="bd-shell-buffs"/g) || []).length, 1);
+    assert.ok(grouped.includes(`대미지 버프 합계: +${buffs.damageBonus}%`));
+    b.wt = 'shield-sword';
+    assert.strictEqual(shell(), null);
+    assert.strictEqual(vm.runInContext('bdShellUI(shellBuild)', ctx), '');
+    for (const type of ['charge-blade', 'light-gun', 'heavy-gun']) {
+      ctx.shellOtherWeapon = { t: type };
+      assert.ok(vm.runInContext('bdEffects(bdSkillDesc("포술", 5), "포술", shellOtherWeapon).length', ctx) > 0);
+    }
+    delete ctx.shellOtherWeapon;
+  } finally { BUILD.sets.pop(); delete ctx.shellBuild; }
+});
+
 check('힘의 해방은 체크 시 회심 증가분만 적용한다', () => {
   const name = '힘의 해방', values = [20, 30, 40, 50, 60];
   for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {

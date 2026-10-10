@@ -712,6 +712,21 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 .bd-bow-eff details p { display: block; margin-top: 4px; }
 .bd-bow-eff small { display: block; margin: 4px 0 0 20px; color: var(--muted); }
 .bd-bow-eff .bd-bow-note { margin-top: 6px; font-size: .67rem; opacity: .8; }
+.bd-shell { grid-column: 1 / -1; margin: 10px 11px 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: rgba(233,161,59,.04); font-size: .72rem; }
+.bd-shell-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bd-shell-head small { margin-left: 4px; font-weight: normal; color: var(--muted); }
+.bd-shell-head > span { color: var(--muted); }
+.bd-shell-tabs { display: flex; gap: 5px; margin-top: 8px; }
+.bd-shell-tabs button { flex: 1; min-width: 0; padding: 6px 2px; border: 1px solid var(--line); border-radius: 5px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+.bd-shell-tabs button[aria-pressed="true"] { color: var(--amber-hi); border-color: var(--amber); background: rgba(233,161,59,.12); }
+.bd-shell-result { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 9px 0 5px; font-variant-numeric: tabular-nums; }
+.bd-shell-result b { font-size: 1.35rem; color: var(--amber-hi); }
+.bd-shell-result span, .bd-shell-note { color: var(--muted); }
+.bd-shell > small { display: block; text-align: center; }
+.bd-shell details { margin-top: 8px; }
+.bd-shell summary { cursor: pointer; color: var(--bone); }
+.bd-shell details p { margin: 5px 0; line-height: 1.5; }
+.bd-shell details a { color: var(--amber); }
 /* 점수 옆 배지 */
 .bd-cb {
   font-style: normal; font-size: .66rem; padding: 2px 6px; border-radius: 999px;

@@ -33,7 +33,7 @@ const bdNewBuild = () => ({
   helm: null, mail: null, gloves: null, belt: null, greaves: null,
   ds: { helm: [], mail: [], gloves: [], belt: [], greaves: [] },
   /* 켜 둔 조건부 스킬 이름. 기본은 전부 꺼짐입니다. */
-  cond: {}, bowEfficiency: false, style20: false, params: [null, null, null],
+  cond: {}, bowEfficiency: false, style20: false, params: [null, null, null], shellMode: null, shellDetailsOpen: false,
 });
 
 let bdState = { builds: [bdNewBuild()], detail: false };
@@ -146,6 +146,7 @@ function bdCombineEffects(effects) {
 }
 
 function bdEffects(desc, name = '', weapon = null) {
+  if (weapon?.t === 'gunlance' && ['포술', '포술·경지'].includes(name)) return [];
   /* 부위 파괴 축적은 HP 대미지가 아니다. 동작 한정 효과도 일반 대미지와 구분한다. */
   if (name.startsWith('파괴왕') || ['라스트 샷', '후발 주자', '각성의 일격', '사냥꾼의 결속'].includes(name)) return [];
   if (BD_DAMAGE_SCOPE[name]) {
@@ -179,7 +180,7 @@ function bdEffects(desc, name = '', weapon = null) {
       ? [{ k: 'dmg', pct: 1, v: +m[1], cond: true,
         scope: weapon.t === 'hammer' ? '모으기 공격 기준' : '향음 공격 기준' }] : [];
   }
-  // 포술 계열은 별도 작업 대상이므로 기존 처리를 유지한다.
+  // 차지액스·보우건의 포술 계열은 별도 작업까지 기존 처리를 유지한다.
   const gate = name === '포술·경지' ? null : bdSkillGate(desc);
   const need = gate ? { s: gate.s, lv: gate.lv } : null;
   /* 완전 충전도 전투 조건이므로 만피를 가정해 자동으로 켜지 않는다.
@@ -342,7 +343,7 @@ function bdStats(b) {
   const bowCycle = bdBowCycle(b, lvOf);
   const score = b.bowEfficiency && bowCycle?.multiplier ? Math.round(baseScore * bowCycle.multiplier) : baseScore;
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
-  return { base, now, score, baseScore, bowCycle, hp, conds, el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX, negCritX } };
+  return { base, now, score, baseScore, bowCycle, hp, conds, damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null, co: { A, B, C, D, E, F, G, critX, negCritX } };
 }
 
 function bdTotals(b) {
@@ -361,6 +362,58 @@ function bdTotals(b) {
 /* 조건부 스킬. 조건의 성격이 제각각이라(약점 공격은 사실상 상시, 부활은 사고)
    하나의 기본값이 없어 켜고 끄게 둡니다. 기본은 전부 꺼짐입니다. */
 const BD_KIND = { atk: '공격력', crit: '회심률', ele: '속성', dmg: '대미지', critx: '회심 배율', hp: '체력' };
+/* mhn.quest 모션 자료: G10 고정 기준 1596, 계수 적용 후 발당 올림.
+   https://mhn.quest/ — 메인 점수의 활성 효과 중 포격에 해당하는 대미지 증가만 공유한다. */
+const BD_SHELL_TYPES = {
+  '일반형 포격': { name: '일반형', normal: 42, charged: 68, burst: 55, ammo: 5, default: 'burst' },
+  '방사형 포격': { name: '방사형', normal: 66, charged: 158, burst: 66, ammo: 3, default: 'charged' },
+  '확산형 포격': { name: '확산형', normal: 82, charged: 114, burst: 72, ammo: 2, default: 'normal' },
+};
+const BD_SHELL_MODES = { normal: '일반 포격', charged: '모으기 포격', burst: '풀버스트' };
+function bdShellStats(b) {
+  const w = bdWeaponOf(b);
+  if (!w || b.wt !== 'gunlance') return null;
+  const type = (w.x || []).map(x => BD_SHELL_TYPES[x]).find(Boolean);
+  if (!type) return null;
+  const mode = Object.hasOwn(BD_SHELL_MODES, b.shellMode) ? b.shellMode : type.default;
+  const totals = new Map(bdTotals(b));
+  const lv = Math.max(0, Math.min(5, totals.get('포술') || 0));
+  const mastery = lv === 5 ? Math.max(0, Math.min(2, totals.get('포술·경지') || 0)) : 0;
+  const artilleryBonus = [0, 10, 15, 20, 30, 40][lv], masteryBonus = mastery * 15;
+  const damageEffects = bdStats(b).damageEffects.filter(e => {
+    const scope = e.scope || BD_DAMAGE_SCOPE[e.need?.s || e.sk] || '';
+    return !e.onCrit && !/SP|공중|탄·화살|지정된/.test(scope)
+      && (e.sk !== '차지 스톡' || mode === 'charged');
+  });
+  const damageBonus = damageEffects.reduce((sum, e) => sum + e.v, 0);
+  const multiplier = 1 + (artilleryBonus + masteryBonus + damageBonus) / 100;
+  const ammo = mode === 'burst' ? type.ammo + (lv >= 3 ? 1 : 0) : 1;
+  const coefficient = type[mode], shot = Math.ceil(1596 * coefficient / 100 * multiplier);
+  return { type: type.name, mode, lv, mastery, artilleryBonus, masteryBonus, damageEffects, damageBonus, multiplier, ammo, coefficient, shot, damage: shot * ammo };
+}
+function bdShellUI(b) {
+  const shell = bdShellStats(b);
+  if (!shell) return '';
+  const bi = bdState.builds.indexOf(b), { type, mode, lv, mastery, artilleryBonus, masteryBonus, damageEffects, damageBonus, multiplier, ammo, coefficient, shot, damage } = shell;
+  return `<section class="bd-shell" aria-label="포격 대미지">
+    <div class="bd-shell-head"><b>포격 대미지 <small>시안</small></b><span>G10 · ${type}</span></div>
+    <div class="bd-shell-tabs" role="group" aria-label="포격 공격 방식">${Object.entries(BD_SHELL_MODES).map(([key, label]) =>
+      `<button data-shell="${bi}:${key}" aria-pressed="${mode === key}"${bi < 0 ? ' disabled' : ''}>${label}</button>`).join('')}</div>
+    <div class="bd-shell-result"><b>${damage.toLocaleString('ko-KR')}</b></div>
+    <details data-shell-details="${bi}"${b.shellDetailsOpen ? ' open' : ''}><summary>계산 근거</summary>
+      <p>공격 방식: ${type} · ${BD_SHELL_MODES[mode]}</p>
+      <p>${mode === 'burst' ? `전탄 ${ammo}발 기준` : '1발 기준'} · 기존 점수와 별도 계산</p>
+      <p>G10 고정 기준: 1596 · 공격 계수: ${coefficient}%</p>
+      <p>포술 Lv${lv}: +${artilleryBonus}%${mode === 'burst' && lv >= 3 ? ' · 장탄수 +1' : ''}</p>
+      ${mastery ? `<p>포술·경지 Lv${mastery}: +${masteryBonus}% (포술 Lv5 충족)</p>` : ''}
+      ${damageEffects.length ? `<p class="bd-shell-buffs" title="${esc(damageEffects.map(e => `${e.sk} +${e.v}%`).join(' · '))}">대미지 버프 합계: +${damageBonus}%${damageEffects.some(e => e.cond) ? ' (상단 체크 반영)' : ''}</p>` : ''}
+      <p>적용 배율: 1 + ${artilleryBonus / 100}${mastery ? ` + ${masteryBonus / 100}` : ''}${damageBonus ? ` + ${damageBonus / 100}` : ''} = ×${Math.round(multiplier * 1000) / 1000}</p>
+      <p>발당 올림(1596 × ${coefficient / 100} × ${multiplier}) = ${shot}${ammo > 1 ? ` · ${ammo}발 합계 = ${damage}` : ''}</p>
+      <p class="bd-shell-note">공격력·속성·회심 및 SP·공중·탄 전용 효과는 제외합니다. 조건부 대미지 효과는 상단 체크를 공유합니다. 스타일별 강화와 각성의 일격은 미반영입니다. 풀버스트는 포격 부분만 계산하며 내려치기 등은 제외합니다.</p>
+      <a href="https://mhn.quest/" target="_blank" rel="noopener noreferrer">출처: mhn.quest 모션 자료</a>
+    </details>
+  </section>`;
+}
 function bdCondList(b) {
   const bi = bdState.builds.indexOf(b);
   /* 미리보기처럼 내 빌드 목록에 없는 것은 켜고 끌 수 없습니다(저장할 곳이 없습니다). */
@@ -580,7 +633,8 @@ function bdShareParam(b) {
     cond.length ? `c=${cond.join(';')}` : '']
     .concat(BD_PARTS().map(({ k }) => `${k}=${b[k] || ''}`)).filter(Boolean).join(',');
   return bdEscape(p + (b.bowEfficiency ? ',bf=1' : '') + (b.style20 ? ',se=1' : '')
-    + (b.params?.some(Boolean) ? ',sp=' + b.params.map(p => p || '').join(';') : ''));
+    + (b.params?.some(Boolean) ? ',sp=' + b.params.map(p => p || '').join(';') : '')
+    + (Object.hasOwn(BD_SHELL_MODES, b.shellMode) ? ',gm=' + b.shellMode : ''));
 }
 /* 링크 복사는 지금 보고 있는 주소를 씁니다(로컬에서 붙여넣어 확인할 수 있게).
    카카오·공유 시트로 나가는 링크는 받는 사람이 열 수 있어야 하므로 배포 절대 주소를 씁니다.
@@ -918,7 +972,8 @@ function bdStatBar(b) {
       const n = Object.values(b.cond || {}).filter(Boolean).length;
       return n ? `<em class="bd-cb" title="조건부 스킬 ${n}개 반영">조건 ${n}</em>` : '';
     })()}</p>
-    ${bdState.detail ? bdCalc(b) : ''}`;
+    ${bdState.detail ? bdCalc(b) : ''}
+    ${bdShellUI(b)}`;
 }
 
 /* 점수가 어떻게 나왔는지 한 줄씩 보여 줍니다(상세 수치 ON).
@@ -1309,8 +1364,23 @@ function bdFillStone(q) {
 }
 
 /* ── 이벤트 ────────────────────────────────────────────────────── */
+$('#bd-cards').addEventListener('toggle', e => {
+  const details = e.target;
+  if (!details.isConnected || !details.matches('[data-shell-details]')) return;
+  const b = bdState.builds[+details.dataset.shellDetails];
+  if (b && b.shellDetailsOpen !== details.open) { b.shellDetailsOpen = details.open; bdSave(); }
+}, true);
 $('#bd-cards').addEventListener('click', e => {
   const t = e.target;
+  const shell = t.closest('[data-shell]');
+  if (shell) {
+    const [bi, mode] = shell.dataset.shell.split(':'), b = bdState.builds[+bi];
+    if (b && bdShellStats(b) && Object.hasOwn(BD_SHELL_MODES, mode)) {
+      b.shellDetailsOpen = shell.closest('.bd-shell').querySelector('details').open;
+      b.shellMode = mode; bdSave(); bdRender();
+    }
+    return;
+  }
   const pick = t.closest('[data-pick]');
   if (pick) { const [bi, target] = pick.dataset.pick.split(':'); return bdOpenGear(+bi, target); }
   const wt = t.closest('[data-wt]');
@@ -1653,6 +1723,7 @@ function bdParse(param, title) {
   b.wt = kv.wt;
   if (bdSet(kv.w)) b.w = kv.w;
   b.st = Math.max(0, Math.min(bdStylesOf(b.wt).length, parseInt(kv.st, 10) || 0));
+  b.shellMode = Object.hasOwn(BD_SHELL_MODES, kv.gm) ? kv.gm : null;
   b.bowEfficiency = kv.bf === '1';
   b.style20 = kv.se === '1';
   b.params = String(kv.sp || '').split(';').slice(0, 3);
