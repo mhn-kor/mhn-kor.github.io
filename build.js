@@ -410,7 +410,7 @@ function bdShellUI(b) {
       <p>적용 배율: 1 + ${artilleryBonus / 100}${mastery ? ` + ${masteryBonus / 100}` : ''}${damageBonus ? ` + ${damageBonus / 100}` : ''} = ×${Math.round(multiplier * 1000) / 1000}</p>
       <p>발당 올림(1596 × ${coefficient / 100} × ${multiplier}) = ${shot}${ammo > 1 ? ` · ${ammo}발 합계 = ${damage}` : ''}</p>
       <p class="bd-shell-note">공격력·속성·회심 및 SP·공중·탄 전용 효과는 제외합니다. 조건부 대미지 효과는 상단 체크를 공유합니다. 스타일별 강화와 각성의 일격은 미반영입니다. 풀버스트는 포격 부분만 계산하며 내려치기 등은 제외합니다.</p>
-      <a href="https://mhn.quest/" target="_blank" rel="noopener noreferrer">출처: mhn.quest 모션 자료</a>
+      <a href="https://mhn.quest/?motions" target="_blank" rel="noopener noreferrer">출처: mhn.quest 모션 자료</a>
     </details>
   </section>`;
 }
