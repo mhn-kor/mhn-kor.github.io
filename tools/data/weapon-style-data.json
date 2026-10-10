@@ -20,9 +20,9 @@
     "crossCheck": "completed_with_source_policy",
     "crossCheckSite": "https://mhnowcalc.com/calc/",
     "counts": {
-      "supported": 266,
+      "supported": 270,
       "unsupported": 477,
-      "unknown": 7
+      "unknown": 4
     },
     "nowcalc": {
       "source": "https://mhnowcalc.com/calc/build_editor_simple.php?lang=ko",
@@ -36,6 +36,7 @@
     },
     "crossCheckCounts": {
       "compared": 266,
+      "inherited": 4,
       "baseMatches": 265,
       "bonus20Matches": 220,
       "parametersMatches": 265
@@ -1672,6 +1673,30 @@
     {
       "set": "puke",
       "sourceSet": "puke",
+      "type": "gunlance",
+      "name": "힐버건랜스",
+      "element": "독",
+      "base": {
+        "atk": 1912,
+        "ele": 417,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "supported",
+        "profile": "nowcalc:Ailment_4",
+        "source": "same_monster",
+        "referenceType": "shield-sword",
+        "stats20": {
+          "atk": 2012,
+          "ele": 457,
+          "crit": 0
+        }
+      }
+    },
+    {
+      "set": "puke",
+      "sourceSet": "puke",
       "type": "switch-axe",
       "name": "다추라가든",
       "element": "독",
@@ -1774,23 +1799,6 @@
       "siteBaseMatches": true
     },
     {
-      "set": "puke",
-      "sourceSet": "puke",
-      "type": "gunlance",
-      "name": "푸케푸케 건랜스",
-      "element": "독",
-      "base": {
-        "atk": 1912,
-        "ele": 417,
-        "crit": 0
-      },
-      "baseSource": "build-data.js",
-      "style": {
-        "status": "unknown",
-        "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
-      }
-    },
-    {
       "set": "barr",
       "sourceSet": "barr",
       "type": "shield-sword",
@@ -1841,6 +1849,30 @@
         }
       },
       "siteBaseMatches": true
+    },
+    {
+      "set": "barr",
+      "sourceSet": "barr",
+      "type": "long-sword",
+      "name": "드래그로카스텔로",
+      "element": null,
+      "base": {
+        "atk": 2103,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "supported",
+        "profile": "nowcalc:None_Element_1",
+        "source": "same_monster",
+        "referenceType": "shield-sword",
+        "stats20": {
+          "atk": 2455,
+          "ele": 0,
+          "crit": 0
+        }
+      }
     },
     {
       "set": "barr",
@@ -1975,6 +2007,30 @@
     {
       "set": "barr",
       "sourceSet": "barr",
+      "type": "charge-blade",
+      "name": "볼보로무당카",
+      "element": null,
+      "base": {
+        "atk": 2103,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "supported",
+        "profile": "nowcalc:None_Element_1",
+        "source": "same_monster",
+        "referenceType": "shield-sword",
+        "stats20": {
+          "atk": 2455,
+          "ele": 0,
+          "crit": 0
+        }
+      }
+    },
+    {
+      "set": "barr",
+      "sourceSet": "barr",
       "type": "light-gun",
       "name": "드래그로라이플",
       "element": null,
@@ -1997,40 +2053,6 @@
         }
       },
       "siteBaseMatches": true
-    },
-    {
-      "set": "barr",
-      "sourceSet": "barr",
-      "type": "charge-blade",
-      "name": "볼보로스 차지액스",
-      "element": null,
-      "base": {
-        "atk": 2103,
-        "ele": 0,
-        "crit": 0
-      },
-      "baseSource": "build-data.js",
-      "style": {
-        "status": "unknown",
-        "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
-      }
-    },
-    {
-      "set": "barr",
-      "sourceSet": "barr",
-      "type": "long-sword",
-      "name": "볼보로스 태도",
-      "element": null,
-      "base": {
-        "atk": 2103,
-        "ele": 0,
-        "crit": 0
-      },
-      "baseSource": "build-data.js",
-      "style": {
-        "status": "unknown",
-        "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
-      }
     },
     {
       "set": "g-girr",
@@ -4890,6 +4912,30 @@
     {
       "set": "rathi",
       "sourceSet": "rathi",
+      "type": "great-sword",
+      "name": "발키리블레이드",
+      "element": "독",
+      "base": {
+        "atk": 1817,
+        "ele": 516,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "supported",
+        "profile": "nowcalc:Ailment_4",
+        "source": "same_monster",
+        "referenceType": "shield-sword",
+        "stats20": {
+          "atk": 1917,
+          "ele": 556,
+          "crit": 0
+        }
+      }
+    },
+    {
+      "set": "rathi",
+      "sourceSet": "rathi",
       "type": "long-sword",
       "name": "비룡도【청엽】",
       "element": "독",
@@ -5046,6 +5092,23 @@
     {
       "set": "rathi",
       "sourceSet": "rathi",
+      "type": "light-gun",
+      "name": "발키리파이어",
+      "element": "독",
+      "base": {
+        "atk": 2251,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "공식 무기 확인됨; 스타일강화 수치 미확인"
+      }
+    },
+    {
+      "set": "rathi",
+      "sourceSet": "rathi",
       "type": "heavy-gun",
       "name": "비룡포【원격】",
       "element": null,
@@ -5094,23 +5157,6 @@
         }
       },
       "siteBaseMatches": true
-    },
-    {
-      "set": "rathi",
-      "sourceSet": "rathi",
-      "type": "great-sword",
-      "name": "리오레이아 대검",
-      "element": "독",
-      "base": {
-        "atk": 1817,
-        "ele": 516,
-        "crit": 0
-      },
-      "baseSource": "build-data.js",
-      "style": {
-        "status": "unknown",
-        "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
-      }
     },
     {
       "set": "bari",
@@ -16448,21 +16494,6 @@
   ],
   "issues": [
     {
-      "set": "puke",
-      "type": "gunlance",
-      "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
-    },
-    {
-      "set": "barr",
-      "type": "charge-blade",
-      "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
-    },
-    {
-      "set": "barr",
-      "type": "long-sword",
-      "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
-    },
-    {
       "set": "g-wrog",
       "type": "shield-sword",
       "reason": "현재 사이트의 기본 수치와 원본 불일치"
@@ -16489,8 +16520,8 @@
     },
     {
       "set": "rathi",
-      "type": "great-sword",
-      "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
+      "type": "light-gun",
+      "reason": "공식 무기 확인됨; 스타일강화 수치 미확인"
     },
     {
       "set": "carnival-24",

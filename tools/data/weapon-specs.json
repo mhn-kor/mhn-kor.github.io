@@ -1,0 +1,193 @@
+{
+ "pukeipukei_swordshield": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_swordshield": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "barroth_swordshield": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "pukeipukei_greatsword": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "barroth_greatsword": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "barroth_lightbowgun": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_longsword": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "pukeipukei_hammer": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "barroth_hammer": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_bow": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "pukeipukei_bow": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "pukeipukei_lance": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "barroth_lance": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_chargeblade": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true,
+  "phial": "impact"
+ },
+ "barroth_gunlance": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "rathian_gunlance": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true,
+  "shelling": "normal"
+ },
+ "pukeipukei_heavybowgun": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_heavybowgun": {
+  "atk": 2251,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "pukeipukei_switchaxe": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "barroth_switchaxe": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_switchaxe": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "pukeipukei_huntinghorn": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "barroth_huntinghorn": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_huntinghorn": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "pukeipukei_insectglaive": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_insectglaive": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "pukeipukei_gunlance": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "barroth_longsword": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "barroth_chargeblade": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true,
+  "phial": "impact"
+ },
+ "rathian_greatsword": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "styleSelectable": true
+ },
+ "rathian_lightbowgun": {
+  "atk": 2251,
+  "ele": 0,
+  "crit": 0,
+  "styleSelectable": true
+ }
+}

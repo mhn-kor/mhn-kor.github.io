@@ -61,7 +61,8 @@ function bdStyleInfo(b) {
   const profile = record?.status === 'supported' ? BD_STYLE_DATA.profiles[record.profile] : null;
   const params = BD_PARAM_LEVELS.map((lv, i) => profile?.parameters[lv]?.find(p => p.stat === b.params?.[i]) || null);
   const selected = !!bdStylesOf(b.wt)[b.st - 1];
-  return { record, profile, params, available: !!profile && selected, active: !!profile && selected && !!b.style20 };
+  const selectable = bdWeaponOf(b)?.styleSelectable ?? !!profile;
+  return { record, profile, params, selectable, available: !!profile && selected, active: !!profile && selected && !!b.style20 };
 }
 
 function bdWeaponBase(b) {
@@ -76,7 +77,7 @@ function bdWeaponBase(b) {
 function bdNormalizeParams(b) {
   const info = bdStyleInfo(b);
   b.params = info.params.map(p => p?.stat || null);
-  if (!info.profile) b.st = 0;
+  if (!info.selectable) b.st = 0;
 }
 
 function bdParamSlots(b, bi) {
@@ -788,7 +789,7 @@ function bdCard(b, bi) {
   const styles = bdStylesOf(b.wt);
   const sp = bdSpOf(b.wt);
   const wsk = ws ? bdWSkills(ws, w) : [];
-  const styleSupported = !!w && !!bdStyleInfo(b).profile;
+  const styleSupported = !!w && bdStyleInfo(b).selectable;
   const styleName = styleSupported && b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
   const weaponBase = bdWeaponBase(b);
   const type = BUILD.weaponTypes.find(t => t.k === b.wt);
@@ -1097,7 +1098,7 @@ function bdOpenList() {
 /* 스타일 강화 */
 function bdOpenStyle(bi) {
   const b = bdState.builds[bi];
-  if (!b || !bdWeaponOf(b) || !bdStyleInfo(b).profile) return;
+  if (!b || !bdWeaponOf(b) || !bdStyleInfo(b).selectable) return;
   bdPick = { kind: 'st', bi };
   const styles = bdStylesOf(b.wt);
   bdOpen('스타일 강화',
@@ -1429,7 +1430,7 @@ $('#bd-modal-body').addEventListener('click', e => {
   const lr = e.target.closest('.bd-lr');
   if (!lr) return;
   if (bdPick.kind === 'st') {
-    if (!bdStyleInfo(b).profile) return;
+    if (!bdStyleInfo(b).selectable) return;
     b.st = +lr.dataset.v; bdSave(); bdRender(); return bdDlg().close();
   }
   if (bdPick.kind === 'gear') {

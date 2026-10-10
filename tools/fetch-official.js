@@ -138,6 +138,31 @@ async function main() {
   }
   fs.writeFileSync(path.join(OUT, 'kinsect.json'), JSON.stringify(kinsect, null, 1) + '\n');
 
+  // 공식 10-5 스펙·병/포격형·스타일 선택 지원. 수집 범위 밖의 기록은 보존한다.
+  const specFile = path.join(OUT, 'weapon-specs.json');
+  const specs = fs.existsSync(specFile) ? JSON.parse(fs.readFileSync(specFile, 'utf8')) : {};
+  for (const match of wpage.matchAll(/"id":"([A-Z0-9_]+)","target":/g)) {
+    const id = match[1].toLowerCase();
+    if (!selected(id)) continue;
+    const start = wpage.lastIndexOf('{', match.index);
+    let depth = 0, quote = false, end;
+    for (let i = start; i < wpage.length; i++) {
+      const c = wpage[i];
+      if (quote) { if (c === '\\') i++; else if (c === '"') quote = false; }
+      else if (c === '"') quote = true;
+      else if (c === '{') depth++;
+      else if (c === '}' && !--depth) { end = i + 1; break; }
+    }
+    const weapon = JSON.parse(wpage.slice(start, end));
+    const base = weapon.grades?.find(g => g.grade === 10)?.levels.find(l => l.level === 5);
+    if (!base) throw new Error('공식 10-5 스펙 없음: ' + id);
+    specs[id] = { atk: base.attack, ele: base.elementAttack, crit: base.critical,
+      styleSelectable: weapon.customizationSpec?.styleSelectable === true,
+      ...(weapon.gunlanceSpec ? { shelling: weapon.gunlanceSpec.shellingType.replace('SHELLING_', '').toLowerCase() } : {}),
+      ...(weapon.chargeBladeSpec ? { phial: weapon.chargeBladeSpec.phialType.replace('PHIAL_', '').toLowerCase() } : {}) };
+  }
+  fs.writeFileSync(specFile, JSON.stringify(specs, null, 1) + '\n');
+
   const added = (k) => Object.keys(names[k]).filter(s => !(old[k] || {})[s]);
   process.stderr.write(
     `\n방어구 ${Object.keys(names.armor).length}개 (신규 ${added('armor').length})` +

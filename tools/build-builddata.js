@@ -85,17 +85,6 @@ const HAND_SETS = [
   },
 ];
 
-/* 공식 목록에 아직 없는, 게임에서 확인한 기존 몬스터 무기.
-   같은 소재의 기존 무기 수치·속성을 복사하고 종류별 특성만 여기서 덮는다. */
-const HAND_WEAPON_ADDITIONS = {
-  rathi: [{ t: 'great-sword', tn: '대검', name: '리오레이아 대검' }],
-  barr: [
-    { t: 'charge-blade', tn: '차지액스', name: '볼보로스 차지액스', x: ['유탄병'] },
-    { t: 'long-sword', tn: '태도', name: '볼보로스 태도' },
-  ],
-  puke: [{ t: 'gunlance', tn: '건랜스', name: '푸케푸케 건랜스', x: ['확산형 포격'] }],
-};
-
 const ELEM_KO = {
   fire: '불', water: '물', thunder: '번개', thunder2: '번개', ice: '얼음', dragon: '용',
   poison: '독', paralysis: '마비', sleep: '수면', blast: '폭파', white: '무속성',
@@ -313,6 +302,7 @@ function exportedObj(data, alias) {
 async function main() {
   const { src, data, ko } = await fetchBundle();
   const off = JSON.parse(fs.readFileSync(path.join(DATA, 'official-names.json'), 'utf8'));
+  const specs = JSON.parse(fs.readFileSync(path.join(DATA, 'weapon-specs.json'), 'utf8'));
   /* 병·탄·포격 등의 한국어 이름표. 게임 패치와 무관하게 거의 바뀌지 않아 저장소에 둡니다. */
   const X = JSON.parse(fs.readFileSync(path.join(DATA, 'wextra.json'), 'utf8'));
   /* 공식 사이트의 조충곤별 사냥벌레(fetch-official.js 가 생성). */
@@ -431,6 +421,9 @@ async function main() {
       if (!name) continue;
       /* 조충곤은 공식 사냥벌레로 번들 값을 덮는다. 공식 목록에 없는 무기(이벤트)만 번들대로. */
       let wmon = mon;
+      const officialId = [slug, ...cands].filter(Boolean).map(c => `${c}_${suffix}`).find(id => specs[id]);
+      const spec = specs[officialId];
+      if (spec) wmon = { ...mon, ...(spec.shelling ? { shelling: spec.shelling } : {}), ...(spec.phial ? { phial: spec.phial } : {}) };
       if (wkey === 'insect-glaive') {
         const spec = [slug, ...cands].filter(Boolean).map(c => KIN[`${c}_${suffix}`]).find(Boolean);
         const z = e => KINSECT_ENUM[e] || e;
@@ -445,19 +438,12 @@ async function main() {
       weapons.push({
         t: wkey, tn: wko, name,
         e: elem && elem !== 'white' ? ELEM_KO[elem] || elem : null,
-        atk, ele, crit,
+        atk: spec?.atk ?? atk, ele: spec ? (spec.ele || null) : ele, crit: spec?.crit ?? crit,
+        ...(spec ? { officialId, styleSelectable: spec.styleSelectable } : {}),
         x: weaponExtra(wkey, wmon, X),
         /* 종류 전용 스킬이 있을 때만 담는다. 없으면 세트의 weaponSkills 를 쓴다. */
         ...(raw[wkey] ? { sk: wsk(raw[wkey]) } : {}),
       });
-    }
-
-    /* 아직 공식 목록에 없는 무기는 같은 몬스터의 기존 무기 수치를 쓴다. */
-    for (const add of HAND_WEAPON_ADDITIONS[key] || []) {
-      if (weapons.some(w => w.t === add.t) || !weapons.length) continue;
-      const base = weapons[0];
-      weapons.push({ t: add.t, tn: add.tn, name: add.name, e: base.e, atk: base.atk,
-        ele: base.ele, crit: base.crit, x: add.x || null });
     }
 
     if (!Object.keys(pieces).length && !weapons.length) continue;

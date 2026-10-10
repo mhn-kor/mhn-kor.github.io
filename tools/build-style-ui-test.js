@@ -56,6 +56,23 @@ const path = require('path'), { pathToFileURL } = require('url');
       assert.strictEqual(await page.locator('#bd-modal-body [data-param-choice="ele"]').count(), 0);
       await page.locator('#bd-modal-body [data-param-choice=""]').click();
       assert.ok((await slots.first().getAttribute('class')).includes('empty'));
+      for (const [w, wt] of [['rathi', 'great-sword'], ['barr', 'charge-blade'], ['barr', 'long-sword'], ['puke', 'gunlance']]) {
+        await page.evaluate(({ w, wt }) => {
+          bdState.builds[0] = { ...bdNewBuild(), w, wt }; bdRender();
+        }, { w, wt });
+        assert.strictEqual(await card.locator('[data-style]').isDisabled(), false);
+        await card.locator('[data-style]').click();
+        await page.locator('#bd-modal-body [data-v="1"]').click();
+        assert.strictEqual(await page.evaluate(() => bdState.builds[0].st), 1);
+        assert.strictEqual(await style20.isDisabled(), false);
+        await style20.check();
+        await slots.first().click();
+        await page.locator('#bd-modal-body [data-param-choice="atk"]').click();
+        await page.reload();
+        assert.strictEqual(await page.evaluate(() => bdState.builds[0].st), 1);
+        assert.strictEqual(await style20.isChecked(), true);
+        assert.ok((await slots.first().getAttribute('class')).includes('atk'));
+      }
       assert.deepStrictEqual(errors, []);
       await page.close();
     }

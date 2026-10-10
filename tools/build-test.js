@@ -844,7 +844,11 @@ check('스타일 회심은 공격 증강【회심】에 포함되고 스킬 회�
 check('스타일 미지원·미확인 무기는 버튼과 직접 선택 경로를 막는다', () => {
   const data = vm.runInContext('BD_STYLE_DATA', ctx), state = vm.runInContext('bdState', ctx);
   for (const status of ['unsupported', 'unknown']) {
-    const [key] = Object.entries(data.weapons).find(([, r]) => r.status === status);
+    const [key] = Object.entries(data.weapons).find(([key, r]) => {
+      const [set, type] = key.split(':');
+      const weapon = BUILD.sets.find(s => s.key === set)?.weapons.find(w => w.t === type);
+      return r.status === status && !weapon?.styleSelectable;
+    });
     const [set, type] = key.split(':'), b = { ...bdNewBuild(), w: set, wt: type, st: 1 };
     state.builds.push(b); ctx.unsupportedBuild = b;
     try {
@@ -857,6 +861,36 @@ check('스타일 미지원·미확인 무기는 버튼과 직접 선택 경로�
       assert.strictEqual(b.st, 0);
       assert.strictEqual(bdParse(bdShareParam({ ...b, st: 2 })).st, 0);
     } finally { state.builds.pop(); delete ctx.unsupportedBuild; }
+  }
+});
+
+check('공식 확인된 4종은 같은 몬스터 강화치로 스타일20 적용과 저장이 가능하다', () => {
+  const cases = [
+    ['rathi', 'great-sword', '발키리블레이드', 1817, 516],
+    ['barr', 'charge-blade', '볼보로무당카', 2103, 0],
+    ['barr', 'long-sword', '드래그로카스텔로', 2103, 0],
+    ['puke', 'gunlance', '힐버건랜스', 1912, 417],
+  ];
+  for (const [set, type, name, atk, ele] of cases) {
+    const b = { ...bdNewBuild(), w: set, wt: type, st: 1, style20: true };
+    const weapon = BUILD.sets.find(s => s.key === set).weapons.find(w => w.t === type);
+    assert.strictEqual(weapon.name, name);
+    assert.strictEqual(weapon.atk, atk);
+    assert.strictEqual(weapon.ele || 0, ele);
+    assert.ok(weapon.officialId && weapon.styleSelectable);
+    ctx.officialStyleBuild = b;
+    try {
+      const info = vm.runInContext('bdStyleInfo(officialStyleBuild)', ctx);
+      assert.ok(info.selectable);
+      assert.strictEqual(info.active, true);
+      assert.strictEqual(info.profile, vm.runInContext(`bdStyleInfo({ w: '${set}', wt: 'shield-sword' }).profile`, ctx));
+      vm.runInContext('bdNormalizeParams(officialStyleBuild)', ctx);
+      assert.strictEqual(b.st, 1);
+      assert.strictEqual(bdParse(bdShareParam(b)).st, 1);
+      const html = vm.runInContext('bdCard(officialStyleBuild, 0)', ctx);
+      assert.ok(!/data-style="0" disabled/.test(html));
+      assert.ok(!/data-style20="0"[^>]* disabled/.test(html));
+    } finally { delete ctx.officialStyleBuild; }
   }
 });
 

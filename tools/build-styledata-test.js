@@ -51,7 +51,11 @@ assert.deepStrictEqual(data('somn', 'great-sword').bonus20, { atk: 144, ele: 52,
 assert.deepStrictEqual(data('mizu', 'shield-sword').bonus20, { atk: 64, ele: 96, crit: 0 });
 assert.deepStrictEqual(data('rathi', 'heavy-gun').bonus20, { atk: 204, ele: 0, crit: 0 });
 for (const lv of [10, 15, 20]) assert.deepStrictEqual(data('spring-26', 'light-gun').parameters[lv], [{ stat: 'atk', value: 100 }]);
-assert.strictEqual(output.meta.crossCheckCounts.compared, output.meta.counts.supported);
+assert.strictEqual(output.meta.crossCheckCounts.compared + output.meta.crossCheckCounts.inherited, output.meta.counts.supported);
+for (const [set, type] of [['rathi', 'great-sword'], ['barr', 'long-sword'], ['barr', 'charge-blade'], ['puke', 'gunlance']]) {
+  assert.strictEqual(get(set, type).style.source, 'same_monster');
+  assert.deepStrictEqual(data(set, type), data(set, 'shield-sword'));
+}
 const missingCalc = structuredClone(calc);
 delete missingCalc.weapons.Kadachi_SwordAndShield;
 assert.strictEqual(applyCalc(collect(build, source), missingCalc).weapons.find(w => w.set === 'tobi' && w.type === 'shield-sword').style.status, 'unknown');

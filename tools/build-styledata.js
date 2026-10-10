@@ -75,11 +75,26 @@ function applyCalc(output, calc) {
       output.issues.push({ set: weapon.set, type: weapon.type, reason: e.message });
     }
   }
+  // 공식 신규 무기군은 같은 몬스터의 검증된 강화치를 공유한다.
+  // 속성·보우건 계열의 기존 예외는 섞지 않고, 후보가 일치할 때만 연결한다.
+  const verified = output.weapons.filter(w => w.style.status === 'supported');
+  const gun = type => ['light-gun', 'heavy-gun'].includes(type);
+  let inherited = 0;
+  for (const weapon of output.weapons) {
+    if (weapon.style.reason !== '공식 무기 확인됨; 스타일강화 수치 미확인') continue;
+    const peers = verified.filter(w => w.set === weapon.set && w.element === weapon.element && gun(w.type) === gun(weapon.type));
+    if (!peers.length || new Set(peers.map(w => w.style.profile)).size !== 1) continue;
+    const reference = peers[0], profile = reference.style.profile, data = output.profiles[profile];
+    weapon.style = { status: 'supported', profile, source: 'same_monster', referenceType: reference.type,
+      stats20: Object.fromEntries(STATS.map(s => [s, weapon.base[s] + data.bonus20[s]])) };
+    inherited++;
+  }
+  output.issues = output.issues.filter(issue => !output.weapons.some(w => w.set === issue.set && w.type === issue.type && w.style.source === 'same_monster'));
   output.schemaVersion = 2;
   output.meta.nowcalc = calc.meta;
   output.meta.sourcePolicy = { base: 'mhn.quest (10-5)', bonus20: 'mhnowcalc.com', parameters: 'mhnowcalc.com' };
   output.meta.crossCheck = 'completed_with_source_policy';
-  output.meta.crossCheckCounts = { compared: comparisons.length,
+  output.meta.crossCheckCounts = { compared: comparisons.length, inherited,
     ...Object.fromEntries(['base', 'bonus20', 'parameters'].map(k => [k + 'Matches', comparisons.filter(c => c.matches[k]).length])) };
   output.meta.counts = Object.fromEntries(['supported', 'unsupported', 'unknown'].map(s => [s, output.weapons.filter(w => w.style.status === s).length]));
   output.comparisons = comparisons;
@@ -127,7 +142,9 @@ function collect(build, source) {
     weapons.push(record);
     const unknown = reason => { record.style = { status: 'unknown', reason }; issues.push({ set: set.key, type, reason }); };
     if (!mon) { unknown('원본 소재 정보 없음'); continue; }
-    if (!source.matForge[key]?.includes(type)) { unknown('원본에서 해당 소재의 무기군 존재를 확인하지 못함'); continue; }
+    if (!source.matForge[key]?.includes(type)) {
+      unknown(weapon.officialId ? '공식 무기 확인됨; 스타일강화 수치 미확인' : '원본에서 해당 소재의 무기군 존재를 확인하지 못함'); continue;
+    }
     const rawElement = mon.eff?.[type] || mon.eff?.all;
     const curve = mon[rawElement];
     if (!curve || !curve.base || Object.values(curve).some(k => typeof k === 'string' && !source.weaponVal[k]?.length)) { unknown('10-5 원본 곡선 없음'); continue; }
