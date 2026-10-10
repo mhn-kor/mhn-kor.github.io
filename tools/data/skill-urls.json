@@ -132,5 +132,6 @@
  "폭파 피해 내성": "/ko/skills/blast_resistance",
  "차지 스톡": "/ko/skills/charge_stock",
  "포술·경지": "/ko/skills/artillery_secret",
- "추가 공격【폭파】": "/ko/skills/pursuit_blast"
+ "추가 공격【폭파】": "/ko/skills/pursuit_blast",
+ "특수 스킬 위력 UP·경지": "/ko/skills/sp_move_boost_secret"
 }

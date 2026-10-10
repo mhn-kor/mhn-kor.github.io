@@ -224,11 +224,53 @@ check('특수 스킬 위력 상승 경지도 부모 체크와 합산 수치를 �
     assert.strictEqual(on.stats.conds.length, 1);
     assert.strictEqual(on.stats.conds[0].list[0].v, percent);
     assert.ok(on.html.includes(`대미지 +${percent}%`));
-    assert.strictEqual(on.html.includes('(특수 스킬 위력 상승·경지 적용)'), lv >= 5);
+    assert.strictEqual(on.html.includes('(특위UP 경지 적용)'), lv >= 5);
   }
   assert.strictEqual(calcSkills([['특수 스킬 위력 상승·경지', 1]]).stats.co.F, 1);
   const effects = vm.runInContext('bdEffects("Lv5 이상의 \'파괴왕\' 스킬이 발동 중일 때, 누적 대미지가 20% 증가한다.", "파괴왕·경지")', ctx);
   assert.strictEqual(effects.length, 0, '향후 파괴왕 경지도 HP 대미지에서 제외');
+});
+
+check('리오레우스 아종은 스타일20에서만 경지 Lv1을 얻고 기본 스킬 Lv5부터 반영한다', () => {
+  const skill = '특수 스킬 위력 UP·경지', base = '특수 스킬 위력 상승';
+  const set = BUILD.sets.find(s => s.key === 'a-ratha');
+  for (const weapon of set.weapons) {
+    const b = { ...bdNewBuild(), w: set.key, wt: weapon.t, st: 1, style20: true };
+    assert.strictEqual(new Map(bdTotals(b)).get(skill), 1);
+    b.style20 = false;
+    assert.ok(!new Map(bdTotals(b)).has(skill));
+    b.style20 = true; b.st = 0;
+    assert.ok(!new Map(bdTotals(b)).has(skill));
+  }
+  const armor = { key: 'style-unlock-test', name: '테스트', weaponSkills: [], weapons: [],
+    pieces: { helm: { name: '테스트', skills: [], slot: 0 } } };
+  BUILD.sets.push(armor);
+  const b = { ...bdNewBuild(), w: set.key, st: 1, style20: true, helm: armor.key, cond: { [base]: true } };
+  const state = vm.runInContext('bdState', ctx);
+  state.builds.push(b); ctx.unlockBuild = b;
+  try {
+    const weaponLv = new Map(bdTotals({ ...b, helm: null })).get(base) || 0;
+    for (const lv of [4, 5, 6]) {
+      armor.pieces.helm.skills = [{ s: base, lv: lv - weaponLv }];
+      const stats = vm.runInContext('bdStats(unlockBuild)', ctx);
+      const percent = +/대미지가 (\d+)%/.exec(bdSkillDesc(base, lv))[1] + (lv >= 5 ? 20 : 0);
+      assert.ok(Math.abs(stats.co.F - (1 + percent / 100)) < 1e-12);
+      const cond = stats.conds.find(c => c.sk === base);
+      assert.strictEqual(cond.lv, Math.min(lv, 5));
+      assert.strictEqual(cond.applied.includes(skill), lv >= 5);
+      const html = vm.runInContext('bdCondList(unlockBuild)', ctx);
+      assert.strictEqual(html.includes('(특위UP 경지 적용)'), lv >= 5);
+      assert.ok(!html.includes('(특수 스킬 위력 UP·경지 적용)'));
+      assert.ok(vm.runInContext('bdCard(unlockBuild, 0)', ctx).includes(skill));
+      assert.strictEqual(bdParse(bdShareParam(b)).style20, true);
+    }
+    b.cond[base] = false;
+    assert.strictEqual(vm.runInContext('bdStats(unlockBuild).co.F', ctx), 1);
+    b.style20 = false;
+    assert.ok(!new Map(bdTotals(b)).has(skill));
+    b.style20 = true; b.w = 'ratha';
+    assert.ok(!new Map(bdTotals(b)).has(skill));
+  } finally { BUILD.sets.pop(); state.builds.pop(); delete ctx.unlockBuild; }
 });
 
 check('힘의 해방은 체크 시 회심 증가분만 적용한다', () => {
@@ -398,11 +440,13 @@ check('공식 전환은 임시 키를 유지하고 장비 이름·슬롯을 가�
 });
 
 check('공식 공개된 세 스킬은 임시 번역 대신 공식 설명을 사용한다', () => {
-  for (const n of ['추가 공격【폭파】', '포술·경지', '차지 스톡']) {
+  for (const n of ['추가 공격【폭파】', '포술·경지', '차지 스톡', '특수 스킬 위력 UP·경지']) {
     assert.ok(!vm.runInContext('SKILLDESC_MANUAL', ctx)[n], `${n} 임시 설명 잔존`);
     const levels = vm.runInContext('SKILLDESC', ctx)[n];
     for (const [lv, desc] of levels) assert.strictEqual(bdSkillDesc(n, lv), desc);
   }
+  assert.ok(!vm.runInContext('SKILLDESC_MANUAL', ctx)['특수 스킬 위력 상승·경지']);
+  for (const lv of [1, 2]) assert.strictEqual(bdSkillDesc('특수 스킬 위력 상승·경지', lv), bdSkillDesc('특수 스킬 위력 UP·경지', lv));
 });
 
 check('요청 무기는 같은 소재의 수치를 쓰고 특성이 맞다', () => {

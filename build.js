@@ -74,6 +74,12 @@ function bdWeaponBase(b) {
   return base;
 }
 
+function bdBuildWSkills(b) {
+  const skills = bdWSkills(bdSet(b.w), bdWeaponOf(b));
+  const extra = bdStyleInfo(b).active ? (BD_STYLE_UNLOCKS[b.w] || []).filter(x => x.level <= 20) : [];
+  return [...skills, ...extra.map(({ s, lv }) => ({ s, lv }))];
+}
+
 function bdNormalizeParams(b) {
   const info = bdStyleInfo(b);
   b.params = info.params.map(p => p?.stat || null);
@@ -244,6 +250,7 @@ function bdBowCycle(b, lvOf) {
    표류연성 데이터에서 빌려 옵니다(위 bdStoneLevels 주석). 한 줄만 필요한 곳과
    표로 다 보여 주는 곳이 같은 것을 봐야 해서 여기 한 벌만 둡니다. */
 function bdSkillLevels(name) {
+  if (name === '특수 스킬 위력 상승·경지') name = '특수 스킬 위력 UP·경지';
   const rows = (typeof SKILLDESC_MANUAL !== 'undefined' && SKILLDESC_MANUAL[name])
     || (typeof SKILLDESC !== 'undefined' && SKILLDESC[name]) || bdStoneLevels(name);
   return rows && rows.length ? rows : null;
@@ -341,7 +348,7 @@ function bdStats(b) {
 function bdTotals(b) {
   const total = new Map();
   const add = (name, lv) => total.set(name, (total.get(name) || 0) + lv);
-  bdWSkills(bdSet(b.w), bdWeaponOf(b)).forEach(x => add(x.s, x.lv));
+  bdBuildWSkills(b).forEach(x => add(x.s, x.lv));
   for (const { k } of BD_PARTS()) {
     const s = bdSet(b[k]);
     if (s && s.pieces[k]) s.pieces[k].skills.forEach(x => add(x.s, x.lv));
@@ -368,7 +375,7 @@ function bdCondList(b) {
       const what = c.list.map(e => `${e.scope ? e.scope + ' · ' : ''}${BD_KIND[e.k] || e.k} ${e.v > 0 ? '+' : ''}${e.v}${e.pct || e.k === 'crit' || e.k === 'critx' ? '%' : ''}`).join(' · ');
       return `<label class="bd-cl${on[c.sk] ? ' on' : ''}">
         <input type="checkbox" data-cond="${bi}:${esc(c.sk)}"${on[c.sk] ? ' checked' : ''}>
-        <span>${esc(c.sk)} <b>${c.lv}</b>${c.applied.length ? ` <small>(${esc(c.applied.join(' · '))} 적용)</small>` : ''}</span>
+        <span>${esc(c.sk)} <b>${c.lv}</b>${c.applied.length ? ` <small>(${esc(c.applied.map(s => ['특수 스킬 위력 UP·경지', '특수 스킬 위력 상승·경지'].includes(s) ? '특위UP 경지' : s).join(' · '))} 적용)</small>` : ''}</span>
         <i>${esc(what)}</i>
       </label>`;
     }).join('')}
@@ -788,7 +795,7 @@ function bdCard(b, bi) {
   const ws = bdSet(b.w);
   const styles = bdStylesOf(b.wt);
   const sp = bdSpOf(b.wt);
-  const wsk = ws ? bdWSkills(ws, w) : [];
+  const wsk = ws ? bdBuildWSkills(b) : [];
   const styleSupported = !!w && bdStyleInfo(b).selectable;
   const styleName = styleSupported && b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
   const weaponBase = bdWeaponBase(b);
@@ -1759,7 +1766,7 @@ function bdPreviewHtml(b) {
   const ws = bdSet(b.w);
   const rows = [ws
     ? line(bdMon(ws.key), w ? w.name : ws.name,
-        [wt && wt.n, style ? `스타일 ${style}` : ''].filter(Boolean).join(' · '), bdWSkills(ws, w))
+        [wt && wt.n, style ? `스타일 ${style}` : ''].filter(Boolean).join(' · '), bdBuildWSkills(b))
     : `<li class="bd-pv empty">무기 없음</li>`];
 
   for (const { k, n } of BD_PARTS()) {

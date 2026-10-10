@@ -21,6 +21,12 @@ const BD_SP = {
   bow: '용화살',
 };
 
+/* 아종의 스타일강화 해금 스킬. 공식 확인된 소재만 등록한다.
+   현재 화면은 Lv20만 지원하므로 Lv10 해금도 적용 시 함께 활성화된다. */
+const BD_STYLE_UNLOCKS = {
+  'a-ratha': [{ level: 10, s: '특수 스킬 위력 UP·경지', lv: 1 }],
+};
+
 const BD_STYLES = {
   'shield-sword': ['파고들어베기', '저스트러시'],
   'dual-blades': ['귀인화[짐승]', '나선참'],
