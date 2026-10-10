@@ -396,7 +396,7 @@ function bdShellUI(b) {
   if (!shell) return '';
   const bi = bdState.builds.indexOf(b), { type, mode, lv, mastery, artilleryBonus, masteryBonus, damageEffects, damageBonus, multiplier, ammo, coefficient, shot, damage } = shell;
   return `<section class="bd-shell" aria-label="포격 대미지">
-    <div class="bd-shell-head"><b>포격 대미지 <small>시안</small></b><span>G10 · ${type}</span></div>
+    <div class="bd-shell-head"><b>포격 대미지</b><span>G10 · ${type}</span></div>
     <div class="bd-shell-tabs" role="group" aria-label="포격 공격 방식">${Object.entries(BD_SHELL_MODES).map(([key, label]) =>
       `<button data-shell="${bi}:${key}" aria-pressed="${mode === key}"${bi < 0 ? ' disabled' : ''}>${label}</button>`).join('')}</div>
     <div class="bd-shell-result"><b>${damage.toLocaleString('ko-KR')}</b></div>
