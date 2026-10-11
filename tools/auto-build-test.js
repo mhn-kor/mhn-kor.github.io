@@ -62,6 +62,31 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(filled.ds.helm.filter(Boolean).length, 0);
   }
   get('BUILD.sets.pop(); delete driftOrderBuild');
+  // 전체 소재 선택, 공식 순서, 존재하지 않는 무기군 전환과 강화 초기화를 검사한다.
+  let selectable = 0;
+  for (const type of get('BUILD.weaponTypes')) {
+    const sets = get('abMonsters')(type.k);
+    assert.deepStrictEqual(Array.from(sets, s => s.key), Array.from(get('bdOrderedSets()').filter(s => s.weapons.some(w => w.t === type.k)), s => s.key));
+    get('abChangeWeapon')('wt', type.k);
+    for (const set of sets) {
+      get('abChangeWeapon')('monster', set.key);
+      assert.ok(get('bdWeaponOf(abState.b)'), set.name + ' ' + type.n);
+      assert.strictEqual(get('abState.b.st'), 0);
+      assert.strictEqual(get('abState.b.style20'), false);
+      assert.ok(get('abState.b.params').every(p => p === null));
+      assert.ok(Number.isFinite(get('bdWeaponBase(abState.b).atk')));
+      if (get('abDirections(abState.b)').length) assert.strictEqual(get('abValidate(abState.targets)'), '');
+      else assert.strictEqual(get('abState.direction'), 'manual');
+      get('abRender()');
+      selectable++;
+    }
+  }
+  get('abState.edited=true; abState.targets=abTargets(["연격","간파","슈퍼회심"])');
+  get('abChangeWeapon')('monster', 'mizu');
+  assert.strictEqual(get('abState.targets[0].s'), '연격', '사용자 지정 스킬 보존');
+  for (const [field, value] of [['wt','long-sword'], ['monster','mizu']]) get('abChangeWeapon')(field, value);
+  get('abApplyDirection("water")');
+  console.log('전체 무기 선택 검수', selectable, '종');
   get('abState.b.st=0; abState.b.style20=false');
   const config = get('({b:abState.b,targets:abState.targets,drift:true})');
   const result = await get('abSearch')(config);
@@ -89,6 +114,16 @@ const get = s => vm.runInContext(s, ctx);
   const lockWithoutDrift = await get('abSearch')({ ...config, targets:config.targets.map(t=>({...t,min:1})), drift:false, lockon:true });
   assert.ok(lockWithoutDrift.pool.length > 0);
   assert.ok(lockWithoutDrift.pool.every(r => r.drifts === 0 && new Map(get('bdTotals')(r.b)).get('록온') >= 1));
+  for (const element of ['불', '독', '폭파', null]) {
+    const set = get('BUILD.sets').find(s => s.weapons.some(w => w.t === 'long-sword' && (w.e || null) === element));
+    assert.ok(set, '대표 속성 소재 필요: ' + element);
+    const b = { ...get('bdNewBuild')(), w: set.key, wt: 'long-sword' };
+    const targets = get('abTargets')(['연격', '간파', '슈퍼회심']).map(t => ({ ...t, min: 1 }));
+    const sample = await get('abSearch')({ b, targets, drift: true, lockon: true });
+    assert.ok(sample.pool.length, set.name + ' 추천 후보 필요');
+    assert.ok(sample.pool.every(r => Number.isFinite(r.score) && r.b.w === set.key));
+    console.log(set.name, '추천 검수 통과');
+  }
   assert.strictEqual(await get('abSearch')(config, () => {}, () => true), null);
   const sorted = [...result.pool].sort((a, b) => get('abCompare')(a, b, 'score'));
   assert.strictEqual(get('abBest')(result.pool, 'score')[0].score, sorted[0].score);

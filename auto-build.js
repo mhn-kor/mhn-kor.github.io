@@ -1,4 +1,4 @@
-/* 타마미츠네 샘플. 무기별 운용 지식은 나중에 별도 규칙 데이터로 확장한다.
+/* 전체 등록 무기를 지원. 무기별 운용 지침은 별도 구현 단계에서 적용한다.
    bounded beam search: 전역 최적 보장이 아닌 제한 탐색, 점수는 기존 bdStats를 공유. */
 const AB_LIMIT = { beam: 160, armor: 24, evaluated: 6000, ms: 8000 };
 const AB_SOURCES = [
@@ -18,6 +18,11 @@ const abSkills = () => [...new Set([...Object.keys(BUILD.maxLv), ...abStonePool(
   .sort((a, b) => a.localeCompare(b, 'ko'));
 const abTargets = names => names.map(s => ({ s, min: Math.max(1, abMax(s) - 2), max: abMax(s) }));
 const abMelee = wt => !['light-gun', 'heavy-gun', 'bow'].includes(wt);
+const abMonsters = wt => bdOrderedSets().filter(s => s.weapons.some(w => w.t === wt));
+const abElementSkill = b => {
+  const element = bdWeaponOf(b)?.e;
+  return ['불', '물', '번개', '얼음', '용'].includes(element) ? `${element}속성 공격 강화` : null;
+};
 const abSearchTargets = config => config.lockon && abMelee(config.b.wt)
   ? [{ s: '록온', min: 1, max: 1 }, ...config.targets.filter(t => t.s !== '록온')] : config.targets;
 let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'long-sword' }, direction: '', edited: false,
@@ -25,13 +30,25 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'long-sword' }, direction: 
   order: 'priority', pool: [], stats: null, busy: false, run: 0, notice: '', scroll: 0, active: false };
 
 function abDirections(b) {
-  const base = bdWeaponBase(b), water = { id: 'water', name: '물속성 중심',
-    desc: '물속성 강화와 회심격을 중심으로 구성합니다.',
-    skills: ['물속성 공격 강화', '회심격【속성】', '슈퍼회심'] };
+  const skill = abElementSkill(b);
+  if (!skill) return [];
+  const base = bdWeaponBase(b), elemental = { id: 'water', name: `${bdWeaponOf(b).e}속성 중심`,
+    desc: '해당 속성 강화와 회심격을 중심으로 구성합니다.',
+    skills: [skill, '회심격【속성】', '슈퍼회심'] };
   const critical = { id: 'critical', name: '회심 활용',
     desc: `강화 적용 후 기본 회심 ${base.crit}%를 활용합니다.`,
-    skills: ['회심격【속성】', '슈퍼회심', '물속성 공격 강화'] };
-  return base.crit >= 40 ? [critical, water] : [water, critical];
+    skills: ['회심격【속성】', '슈퍼회심', skill] };
+  return base.crit >= 40 ? [critical, elemental] : [elemental, critical];
+}
+
+function abChangeWeapon(field, value) {
+  const s = abState;
+  if (field === 'wt') {
+    s.b.wt = value; s.lockon = abMelee(value);
+    if (!bdWeaponOf(s.b)) s.b.w = abMonsters(value)[0]?.key || null;
+  } else s.b.w = value;
+  s.b.st = 0; s.b.style20 = false; s.b.params = [null, null, null];
+  if (!s.edited) abApplyDirection(abDirections(s.b)[0]?.id || 'manual');
 }
 
 function abApplyDirection(id) {
@@ -112,7 +129,7 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
   const started = performance.now(), parts = BD_PARTS(), { b: seed, targets: userTargets, drift } = config;
   const targets = abSearchTargets(config), requireLock = !!config.lockon && abMelee(seed.wt);
   const stones = abStonePool(), fillers = [...new Set([...targets.map(t => t.s),
-    '물속성 공격 강화', '회심격【속성】', '슈퍼회심', '간파', '약점 특효', '연격'])];
+    ...[abElementSkill(seed)].filter(Boolean), '회심격【속성】', '슈퍼회심', '간파', '약점 특효', '연격'])];
   let all = parts.map(({ k }) => bdOrderedSets().filter(s => s.pieces[k]).map(s => ({ key: s.key, piece: s.pieces[k] })));
   const totalsFor = b => new Map(bdTotals(b));
   const optimistic = (b, stage) => {
@@ -183,23 +200,23 @@ function abOptions(rows, selected) {
 function abRender() {
   const s = abState, b = s.b, base = bdWeaponBase(b), info = bdStyleInfo(b), dirs = abDirections(b);
   const skills = abSkills(), w = bdWeaponOf(b);
-  $('#ab-screen').innerHTML = `<div class="ab-heading"><button class="btn ghost" data-ab-back>← 내 빌드</button><h2>자동빌드 (테스트중)</h2><span>타마미츠네 샘플</span></div>
-    <div class="ab-box"><h3>무기 설정</h3><div class="ab-config">
-      <label>무기군<select data-ab="wt">${abOptions(BUILD.weaponTypes.filter(t => bdSet('mizu').weapons.some(w => w.t === t.k)).map(t => [t.k, t.n]), b.wt)}</select></label>
-      <label>몬스터<select data-ab="monster"><option value="mizu">타마미츠네</option></select></label>
+  $('#ab-screen').innerHTML = `<div class="ab-heading"><button class="btn ghost" data-ab-back>← 내 빌드</button><h2>자동빌드 (테스트중)</h2></div>
+    <div class="ab-box ab-form-settings ab-weapon-settings"><h3>무기 설정</h3><div class="ab-config">
+      <label>무기군<select data-ab="wt">${abOptions(BUILD.weaponTypes.filter(t => abMonsters(t.k).length).map(t => [t.k, t.n]), b.wt)}</select></label>
+      <label>몬스터·소재<select data-ab="monster">${abOptions(abMonsters(b.wt).map(s => [s.key, s.name]), b.w)}</select></label>
       <label>스타일<select data-ab="st"${info.selectable ? '' : ' disabled'}>${abOptions([[0, '스타일 없음'], ...bdStylesOf(b.wt).map((n, i) => [i + 1, n])], b.st)}</select></label>
       <label class="ab-check"><input type="checkbox" data-ab="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
     </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-ab-param="${i}"${info.active ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
-    <p class="ab-base">${esc(w.name)} · 공격력 <b>${base.atk}</b> · 물속성 <b>${base.ele}</b> · 회심 <b>${base.crit}%</b></p></div>
+    <p class="ab-base">${esc(w.name)} · 공격력 <b>${base.atk}</b>${w.e ? ` · ${esc(w.e)} <b>${base.ele}</b>` : ''} · 회심 <b>${base.crit}%</b></p></div>
     <div class="ab-box"><h3>세팅 방향 <small>공식 효과 기반 샘플 프리셋</small></h3><div class="ab-directions" role="group" aria-label="세팅 방향">
-      ${[...dirs, { id: 'manual', name: '직접 설정', desc: '핵심 스킬과 순위를 직접 정합니다.' }].map((d, i) => `<button data-ab-dir="${d.id}" aria-pressed="${s.direction === d.id}"><b>${esc(d.name)}${i === 0 ? ' · 추천' : ''}</b><span>${esc(d.desc)}</span></button>`).join('')}</div>
+      ${[...dirs, { id: 'manual', name: '직접 설정', desc: '핵심 스킬과 순위를 직접 정합니다.' }].map((d, i) => `<button data-ab-dir="${d.id}" aria-pressed="${s.direction === d.id}"><b>${esc(d.name)}${i === 0 && dirs.length ? ' · 추천' : ''}</b><span>${esc(d.desc)}</span></button>`).join('')}</div>
       <p class="ab-muted">${s.edited ? '선택한 방향 · 사용자 수정. 새 방향을 선택하면 핵심 스킬이 교체됩니다.' : '방향을 선택하면 핵심 스킬을 채워줍니다. 무기별 운용 가이드는 아직 적용하지 않았습니다.'}</p></div>
-    <div class="ab-box"><h3>핵심 스킬</h3><div class="ab-targets">${s.targets.map((t, i) => `<div><label>${i + 1}순위<select data-ab-skill="${i}">${abOptions([['', '스킬 선택'], ...skills.map(n => [n, n])], t.s)}</select></label>
+    <div class="ab-box ab-form-settings ab-core-settings"><h3>핵심 스킬</h3><div class="ab-targets">${s.targets.map((t, i) => `<div><label>${i + 1}순위<select data-ab-skill="${i}">${abOptions([['', '스킬 선택'], ...skills.map(n => [n, n])], t.s)}</select></label>
       <label>최소 Lv<select data-ab-min="${i}">${abOptions(Array.from({ length: abMax(t.s) }, (_, n) => [n + 1, String(n + 1)]), t.min)}</select></label>
       <label>목표 Lv<select data-ab-max="${i}">${abOptions(Array.from({ length: abMax(t.s) }, (_, n) => [n + 1, String(n + 1)]), t.max)}</select></label></div>`).join('')}</div>
       <p class="ab-muted">기본 범위는 최대 레벨 −2 ~ 최대 레벨입니다. 최소 레벨은 반드시 충족하고, 우선순위순은 1 → 2 → 3순위 목표 충족도를 먼저 비교합니다.</p>
-      <div class="ab-actions"><label><input type="checkbox" data-ab="drift"${s.drift ? ' checked' : ''}>표류연성 사용</label>
-      <label title="체크하면 핵심 스킬과 별도로 록온 Lv1을 반드시 확보합니다"><input type="checkbox" data-ab="lockon"${s.lockon && abMelee(b.wt) ? ' checked' : ''}${abMelee(b.wt) ? '' : ' disabled'}>록온 필수</label>
+      <div class="ab-actions"><label class="ab-check"><input type="checkbox" data-ab="drift"${s.drift ? ' checked' : ''}>표류연성 사용</label>
+      <label class="ab-check" title="체크하면 핵심 스킬과 별도로 록온 Lv1을 반드시 확보합니다"><input type="checkbox" data-ab="lockon"${s.lockon && abMelee(b.wt) ? ' checked' : ''}${abMelee(b.wt) ? '' : ' disabled'}>록온 필수</label>
       <button class="btn primary" data-ab-search${s.busy ? ' disabled' : ''}>${s.busy ? '후보 탐색 중…' : '추천 빌드 찾기'}</button>${s.busy ? '<button class="btn ghost" data-ab-cancel>중지</button>' : ''}</div>
       <p id="ab-status" role="status" aria-live="polite">${esc(s.notice)}</p>
       <details class="ab-basis"><summary>추천 기준과 출처</summary><p>기존 빌드 점수로 평가합니다. 조건부 효과는 발동한 상태로 가정하며 특수 위력·SP 전용 효과는 제외합니다. 동시 발동 가능성·유지율은 보정하지 않아 실제 DPS가 아닙니다. 특수 게이지 가속은 선택 가능한 핵심 스킬로 유지하며 임의 대미지 점수는 부여하지 않습니다.</p>
@@ -230,7 +247,7 @@ function abEquipmentUI(b) {
     <p class="ab-weapon-info">${esc(style)}${bdStyleInfo(b).active ? ' · 스타일강화 Lv20' : ''} · ${b.params.map(p => p ? BD_PARAM_NAMES[p] : '미선택').join(' / ')}</p>
     ${BD_PARTS().map(({ k }) => { const s = bdSet(b[k]); return row(k, s.pieces[k].name, s, s.pieces[k].skills, bdStoneList(b, k)); }).join('')}</div>
     <div class="ab-totals"><h4>스킬 합계 <small>강조: 핵심 스킬 · 필수 록온</small></h4><div class="bd-inline">${chips(bdTotals(b).map(([s, lv]) => ({ s, lv })))}</div>
-    <div class="bd-stats"><span>${BD_SI.atk}${base.atk} ▸ <b>${stats.now.atk}</b></span><span>${bdIco('assets/element/water.png')}${base.ele} ▸ <b>${stats.now.ele}</b></span><span>${BD_SI.crit}${base.crit}% ▸ <b>${stats.now.crit}%</b></span></div></div>`;
+    <div class="bd-stats"><span>${BD_SI.atk}${base.atk} ▸ <b>${stats.now.atk}</b></span>${w.e && BD_EI[w.e] ? `<span>${bdIco(`assets/element/${BD_EI[w.e]}.png`)}${base.ele} ▸ <b>${stats.now.ele}</b></span>` : ''}<span>${BD_SI.crit}${base.crit}% ▸ <b>${stats.now.crit}%</b></span></div></div>`;
 }
 
 function abCalculationUI(b) {
@@ -279,7 +296,7 @@ $('#ab-screen').addEventListener('change', e => {
   const el = e.target, s = abState;
   if (el.dataset.ab === 'order') { s.order = el.value; return abRenderResults(); }
   abInvalidate();
-  if (el.dataset.ab === 'wt') { s.b.wt = el.value; s.b.st = 0; s.b.style20 = false; s.b.params = [null, null, null]; s.lockon = abMelee(el.value); }
+  if (['wt', 'monster'].includes(el.dataset.ab)) abChangeWeapon(el.dataset.ab, el.value);
   if (el.dataset.ab === 'st') { s.b.st = +el.value; if (!s.b.st) s.b.style20 = false; }
   if (el.dataset.ab === 'style20') s.b.style20 = el.checked;
   if (el.dataset.ab === 'drift') s.drift = el.checked;
@@ -302,7 +319,7 @@ $('#ab-screen').addEventListener('click', async e => {
     const r = abState.results[+el.dataset.abImport];
     if (!r) return;
     const b = structuredClone(r.b), direction = abDirections(b).find(d => d.id === abState.direction)?.name || '직접 설정';
-    b.n = `타마미츠네 · ${direction}`;
+    b.n = `${bdSet(b.w).name} · ${direction}`;
     if (bdAdopt(bdShareParam(b), b.n)) {
       abState.scroll = 0; location.hash = 'build';
       requestAnimationFrame(() => bdFocusBuild(0)); toast('최신 내 빌드로 가져왔습니다');

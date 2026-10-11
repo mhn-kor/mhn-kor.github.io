@@ -15,6 +15,28 @@
 #ab-screen select:disabled { opacity: .4; }
 #ab-screen input[type="checkbox"] { accent-color: var(--amber); }
 #ab-screen .ab-check, .ab-actions label { flex-direction: row; align-items: center; }
+/* 무기·핵심 스킬 설정 공통. 항목명보다 선택값을 강조하고 터치 높이를 확보한다. */
+#ab-screen .ab-form-settings label { color: var(--muted); font-size: 12px; }
+#ab-screen .ab-form-settings select {
+  min-height: 44px; padding: 10px; font-size: 16px; font-weight: 600; color: var(--bone);
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface-2));
+  border-color: color-mix(in srgb, var(--amber) 45%, var(--line)); color-scheme: dark;
+}
+#ab-screen .ab-form-settings select:focus-visible {
+  border-color: var(--amber-hi); outline: 2px solid var(--amber); outline-offset: 2px;
+}
+#ab-screen .ab-form-settings select:disabled {
+  opacity: 1; color: var(--muted); background: #211e1a; border-color: #494138; cursor: not-allowed;
+}
+#ab-screen .ab-form-settings .ab-check {
+  min-height: 44px; padding: 8px 10px; align-self: end; border: 1px solid var(--line);
+  border-radius: 7px; color: var(--bone); box-sizing: border-box; cursor: pointer;
+}
+.ab-form-settings .ab-check input { width: 18px; height: 18px; flex: none; margin: 0; }
+#ab-screen .ab-form-settings .ab-check:has(input:checked) {
+  border-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--surface-2));
+}
+#ab-screen .ab-form-settings .ab-check:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
 .ab-base { margin: 14px 0 0; }
 .ab-base b { color: var(--bone); }
 .ab-directions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }

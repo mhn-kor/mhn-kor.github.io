@@ -24,6 +24,22 @@ const { pathToFileURL } = require('url');
       assert.strictEqual(await page.locator('#bd-cards').isVisible(), false);
       assert.strictEqual(await page.locator('#panel-build > .bd-tools').isVisible(), false);
       assert.strictEqual(await page.locator('[data-ab="style20"]').isDisabled(), true);
+      const fields = await page.locator('.ab-weapon-settings select').evaluateAll(nodes => nodes.map(el => ({
+        height: el.getBoundingClientRect().height, background: getComputedStyle(el).backgroundColor,
+        fontSize: getComputedStyle(el).fontSize, disabled: el.disabled
+      })));
+      assert.ok(fields.every(f => f.height >= 44 && f.fontSize === '16px'));
+      const coreFields = await page.locator('.ab-core-settings select').evaluateAll(nodes => nodes.map(el => ({
+        height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize,
+        background: getComputedStyle(el).backgroundColor
+      })));
+      assert.strictEqual(coreFields.length, 9);
+      assert.ok(coreFields.every(f => f.height >= 44 && f.fontSize === '16px' && f.background === fields[0].background));
+      assert.notStrictEqual(fields.find(f => !f.disabled).background, fields.find(f => f.disabled).background);
+      const field = page.locator('[data-ab="wt"]');
+      await field.focus();
+      assert.strictEqual(await field.evaluate(el => getComputedStyle(el).outlineWidth), '2px');
+      await page.locator('.ab-weapon-settings').screenshot({path:path.join(os.tmpdir(),`mhn-auto-settings-${width}.png`)});
       assert.strictEqual(await page.locator('[data-ab="lockon"]').isChecked(), true);
       await page.locator('[data-ab="lockon"]').uncheck();
       for (const wt of ['light-gun', 'heavy-gun', 'bow']) {
