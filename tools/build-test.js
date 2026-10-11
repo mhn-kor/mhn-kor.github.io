@@ -151,12 +151,12 @@ check('회심격은 일반 속성 C에 합산하고 고룡 E만 고정 증가분
   assert.strictEqual(stats.co.D, 700);
   assert.strictEqual(stats.co.E, 1.15);
   assert.strictEqual(stats.now.ele, 3183);
-  assert.strictEqual(stats.score, 7768);
-  assert.ok(Math.abs(stats.branches.normal - 5191.94) < 1e-9);
-  assert.ok(Math.abs(stats.branches.critical - 8871.954) < 1e-9);
+  assert.strictEqual(stats.score, 5975);
+  assert.ok(Math.abs(stats.branches.normal - 3993.8) < 1e-9);
+  assert.ok(Math.abs(stats.branches.critical - 6824.58) < 1e-9);
   const html = calcSkills(skills, weapon, cond).html;
   assert.ok(html.includes('속성·일반') && html.includes('속성·회심'));
-  assert.ok(html.includes('5191.94 × 0.3 + 8871.954 × 0.7 ≈ 7768'));
+  assert.ok(html.includes('3993.8 × 0.3 + 6824.58 × 0.7 ≈ 5975'));
   const noElder = calcSkills(skills.filter(([s]) => s !== '명룡의 파뢰'), weapon, cond).stats;
   assert.strictEqual(noElder.co.E, 1);
   assert.strictEqual(noElder.now.ele, Math.round(1532 * 1.35 + 700));
@@ -239,6 +239,31 @@ check('추가 공격 3종은 상태이상 일치 또는 슬래시액스의 해�
         else assert.strictEqual(on.stats.score, off.stats.score);
       }
     }
+  }
+});
+
+check('축적 시 위력은 상태이상 무기·슬래시액스 상태이상 병에서만 계산한다', () => {
+  const name = '상태 이상 축적 시 위력 UP';
+  for (const { k: t } of BUILD.weaponTypes) for (const e of [null, '물', '독', '마비', '수면', '폭파'])
+    for (const phial of ['', '독병', '마비병', '수면병', '강격병']) for (const [lv] of bdSkillLevels(name)) {
+      const weapon = { t, e, x: phial ? [phial] : [] };
+      const valid = ['독', '마비', '수면', '폭파'].includes(e)
+        || (t === 'switch-axe' && ['독병', '마비병', '수면병'].includes(phial));
+      const off = calcSkills([[name, lv]], weapon), on = calcSkills([[name, lv]], weapon, { [name]: true });
+      assert.strictEqual(on.stats.conds.some(c => c.sk === name), valid);
+      assert.strictEqual(off.stats.score, calcSkills([], weapon).stats.score);
+      assert.strictEqual(on.stats.co.F, valid ? 1 + lv / 10 : 1);
+    }
+});
+
+check('저스트 교격은 저장된 체크 상태와 무관하게 점수에서 제외한다', () => {
+  const name = '저스트 교격';
+  for (const [lv] of bdSkillLevels(name)) {
+    const off = calcSkills([[name, lv]]), on = calcSkills([[name, lv]], {}, { [name]: true });
+    assert.strictEqual(on.stats.score, calcSkills([]).stats.score);
+    assert.strictEqual(off.stats.score, on.stats.score);
+    assert.ok(!on.stats.conds.some(c => c.sk === name));
+    assert.ok(bdSkillDesc(name, lv).includes('저스트 회피'));
   }
 });
 

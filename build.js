@@ -135,6 +135,8 @@ const BD_SKILL_WEAPONS = { '변형 공격 강화': ['switch-axe', 'charge-blade'
 const BD_STATUS_BOOST = { '추가 공격【독】': '독', '추가 공격【마비】': '마비', '추가 공격【폭파】': '폭파' };
 const bdStatusBoostApplies = (name, w) => w?.e === BD_STATUS_BOOST[name]
   || (w?.t === 'switch-axe' && (w.x || []).includes(BD_STATUS_BOOST[name] + '병'));
+const bdBuildupApplies = w => ['독', '마비', '수면', '폭파'].includes(w?.e)
+  || (w?.t === 'switch-axe' && (w.x || []).some(x => /^(독|마비|수면|폭파)병$/.test(x)));
 const bdAmmoBoostApplies = (name, w) => ['light-gun', 'heavy-gun'].includes(w?.t)
   && (w.x || []).some(x => BD_AMMO_BOOST[name].test(x.trim().split(/\s+/)[0]));
 
@@ -158,12 +160,13 @@ function bdCombineEffects(effects) {
 }
 
 function bdEffects(desc, name = '', weapon = null) {
+  if (name === '상태 이상 축적 시 위력 UP' && !bdBuildupApplies(weapon)) return [];
   if (BD_STATUS_BOOST[name] && !bdStatusBoostApplies(name, weapon)) return [];
   if (BD_SKILL_WEAPONS[name] && !BD_SKILL_WEAPONS[name].includes(weapon?.t)) return [];
   if (BD_AMMO_BOOST[name] && !bdAmmoBoostApplies(name, weapon)) return [];
   if (weapon?.t === 'gunlance' && ['포술', '포술·경지'].includes(name)) return [];
   /* 부위 파괴 축적은 HP 대미지가 아니다. 동작 한정 효과도 일반 대미지와 구분한다. */
-  if (name.startsWith('파괴왕') || ['라스트 샷', '후발 주자', '각성의 일격', '사냥꾼의 결속'].includes(name)) return [];
+  if (name.startsWith('파괴왕') || ['라스트 샷', '후발 주자', '각성의 일격', '사냥꾼의 결속', '저스트 교격'].includes(name)) return [];
   if (BD_DAMAGE_SCOPE[name]) {
     const m = /대미지가 (\d+)% (?:상승|증가)/.exec(desc);
     return m ? [{ k: 'dmg', pct: 1, v: +m[1], cond: true, scope: BD_DAMAGE_SCOPE[name] }] : [];

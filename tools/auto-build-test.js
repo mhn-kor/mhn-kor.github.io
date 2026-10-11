@@ -11,6 +11,8 @@ const get = s => vm.runInContext(s, ctx);
   assert.strictEqual(get('abValidate(abTargets(["연격", "연격", "슈퍼회심"]))').includes('중복'), true);
   assert.strictEqual(get('abTargets(["점프 철인"])[0].min'), 1);
   const originalWeapon = get('structuredClone(abState.b)');
+  assert.ok(!get('abSupportSkills(abState.b)').includes('저스트 교격'));
+  assert.deepStrictEqual(Array.from(get('bdEffects(bdSkillDesc("저스트 교격", 5), "저스트 교격", bdWeaponOf(abState.b))')), []);
   for (const [monster, type, accepted] of [
     ['mizu', 'long-sword', []], ['barr', 'switch-axe', ['마비']],
     ['arzu', 'switch-axe', ['독']], ['brachy', 'hammer', ['폭파']],
@@ -20,6 +22,14 @@ const get = s => vm.runInContext(s, ctx);
     get('abState').b = { ...originalWeapon, w: set.key, wt: type };
     for (const status of ['독', '마비', '폭파'])
       assert.strictEqual(get('abSkills()').includes(`추가 공격【${status}】`), accepted.includes(status));
+  }
+  get('abState').b = originalWeapon;
+  const buildup = '상태 이상 축적 시 위력 UP';
+  for (const [w, wt, valid] of [['mizu','long-sword',false],['barr','switch-axe',true],['arzu','switch-axe',true]]) {
+    get('abState').b = { ...originalWeapon, w, wt };
+    assert.strictEqual(get('abSkills()').includes(buildup), valid);
+    assert.strictEqual(get('abSupportSkills(abState.b)').includes(buildup), valid);
+    assert.strictEqual(get('bdEffects(bdSkillDesc("상태 이상 축적 시 위력 UP",5),"상태 이상 축적 시 위력 UP",bdWeaponOf(abState.b)).length') > 0, valid);
   }
   get('abState').b = originalWeapon;
   assert.strictEqual(get('abState.lockon'), true);
@@ -32,6 +42,70 @@ const get = s => vm.runInContext(s, ctx);
   get('abState.b.st=1; abState.b.style20=true; abState.b.params=["crit","crit","crit"]');
   assert.strictEqual(get('bdWeaponBase(abState.b).crit'), 50);
   assert.strictEqual(get('abDirections(abState.b)[0].id'), 'critical');
+  const guideSeed = get('structuredClone(abState.b)');
+  // 지침별 추천 방향·예외·레벨과 자동 보충을 대응 검수한다.
+  const negativeSet = get('BUILD.sets').find(s => s.name === '이블조');
+  assert.ok(negativeSet);
+  const negative = { ...get('bdNewBuild')(), w: negativeSet.key, wt: 'great-sword' };
+  const negativeDirections = get('abDirections')(negative);
+  assert.deepStrictEqual(Array.from(negativeDirections, d => d.id), ['brutal-5','brutal-3','brutal-low']);
+  assert.ok(!negativeDirections.some(d => d.id === 'critical'));
+  const fastNegative = { ...negative, wt:'dual-blades' };
+  assert.strictEqual(get('abDirections')(fastNegative)[0].id, 'brutal-low');
+  const erased = { ...negative, st:1, style20:true, params:['crit','crit','crit'] };
+  assert.ok(get('bdStyleInfo')(erased).active);
+  assert.ok(!get('abDirections')(erased).some(d => d.id.startsWith('brutal')));
+  assert.ok(!get('abPolicy')(erased,'water',[]).fillers.includes('흉회심'));
+  assert.ok(get('abPolicy')(erased,'manual',[{s:'흉회심',min:1,max:1}]).fillers.includes('흉회심'), '사용자 명시 선택 우선');
+  const critAttack = get('abDirections')(guideSeed).find(d => d.id === 'crit-attack');
+  assert.ok(critAttack.targets.some(t => t.s === '공격 증강【회심】'));
+  assert.ok(get('abPolicy')(guideSeed, 'crit-attack', critAttack.targets).prefer.includes('공격 증강【회심】'));
+  assert.strictEqual(get('abDirections')(guideSeed).find(d=>d.id==='critical').critMin,80);
+  assert.ok(!get('abDirections')(guideSeed).find(d=>d.id==='critical').targets.some(t=>t.s==='슈퍼회심'));
+  const morph = { ...guideSeed, wt:'switch-axe' };
+  assert.ok(get('abDirections')(morph).find(d=>d.id==='morph-critical').targets.some(t=>t.s==='슈퍼회심'));
+  const lance = { ...get('bdNewBuild')(),w:'mizu',wt:'lance',st:2 };
+  const just = get('abDirections')(lance)[0];
+  assert.strictEqual(just.id,'water','스타일이 무기의 투자 방향을 대체하지 않음');
+  assert.deepStrictEqual(Array.from(get('abStyleRule')(lance).required,t=>[t.s,t.min,t.max]), [['불퇴전',4,5],['반사',1,5]]);
+  assert.ok(!get('abSearchTargets')({b:lance,targets:just.targets}).some(t=>t.s==='매진'),'보완 권장 스킬은 필수화하지 않음');
+  assert.ok(!get('abPolicy')(lance,just.id,just.targets).fillers.includes('가드 성능'));
+  const shield = get('abDirections')({...lance,st:1})[0];
+  assert.deepStrictEqual(Array.from(get('abStyleRule')({...lance,st:1}).required,t=>[t.s,t.min,t.max]), [['가드 성능',5,5],['반사',1,5],['불퇴전',4,5]]);
+  for (const st of [1,2]) {
+    const inverseLance = {...negative,wt:'lance',st};
+    assert.deepStrictEqual(Array.from(get('abDirections')(inverseLance),d=>d.id),['brutal-low','brutal-3','brutal-5']);
+    const critLance = {...guideSeed,wt:'lance',st};
+    assert.deepStrictEqual(Array.from(get('abDirections')(critLance),d=>d.id),['critical','crit-attack','water']);
+    const required = get('abSearchTargets')({b:critLance,targets:just.targets,lockon:true});
+    assert.ok(required.some(t=>t.s==='반사'&&t.min===1));
+    const gated = get('abSearchTargets')({b:critLance,targets:just.targets.map(t=>({...t,min:1}))});
+    assert.ok(gated.some(t=>t.s==='물속성 공격 강화'&&t.min===5),'필수 경지의 선행 레벨 확보');
+    const unrestricted = get('abSearchTargets')({b:critLance,targets:just.targets,styleGuide:false});
+    assert.ok(!unrestricted.some(t=>t.s==='반사'),'스타일 자동 기준은 사용자 해제 가능');
+    assert.ok(!get('abSupportSkills')(critLance).includes('적정 거리 위력 UP'));
+    assert.ok(!get('abSupportSkills')(critLance).includes('차지 마스터'));
+    assert.ok(!get('abSupportSkills')(critLance).includes('상태 이상 축적 시 위력 UP'));
+    assert.notDeepStrictEqual(Array.from(get('abPolicy')(critLance,'manual',just.targets).fillers),
+      Array.from(get('abPolicy')(inverseLance,'manual',just.targets).fillers),'동일 핵심 스킬도 스펙별 보조 후보 변경');
+  }
+  const poisonSet = get('BUILD.sets').find(s=>s.weapons.some(w=>w.t==='gunlance'&&w.e==='독'));
+  const poison = { ...get('bdNewBuild')(),w:poisonSet.key,wt:'gunlance',st:1 };
+  const statusDirections = get('abDirections')(poison);
+  assert.strictEqual(statusDirections[0].targets[0].s,'추가 공격【독】');
+  assert.ok(statusDirections.some(d=>d.id==='status-rear'));
+  assert.ok(!get('abDirections')({...poison,st:2}).some(d=>d.id==='status-rear'));
+  const phial = { ...get('bdNewBuild')(),w:'barr',wt:'switch-axe' };
+  assert.strictEqual(get('abDirections')(phial)[0].targets[0].s,'추가 공격【마비】');
+  assert.deepStrictEqual(Array.from(get('abCurve')('불퇴전',lance).increments),[10,5,5,10,10]);
+  assert.strictEqual(get('abTargets(["불퇴전"])[0].min'),1);
+  assert.strictEqual(get('abCurve')('반사',lance),null,'비수치 효과의 임의 환산 금지');
+  // 파라미터/스타일 변경은 자동 지침을 갱신하되 직접 수정은 보존한다.
+  get('abState').b=guideSeed; get('abApplyDirection')('water'); get('abSyncDirection')();
+  assert.strictEqual(get('abState.direction'),'critical');
+  get('abState.edited=true; abState.targets[0]={s:"연격",min:2,max:3}; abSyncDirection()');
+  assert.strictEqual(get('abState.targets[0].s'),'연격');
+  get('abState').b=guideSeed; get('abApplyDirection')('water');
   get(`BUILD.sets.push({key:'ab-test',name:'검수',weapons:[],pieces:{helm:{slot:1,skills:[
     {s:'특수 스킬 위력 상승',lv:5},{s:'연격',lv:5},{s:'특수 게이지 가속',lv:3}]}}});
     abTestBuild={...abState.b,helm:'ab-test',cond:{'특수 스킬 위력 상승':true}};abScoreBuild(abTestBuild)`);
@@ -62,6 +136,28 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(filled.ds.helm.filter(Boolean).length, 0);
   }
   get('BUILD.sets.pop(); delete driftOrderBuild');
+  for (const [b, d] of [[lance,just],[{...lance,st:1},shield],
+    [{...guideSeed,wt:'lance',st:2},get('abDirections')({...guideSeed,wt:'lance',st:2}).find(d=>d.id==='critical')],
+    [{...negative,wt:'lance',st:1},get('abDirections')({...negative,wt:'lance',st:1})[0]],
+    [guideSeed,get('abDirections')(guideSeed).find(d=>d.id==='critical')],
+    [guideSeed,critAttack],[negative,negativeDirections[0]],[poison,statusDirections[0]]]) {
+    const result = await get('abSearch')({b, direction:d.id, targets:d.targets, drift:true, lockon:true});
+    assert.ok(result.pool.length, d.name + ' 후보 필요');
+    for (const r of result.pool) {
+      const totals = new Map(get('bdTotals')(r.b));
+      assert.ok(get('abSearchTargets')({b,targets:d.targets,lockon:true}).every(t=>(totals.get(t.s)||0)>=t.min));
+      assert.ok(!d.critMin || get('bdStats')(r.b).now.crit>=d.critMin);
+      assert.ok(!(r.b.cond['불퇴전']&&r.b.cond['매진']));
+      assert.strictEqual(r.score,get('bdStats')(r.b).score);
+    }
+    console.log(d.name, '지침 적용 추천 검수 통과', result.ms,'ms');
+  }
+  // 새 장비의 스킬·슬롯만 등록해도 운용 조건을 확보하는 후보에 들어온다.
+  get(`BUILD.sets.push({key:'new-guide-gear',name:'검수용 신규 장비',weapons:[],pieces:{helm:{slot:2,skills:[
+    {s:'가드 성능',lv:5},{s:'반사',lv:1},{s:'불퇴전',lv:4},{s:'록온',lv:1}]}}});`);
+  const fresh = await get('abSearch')({b:{...lance,st:1},direction:shield.id,targets:shield.targets,drift:true,lockon:true});
+  assert.ok(fresh.pool.some(r=>r.b.helm==='new-guide-gear'),'장비 ID를 추천 규칙에 추가하지 않고도 새 후보 발견');
+  get('BUILD.sets.pop()');
   // 전체 소재 선택, 공식 순서, 존재하지 않는 무기군 전환과 강화 초기화를 검사한다.
   let selectable = 0;
   for (const type of get('BUILD.weaponTypes')) {
@@ -75,7 +171,7 @@ const get = s => vm.runInContext(s, ctx);
       assert.strictEqual(get('abState.b.style20'), false);
       assert.ok(get('abState.b.params').every(p => p === null));
       assert.ok(Number.isFinite(get('bdWeaponBase(abState.b).atk')));
-      if (get('abDirections(abState.b)').length) assert.strictEqual(get('abValidate(abState.targets)'), '');
+      if (get('abDirections(abState.b)').length) assert.strictEqual(get('abValidate(abState.targets)'), '', set.name + ' ' + type.n + ': ' + JSON.stringify(get('abState.targets')));
       else assert.strictEqual(get('abState.direction'), 'manual');
       get('abRender()');
       selectable++;
@@ -94,6 +190,10 @@ const get = s => vm.runInContext(s, ctx);
   const best = get('abBest')(result.pool, 'priority');
   assert.strictEqual(best.length, 5, '샘플은 5개 후보를 추천');
   assert.strictEqual(new Set(best.map(r => get('abSignature')(r.b))).size, 5);
+  const alternatives = get('abBest')(result.pool,'alternatives');
+  assert.strictEqual(alternatives[0].score,Math.max(...result.pool.map(r=>r.score)));
+  assert.strictEqual(new Set(alternatives.map(r=>r.profile)).size,5,'다섯 대안의 보조 투자 구성이 다름');
+  assert.ok(alternatives.every(r=>r.score===get('bdStats')(r.b).score),'다양성으로 실제 점수 변경 금지');
   for (const r of best) {
     for (let i = 0; i < 3; i++) assert.ok(r.levels[i] >= config.targets[i].min);
     for (const part of get('BD_PARTS()')) assert.ok(r.b.ds[part.k].filter(Boolean).length <= get('bdSlotCount')(r.b, part.k));
@@ -134,7 +234,8 @@ const get = s => vm.runInContext(s, ctx);
   if (process.argv.includes('--all-weapons')) for (const type of get('BUILD.weaponTypes')) {
     const b = get('bdNewBuild')(); Object.assign(b, { w: 'mizu', wt: type.k, st: 1, style20: true, params: ['crit', 'crit', 'crit'] });
     get('bdNormalizeParams')(b);
-    const result = await get('abSearch')({ ...config, b });
+    const direction = get('abDirections')(b).find(d=>d.id==='water') || get('abDirections')(b)[0];
+    const result = await get('abSearch')({ ...config, b, direction:direction.id, targets:direction.targets });
     assert.ok(result.pool.length, type.n + ' 추천 후보 필요');
     assert.ok(result.pool.every(r => Number.isFinite(r.score) && r.b.wt === type.k));
     console.log(type.n, '검수 통과', result.pool.length, '후보', result.ms, 'ms');
