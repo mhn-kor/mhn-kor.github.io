@@ -4,7 +4,7 @@ const els = {}, ctx = vm.createContext({ console, performance, structuredClone, 
   location: { hash: '#build' }, requestAnimationFrame() {}, window: {},
   document: { querySelector() { return null; } }, esc: s => String(s), closeOnBackdrop() {}, nickAuto() {},
   localStorage: { getItem() { return null; }, setItem() {} } });
-for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build-styles.js', 'build-style-data.js', 'build.js', 'auto-build.js'])
+for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build-styles.js', 'build-style-data.js', 'build.js', 'build-bowgun-data.js', 'auto-build.js'])
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx);
 const get = s => vm.runInContext(s, ctx);
 (async () => {
@@ -52,22 +52,23 @@ const get = s => vm.runInContext(s, ctx);
     const direction = get('abDirections')(b)[0], rule = get('abStyleRule')(b);
     assert.ok(rule.avoid.includes(excluded));
     assert.ok(!get('abStyleRule')({...b, st:0}));
-    assert.ok(direction.targets.every(t => t.min === 1), '필수 조건 없는 스타일은 보조 핵심 최소를 낮추지 않음');
+    assert.strictEqual(direction.targets[0].min,1);
+    assert.ok(direction.targets.slice(1).every(t => t.min === 0), '탄 운용 필수 조건과 보조 핵심을 분리');
     const policy = get('abPolicy')(b,direction.id,direction.targets);
     assert.ok(!policy.fillers.includes(excluded));
     assert.ok(policy.avoid.includes(excluded));
     const manual = [{s:excluded,min:1,max:3}];
     assert.ok(get('abPolicy')(b,'manual',manual).fillers.includes(excluded));
     assert.ok(!get('abPolicy')(b,direction.id,direction.targets,false).avoid.includes(excluded));
-    assert.strictEqual(get('abSearchTargets')({b,targets:direction.targets}).length, direction.targets.length);
+    assert.ok(get('abSearchTargets')({b,targets:direction.targets}).length > direction.targets.length);
     const guard = policy.styleTargets.find(t => t.s === '가드 성능');
     assert.strictEqual(!!guard, wt === 'heavy-gun' && st === 1);
     if (guard) assert.deepStrictEqual([guard.min,guard.max],[0,3]);
     get('abState').b = b;
     get('abRender()');
-    assert.ok(els['#ab-screen'].innerHTML.includes(rule.name));
+    assert.ok(els['#ab-screen'].innerHTML.includes('보우건 운용'));
     const guide = get('abGuideUI')(b,direction.id,direction.targets);
-    assert.ok(guide.includes('탄별 반동·장전 요구 레벨은 아직 자동 확보하지 않습니다'));
+    assert.ok(guide.includes('최선 표시 단계에 도달하는 최소 레벨'));
     assert.ok(!guide.includes('매진 2~3'));
   }
   get('abState').b = guideSeed;
