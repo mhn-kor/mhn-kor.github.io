@@ -43,6 +43,34 @@ const get = s => vm.runInContext(s, ctx);
   assert.strictEqual(get('bdWeaponBase(abState.b).crit'), 50);
   assert.strictEqual(get('abDirections(abState.b)[0].id'), 'critical');
   const guideSeed = get('structuredClone(abState.b)');
+  // 보우건 스타일은 대체 스킬만 자동 보충에서 제외하고 직접 지정·무기 투자 방향을 보존한다.
+  for (const [wt, st, excluded] of [
+    ['light-gun',1,'반동 경감'], ['light-gun',2,'장전 속도'],
+    ['heavy-gun',1,'장전 속도'], ['heavy-gun',2,'반동 경감'],
+  ]) {
+    const b = { ...get('bdNewBuild')(), w:'mizu', wt, st };
+    const direction = get('abDirections')(b)[0], rule = get('abStyleRule')(b);
+    assert.ok(rule.avoid.includes(excluded));
+    assert.ok(!get('abStyleRule')({...b, st:0}));
+    assert.ok(direction.targets.every(t => t.min === 1), '필수 조건 없는 스타일은 보조 핵심 최소를 낮추지 않음');
+    const policy = get('abPolicy')(b,direction.id,direction.targets);
+    assert.ok(!policy.fillers.includes(excluded));
+    assert.ok(policy.avoid.includes(excluded));
+    const manual = [{s:excluded,min:1,max:3}];
+    assert.ok(get('abPolicy')(b,'manual',manual).fillers.includes(excluded));
+    assert.ok(!get('abPolicy')(b,direction.id,direction.targets,false).avoid.includes(excluded));
+    assert.strictEqual(get('abSearchTargets')({b,targets:direction.targets}).length, direction.targets.length);
+    const guard = policy.styleTargets.find(t => t.s === '가드 성능');
+    assert.strictEqual(!!guard, wt === 'heavy-gun' && st === 1);
+    if (guard) assert.deepStrictEqual([guard.min,guard.max],[0,3]);
+    get('abState').b = b;
+    get('abRender()');
+    assert.ok(els['#ab-screen'].innerHTML.includes(rule.name));
+    const guide = get('abGuideUI')(b,direction.id,direction.targets);
+    assert.ok(guide.includes('탄별 반동·장전 요구 레벨은 아직 자동 확보하지 않습니다'));
+    assert.ok(!guide.includes('매진 2~3'));
+  }
+  get('abState').b = guideSeed;
   // 지침별 추천 방향·예외·레벨과 자동 보충을 대응 검수한다.
   const negativeSet = get('BUILD.sets').find(s => s.name === '이블조');
   assert.ok(negativeSet);

@@ -60,8 +60,17 @@ const AB_STYLE_RULES = {
     required: [{ s: '가드 성능', min: 5, max: 5 }, { s: '반사', min: 1, max: 5 }, { s: '불퇴전', min: 4, max: 5 }],
     recommended: [],
     avoid: [], desc: '가드 성능 5 · 반사 1 이상 · 불퇴전 4~5. 돌진 중 가드를 활용합니다.' },
+  '스텝 샷': { id: 'light-step', name: '스텝샷 · 반동 대체', required: [], recommended: [],
+    avoid: ['반동 경감'], desc: '스텝샷 중심 사격은 반동 경감을 자동 보충하지 않습니다. 탄 순환 시 장전 속도는 별도로 필요합니다. 일반 탭 사격의 반동까지 대체하지 않습니다.' },
+  '슬라이딩 리로드': { id: 'light-slide', name: '슬라이딩 리로드 · 장전 대체', required: [], recommended: [],
+    avoid: ['장전 속도'], desc: '한 발 이상 사용 후 슬라이딩 리로드로 장전을 대체합니다. 반동 경감은 사용하는 탄에 맞춰 별도로 확보해야 합니다.' },
+  '가드리로드': { id: 'heavy-guard', name: '가드리로드 · 장전 대체', required: [],
+    recommended: [{ s: '가드 성능', min: 0, max: 3 }], avoid: ['장전 속도'],
+    desc: '가드리로드로 장전을 대체하고 가드 성능 2~3을 권장 후보로 검토합니다. 필수 최소로 강제하지 않으며, 반동 경감은 사용하는 탄에 맞춰 별도로 필요합니다.' },
+  '앉아쏘기': { id: 'heavy-crouch', name: '앉아쏘기 · 반동 대체', required: [], recommended: [],
+    avoid: ['반동 경감'], desc: '앉아쏘기 중심 사격은 반동 경감을 자동 보충하지 않습니다. 탄 순환 시 장전 속도는 별도로 필요합니다. 일반 사격까지 같은 조건으로 취급하지 않습니다.' },
 };
-const abStyleRule = b => b.wt === 'lance' ? AB_STYLE_RULES[bdStylesOf(b.wt)[b.st - 1]] : null;
+const abStyleRule = b => ['lance', 'light-gun', 'heavy-gun'].includes(b.wt) ? AB_STYLE_RULES[bdStylesOf(b.wt)[b.st - 1]] : null;
 const abEquipmentSkills = () => [...new Set(bdOrderedSets().flatMap(s => Object.values(s.pieces).flatMap(p => p.skills.map(x => x.s))))];
 function abSupportSkills(b) {
   const c = abContext(b);
@@ -95,7 +104,7 @@ function abContext(b) {
 function abDirections(b) {
   const c = abContext(b), directions = [];
   const make = (id, name, skills, desc, extra = {}) => ({ id, name,
-    targets: abTargets(skills).map((t, i) => ({ ...t, min: abStyleRule(b) && i > 0 ? 0 : t.min })), desc, ...extra });
+    targets: abTargets(skills).map((t, i) => ({ ...t, min: abStyleRule(b)?.required.length && i > 0 ? 0 : t.min })), desc, ...extra });
   if (c.nativeNegative && c.base.crit < 0 && !c.tripleCrit) {
     const low = make('brutal-low', '흉회심 · 저투자', ['흉회심', c.status || c.element || '연격', '돌파구'],
       '흉회심 1로 손실을 보완하고 다른 피해 스킬에 투자합니다. 전심전력은 필수로 묶지 않습니다.');
@@ -356,7 +365,8 @@ function abGuideUI(b, direction, targets) {
   const extra = abSearchTargets({ b, targets, styleGuide: abState.styleGuide })
     .filter(t => !targets.some(x => x.s === t.s && x.min >= t.min));
   return `<p>${esc(policy.desc || '직접 설정: 사용자 스킬과 레벨을 우선하며 적용 가능한 효과만 평가합니다.')}</p>
-    ${policy.style ? `<p>스타일 골격: ${esc(policy.style.name)}. ${policy.style.required.map(t => `${esc(t.s)} ${t.min}~${t.max}`).join(' · ')} 확보 후 선택한 투자 방향을 결합합니다. ${policy.style.recommended.length ? '매진 2~3은 보완용 권장이며 필수가 아닙니다.' : ''} 투자 방향의 보조 핵심 스킬은 최소 0으로 유연하게 비교하며 직접 최소를 높일 수 있습니다.</p>` : ''}
+    ${policy.style ? `<p>스타일 골격: ${esc(policy.style.name)}. ${esc(policy.style.desc)} ${policy.style.required.length ? '필수 조건과 선택한 투자 방향을 결합하며 보조 핵심의 최소 레벨은 직접 높일 수 있습니다.' : ''} 권장 스킬은 최소 레벨로 강제하지 않습니다.</p>` : ''}
+    ${['light-gun', 'heavy-gun'].includes(b.wt) ? '<p>탄별 반동·장전 요구 레벨은 아직 자동 확보하지 않습니다. 필요한 스킬은 핵심 스킬에서 직접 지정해 주세요. 특정 탄 반복·회피 장전·SP 연계 운용과 탄별 DPS는 미반영입니다.</p>' : ''}
     ${c.nativeNegative && c.tripleCrit ? '<p>회심 파라미터 3개: 흉회심 중심 방향과 자동 추가 연성은 제외합니다. 무기 기본 스킬·장비에 함께 붙은 효과는 실제 계산을 유지합니다.</p>' : ''}
     ${policy.avoid.length ? `<p>자동 보충 비권장: ${policy.avoid.map(esc).join(' · ')}. 다른 유용한 스킬이 붙은 장비까지 금지하지 않습니다.</p>` : ''}
     ${policy.lowPriority.length ? `<p>낮은 우선순위: ${policy.lowPriority.map(esc).join(' · ')}. 후보에서 제외하지 않고 실제 점수로 비교합니다.</p>` : ''}
@@ -380,8 +390,8 @@ function abRender() {
     <p class="ab-base">${esc(w.name)} · 공격력 <b>${base.atk}</b>${w.e ? ` · ${esc(w.e)} <b>${base.ele}</b>` : ''} · 회심 <b>${base.crit}%</b></p></div>
     ${abStyleRule(b) ? `<div class="ab-box ab-form-settings"><h3>스타일 운용 기준 <small>투자 방향과 별도로 결합</small></h3>
       <label class="ab-check"><input type="checkbox" data-ab="styleGuide"${s.styleGuide ? ' checked' : ''}>${esc(abStyleRule(b).name)} 기준 적용</label>
-      <p class="ab-muted">${esc(abStyleRule(b).desc)} ${abStyleRule(b).recommended.length ? '매진은 이동 후 보완용 권장입니다. 최소 레벨로 강제하지 않습니다.' : ''}</p>
-      <p class="ab-muted">${s.styleGuide ? '아래 핵심 3개와 함께 확보합니다. 같은 스타일에서도 몬스터·파라미터에 따라 투자 방향이 달라집니다.' : '스타일의 자동 필수 조건·권장 보충을 해제했습니다. 직접 선택한 핵심 스킬만 필수로 확보합니다.'}</p></div>` : ''}
+      <p class="ab-muted">${esc(abStyleRule(b).desc)}</p>
+      <p class="ab-muted">${s.styleGuide ? '아래 핵심 3개와 함께 적용합니다. 같은 스타일에서도 몬스터·파라미터에 따라 투자 방향이 달라집니다.' : '스타일의 자동 기준을 해제했습니다. 직접 선택한 핵심 스킬은 유지합니다.'}</p></div>` : ''}
     <div class="ab-box"><h3>세팅 방향 <small>무기 특성 × 파라미터 × 운용 지침</small></h3><div class="ab-directions" role="group" aria-label="세팅 방향">
       ${[...dirs, { id: 'manual', name: '직접 설정', desc: '핵심 스킬과 순위를 직접 정합니다.' }].map((d, i) => `<button data-ab-dir="${d.id}" aria-pressed="${s.direction === d.id}"><b>${esc(d.name)}${i === 0 && dirs.length ? ' · 추천' : ''}</b><span>${esc(d.desc)}</span></button>`).join('')}</div>
       <p class="ab-muted">${s.edited ? '사용자 수정 유지 중. 새 방향을 선택하면 핵심 스킬이 교체됩니다.' : '무기·스타일·회심·파라미터에 맞는 지침으로 핵심 스킬과 레벨을 설정합니다.'}</p>
@@ -446,7 +456,7 @@ function abRenderResults() {
       <div class="ab-reason"><h4>요구 스킬 충족</h4><ul>
       ${s.lockon && abMelee(s.b.wt) ? '<li>필수 록온: Lv1 확보</li>' : ''}
       ${s.targets.map((t, j) => `<li>${j + 1}순위 ${esc(t.s)}: <b>Lv${r.levels[j]}</b> 확보 <small>(최소 ${t.min} · 목표 ${t.max})</small></li>`).join('')}</ul>
-      ${s.styleGuide && abStyleRule(r.b) ? `<h4>스타일 운용 조건 확보</h4><p>${abStyleRule(r.b).required.map(t => `${esc(t.s)} ${Math.min(abMax(t.s), new Map(bdTotals(r.b)).get(t.s) || 0)} / 최소 ${t.min}`).join(' · ')}</p>` : ''}
+      ${s.styleGuide && abStyleRule(r.b)?.required.length ? `<h4>스타일 운용 조건 확보</h4><p>${abStyleRule(r.b).required.map(t => `${esc(t.s)} ${Math.min(abMax(t.s), new Map(bdTotals(r.b)).get(t.s) || 0)} / 최소 ${t.min}`).join(' · ')}</p>` : ''}
       <h4>적용한 운용 지침</h4>${abGuideUI(r.b, s.direction, s.targets)}
       <h4>연성 배치</h4><p>${r.drifts}개 사용 · 같은 스킬이 기본으로 붙은 부위의 빈 슬롯부터 배치합니다.</p>
       <h4>점수 계산 가정</h4><p>발동 가정: ${Object.entries(r.b.cond).filter(([, on]) => on).map(([n]) => esc(n)).join(' · ') || '없음'}</p>
