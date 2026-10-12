@@ -24,7 +24,8 @@ for (const [wt,st,avoid] of [['light-gun',1,'반동 경감'],['light-gun',2,'장
   assert.strictEqual(info(b,{mode:'sp'}).mode,'cycle');
   if (g.modes.some(([id])=>id==='repeat')) {
     const r=info(b,{mode:'repeat',slot:999});
-    assert.strictEqual(r.ammo.length,1); assert.strictEqual(r.slot,0);
+    assert.strictEqual(r.ammo.length,1);
+    assert.strictEqual(get('abAmmoPreference')(r.ammo[0].name),Math.max(...r.slots.map(a=>get('abAmmoPreference')(a.name))));
     assert.strictEqual(r.required.find(t=>t.s==='회피 장전').min,4);
   }
 }

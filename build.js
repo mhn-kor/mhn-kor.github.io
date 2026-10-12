@@ -40,7 +40,16 @@ let bdState = { builds: [bdNewBuild()], detail: false };
 let bdWeaponFilter = ''; // 화면만 거른다. 카드 이벤트는 원래 빌드 첨자를 사용한다.
 const bdVisibleBuilds = () => bdState.builds.map((b, bi) => ({ b, bi })).filter(({ b }) => !bdWeaponFilter || b.wt === bdWeaponFilter);
 
-const bdSet = key => BUILD.sets.find(s => s.key === key);
+let bdSetIndex, bdSetSource, bdSetCount;
+const bdSet = key => {
+  if (!key) return undefined;
+  if (bdSetSource!==BUILD.sets || bdSetCount!==BUILD.sets.length) {
+    bdSetSource=BUILD.sets; bdSetCount=BUILD.sets.length; bdSetIndex=new Map();
+    BUILD.sets.forEach((s,i)=>{if(!bdSetIndex.has(s.key)) bdSetIndex.set(s.key,{s,i});});
+  }
+  const hit=bdSetIndex.get(key);
+  return hit && BUILD.sets[hit.i]===hit.s && hit.s.key===key ? hit.s : BUILD.sets.find(s=>s.key===key);
+};
 /* 모든 장비 선택창은 저장된 공식 방어구 순번을 공유한다. 미등록 세트는 뒤로 둔다. */
 const bdOrderedSets = () => [...BUILD.sets].sort((a, b) =>
   (a.o ?? 999) - (b.o ?? 999) || a.g - b.g || a.u - b.u || a.id - b.id);
@@ -122,6 +131,7 @@ const BD_COND = /때|하면|되면|중에는|동안|이하|뒤|그룹 사냥|사
 const BD_DAMAGE_SCOPE = {
   '비연': '공중 공격 기준', '추격': '몬스터 부위 파괴 후', '불퇴전': '회피 없이 10초 경과',
   '특수 스킬 위력 상승': 'SP 특수 스킬 공격 기준', '적정 거리 위력 UP': '적정 거리의 탄·화살 기준',
+  '차지 스톡': '모으기 공격 기준',
   '통상탄·속성 통상탄 강화': '지정된 통상탄·속성탄 기준',
   '참렬탄/속성 참렬탄 강화': '지정된 참렬탄·속성 참렬탄 기준',
 };
@@ -139,6 +149,19 @@ const bdBuildupApplies = w => ['독', '마비', '수면', '폭파'].includes(w?.
   || (w?.t === 'switch-axe' && (w.x || []).some(x => /^(독|마비|수면|폭파)병$/.test(x)));
 const bdAmmoBoostApplies = (name, w) => ['light-gun', 'heavy-gun'].includes(w?.t)
   && (w.x || []).some(x => BD_AMMO_BOOST[name].test(x.trim().split(/\s+/)[0]));
+/* 비교 탄 기준. 계열만 판단하며 탄별 모션/피해/사격 비중은 만들지 않는다. */
+const bdAmmoFamily = x => {
+  const name = String(x || '').trim().split(/\s+/)[0];
+  return ['철갑', '용격', '확산', '참렬', '관통', '산탄'].find(k => name.includes(k))
+    || (/^(통상탄|화염탄|수냉탄|전격탄|빙결탄|멸룡탄)$/.test(name) ? '통상' : null);
+};
+const bdCompareAmmo = b => ['light-gun', 'heavy-gun'].includes(b.wt)
+  && Number.isInteger(b.ammoSlot) ? bdWeaponOf(b)?.x?.[b.ammoSlot] : null;
+const bdScoreWeapon = b => {
+  const w = bdWeaponOf(b), ammo = bdCompareAmmo(b);
+  return { ...w, ...(ammo ? { x: [ammo] } : {}),
+    fallbash: b.wt === 'shield-sword' && !b.st && b.snsMode === 'fallbash' };
+};
 
 /* 경지 설명의 순서 차이를 흡수한다. 데이터에 설명이 추가되면 원래 스킬에 연결된다. */
 function bdSkillGate(desc) {
@@ -160,13 +183,22 @@ function bdCombineEffects(effects) {
 }
 
 function bdEffects(desc, name = '', weapon = null) {
+  const gun = ['light-gun', 'heavy-gun'].includes(weapon?.t);
+  const families = gun ? (weapon.x || []).map(bdAmmoFamily) : [];
+  if (['포술','포술·경지'].includes(name) && !['charge-blade','light-gun','heavy-gun','gunlance'].includes(weapon?.t)) return [];
+  if (gun && name === '적정 거리 위력 UP' && !families.some(x => ['통상','산탄','관통'].includes(x))) return [];
+  if (gun && ['포술','포술·경지'].includes(name) && !families.some(x => ['철갑','용격'].includes(x))) return [];
+  if (name === '저스트 교격' && weapon?.fallbash) {
+    const m = /대미지가 (\d+)% 증가/.exec(desc);
+    return m ? [{k:'dmg',pct:1,v:+m[1],cond:true,scope:'폴배시 · 저스트 회피 후 다음 공격'}] : [];
+  }
   if (name === '상태 이상 축적 시 위력 UP' && !bdBuildupApplies(weapon)) return [];
   if (BD_STATUS_BOOST[name] && !bdStatusBoostApplies(name, weapon)) return [];
   if (BD_SKILL_WEAPONS[name] && !BD_SKILL_WEAPONS[name].includes(weapon?.t)) return [];
   if (BD_AMMO_BOOST[name] && !bdAmmoBoostApplies(name, weapon)) return [];
   if (weapon?.t === 'gunlance' && ['포술', '포술·경지'].includes(name)) return [];
   /* 부위 파괴 축적은 HP 대미지가 아니다. 동작 한정 효과도 일반 대미지와 구분한다. */
-  if (name.startsWith('파괴왕') || ['라스트 샷', '후발 주자', '각성의 일격', '사냥꾼의 결속', '저스트 교격'].includes(name)) return [];
+  if (name.startsWith('파괴왕') || ['라스트 샷', '후발 주자', '각성의 일격', '사냥꾼의 결속', '저스트 교격', '저스트 교격【지속】'].includes(name)) return [];
   if (BD_DAMAGE_SCOPE[name]) {
     const m = /대미지가 (\d+)% (?:상승|증가)/.exec(desc);
     return m ? [{ k: 'dmg', pct: 1, v: +m[1], cond: true, scope: BD_DAMAGE_SCOPE[name] }] : [];
@@ -187,6 +219,10 @@ function bdEffects(desc, name = '', weapon = null) {
     const m = /공격력이 (\d+)/.exec(desc);
     return m ? [{ k: 'atk', v: +m[1], cond: true, scope: '첫 포효 이후' }] : [];
   }
+  if (name === '저스트 모으기 해방') {
+    const m=/공격력이 (\d+)% 상승/.exec(desc);
+    return m ? [{k:'atk',pct:1,v:+m[1],cond:true,scope:'적절한 타이밍의 모으기 공격 기준'}] : [];
+  }
   if (name === '차지 마스터') {
     const m = /무기의 속성 공격력이 (\d+)%/.exec(desc);
     return m && ['불', '물', '번개', '얼음', '용'].includes(weapon?.e)
@@ -199,7 +235,7 @@ function bdEffects(desc, name = '', weapon = null) {
         scope: weapon.t === 'hammer' ? '모으기 공격 기준' : '향음 공격 기준' }] : [];
   }
   // 차지액스·보우건의 포술 계열은 별도 작업까지 기존 처리를 유지한다.
-  const gate = name === '포술·경지' ? null : bdSkillGate(desc);
+  const gate = name === '포술·경지' && !gun ? null : bdSkillGate(desc);
   const need = gate ? { s: gate.s, lv: gate.lv } : null;
   /* 완전 충전도 전투 조건이므로 만피를 가정해 자동으로 켜지 않는다.
      하이 차지용 체력 계산의 만피 가정과 조건부 스킬 체크는 별개다. */
@@ -243,6 +279,16 @@ const BD_CRIT_UP = 1.25, BD_CRIT_DOWN = 0.75;
 const BD_BRUTAL_RATE = 0.3; // 역회심 발생 중 흉회심으로 바뀌는 확률
 /* 기본 체력. 하이 차지가 «남은 체력 게이지» 를 쓰므로 만피 기준으로 잡습니다. */
 const BD_BASE_HP = 100;
+/* 반복 탐색은 같은 설명을 재해석하지 않는다. 설명·무기 적용 조건이 바뀌면 다른 키 사용. */
+const bdEffectCache = new Map();
+function bdCachedEffects(desc, name, weapon) {
+  const key=JSON.stringify([desc,name,weapon?.t,weapon?.e,weapon?.x,!!weapon?.fallbash]);
+  if (!bdEffectCache.has(key)) {
+    if (bdEffectCache.size>=4096) bdEffectCache.clear();
+    bdEffectCache.set(key,bdEffects(desc,name,weapon));
+  }
+  return bdEffectCache.get(key);
+}
 
 /* 첫 칸은 0차지. 일반은 과거 60fps 실측, 강연사는 사용자 실측 3차지 9초.
    스타일별 집중0·3차지가 비교 기준이며, 공격 동작은 각각 1초로 가정한다. */
@@ -288,7 +334,7 @@ function bdSkillDesc(name, lv) {
    회심격은 회심 분기에만 C로 가산. 일반/회심 대미지를 구한 후 확률로 평균한다.
    모션치·육질은 1, 상태이상 수치의 기존 점수 취급은 별도 검토까지 유지한다. */
 function bdStats(b) {
-  const w = bdWeaponOf(b);
+  const w = bdScoreWeapon(b);
   const base = bdWeaponBase(b);
   const info = bdStyleInfo(b), P = info.active ? info.params.reduce((n, x) => n + (x?.stat === 'atk' ? x.value : 0), 0) : 0;
   let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, T = 1, R = 0, critX = BD_CRIT_UP, negCritX = null, crit = base.crit;
@@ -298,7 +344,7 @@ function bdStats(b) {
   /* 효과를 먼저 다 모읍니다. 조건부는 켜 둔 것만 씁니다.
      조건부 목록은 화면에서 켜고 끌 수 있도록 그대로 돌려줍니다. */
   const eff = [];
-  const entries = [...lvOf].map(([name, lv]) => ({ name, lv, list: bdEffects(bdSkillDesc(name, lv) || '', name, w) }));
+  const entries = [...lvOf].map(([name, lv]) => ({ name, lv, list: bdCachedEffects(bdSkillDesc(name, lv) || '', name, w) }));
   const eligible = e => !e.need || (lvOf.get(e.need.s) || 0) >= e.need.lv;
   const conditional = new Map();
   for (const { name, lv, list } of entries) {
@@ -323,7 +369,9 @@ function bdStats(b) {
   /* 순서가 있습니다. 하이 차지가 체력을 쓰고, «회심 공격 시» 효과가 회심률을 씁니다. */
   const hp = BD_BASE_HP + eff.reduce((n, e) => n + (e.k === 'hp' ? e.v : 0), 0);
   for (const e of eff) if (e.k === 'crit') crit += e.v;
-  const p = Math.max(0, Math.min(100, crit)) / 100;   // 마이너스 회심은 회심이 안 터집니다
+  const ammo = bdCompareAmmo(b), family = bdAmmoFamily(ammo);
+  const critApplies = !ammo || ['통상','산탄','관통','참렬'].includes(family);
+  const p = critApplies ? Math.max(0, Math.min(100, crit)) / 100 : 0;
 
   for (const e of eff) {
     if (e.k === 'atk') {
@@ -359,15 +407,16 @@ function bdStats(b) {
   /* 회심 기대 배율. 양수면 회심이, 음수면 역회심이 그 확률만큼 섞입니다. */
   const q = Math.max(-100, Math.min(100, now.crit)) / 100;
   const r = Math.max(0, -q);
-  const G = q >= 0 ? 1 + q * (critX - 1) : negCritX == null ? 1 + r * (BD_CRIT_DOWN - 1)
+  const G = !critApplies ? 1 : q >= 0 ? 1 + q * (critX - 1) : negCritX == null ? 1 + r * (BD_CRIT_DOWN - 1)
     : r * BD_BRUTAL_RATE * negCritX + r * (1 - BD_BRUTAL_RATE) * BD_CRIT_DOWN + (1 - r);
-  const normal = (attack + normalEle) * F, critical = (attack + criticalEle) * F * critX;
+  const statusWeapon=['독','마비','수면','폭파'].includes(w?.e);
+  const normal = (attack + (statusWeapon ? 0 : normalEle)) * F, critical = (attack + (statusWeapon ? 0 : criticalEle)) * F * critX;
   const baseScore = Math.round(R && p > 0 ? normal * (1 - p) + critical * p : normal * G);
   const bowCycle = bdBowCycle(b, lvOf);
   const score = b.bowEfficiency && bowCycle?.multiplier ? Math.round(baseScore * bowCycle.multiplier) : baseScore;
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
-  return { base, now, score, baseScore, bowCycle, hp, conds, branches: { normal, critical, p, normalEle, criticalEle },
-    damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null,
+  return { base, now, score, baseScore, bowCycle, hp, conds, ammo, critApplies, statusWeapon, branches: { normal, critical, p, normalEle, criticalEle },
+    effects: eff, damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null,
     co: { A, B, C, D, E, F, G, P, T, R, critX, negCritX } };
 }
 
@@ -659,6 +708,8 @@ function bdShareParam(b) {
     .concat(BD_PARTS().map(({ k }) => `${k}=${b[k] || ''}`)).filter(Boolean).join(',');
   return bdEscape(p + (b.bowEfficiency ? ',bf=1' : '') + (b.style20 ? ',se=1' : '')
     + (b.params?.some(Boolean) ? ',sp=' + b.params.map(p => p || '').join(';') : '')
+    + (bdCompareAmmo(b) ? ',as=' + b.ammoSlot : '')
+    + (b.wt === 'shield-sword' && !b.st && b.snsMode === 'fallbash' ? ',sns=fallbash' : '')
     + (Object.hasOwn(BD_SHELL_MODES, b.shellMode) ? ',gm=' + b.shellMode : ''));
 }
 /* 링크 복사는 지금 보고 있는 주소를 씁니다(로컬에서 붙여넣어 확인할 수 있게).
@@ -1008,7 +1059,7 @@ function bdScoreFormula(stats) {
   const { now, co, branches: x, baseScore } = stats, f = bdCalcNumber;
   return co.R && x.p > 0
     ? `${f(x.normal)} × ${f(1 - x.p)} + ${f(x.critical)} × ${f(x.p)} ≈ ${baseScore}`
-    : `(${now.atk}${stats.base.ele ? ` + ${now.ele}` : ''}) × ${f(co.F)} × ${f(co.G)} ≈ ${baseScore}`;
+    : `(${now.atk}${stats.base.ele && !stats.statusWeapon ? ` + ${now.ele}` : ''}) × ${f(co.F)} × ${f(co.G)} ≈ ${baseScore}`;
 }
 function bdCalc(b) {
   const w = bdWeaponOf(b);
@@ -1030,8 +1081,8 @@ function bdCalc(b) {
       rows.push(`<span>속성 평균</span><i>회심률 ${f(stats.branches.p * 100)}% 반영 ≈ <b>${now.ele}</b></i>`);
     } else rows.push(`<span>속성</span><i>${element(co.C)} ≈ <b>${now.ele}</b></i>`);
   }
-  const brutal = now.crit < 0 && co.negCritX != null;
-  rows.push(`<span>회심</span><i>${now.crit}% → 기대배율 <b>${f(co.G)}</b>${now.crit >= 0 ? ` (회심 ×${f(co.critX)})` : brutal ? ' (역회심 중 30% 확률로 흉회심)' : ' (역회심 ×0.75)'}</i>`);
+  const brutal = stats.critApplies && now.crit < 0 && co.negCritX != null;
+  rows.push(`<span>회심</span><i>${now.crit}% → 기대배율 <b>${f(co.G)}</b>${!stats.critApplies ? ' (기준 탄에 회심·흉회심 미적용)' : now.crit >= 0 ? ` (회심 ×${f(co.critX)})` : brutal ? ' (역회심 중 30% 확률로 흉회심)' : ' (역회심 ×0.75)'}</i>`);
   if (brutal) {
     const r = Math.min(100, -now.crit) / 100;
     rows.push(`<span>흉회심</span><i>${f(r)} × ${BD_BRUTAL_RATE} × ${f(co.negCritX)} + ${f(r)} × ${f(1 - BD_BRUTAL_RATE)} × ${BD_CRIT_DOWN} + ${f(1 - r)} = <b>${f(co.G)}</b></i>`);
@@ -1044,11 +1095,18 @@ function bdCalc(b) {
   rows.push(`<span>점수</span><i>${bdScoreFormula(stats)}</i>`);
 
   return `<div class="bd-calc">
+    ${bdScoreContextUI(b)}
     ${rows.map(r => `<p>${r}</p>`).join('')}
     ${bdCondList(b)}
     ${bdBowEfficiency(b, stats)}
     <p class="bd-note">하이 차지용 체력은 만피(${BD_BASE_HP} + 체력 스킬) 기준입니다. 조건부 스킬은 체크한 경우에만 반영합니다. 회심격은 일반·회심 공격을 나눠 기대값을 계산합니다. 표시 수치는 반올림하며 점수는 반올림 전 값으로 계산합니다. 모션치·육질은 1로 둡니다 — 빌드 비교용 상대값입니다.</p>
   </div>`;
+}
+function bdScoreContextUI(b) {
+  const bi=bdState.builds.indexOf(b), w=bdWeaponOf(b), disabled=bi<0 ? ' disabled' : '';
+  if (['light-gun','heavy-gun'].includes(b.wt)) return `<label>비교 기준 탄 <select data-score-ammo="${bi}"${disabled}><option value="">무기 전체 기준(탄별 보정 없음)</option>${(w.x || []).map((x,i)=>`<option value="${i}"${b.ammoSlot===i ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></label><p class="bd-note">선택 탄에 적용되는 버프·회심만 비교합니다. 철갑은 폭발 기준이며 실제 탄별 피해·전체 순환 DPS는 계산하지 않습니다.</p>`;
+  if (b.wt==='shield-sword'&&!b.st) return `<label>기본 운용 <select data-score-sns="${bi}"${disabled}><option value="guard"${b.snsMode!=='fallbash' ? ' selected' : ''}>가드 · 방패 연계</option><option value="fallbash"${b.snsMode==='fallbash' ? ' selected' : ''}>폴배시 · 저스트 교격 조건부 적용</option></select></label>`;
+  return '';
 }
 
 /* 스킬마다 상한이 달라(대개 3 또는 5) 막대를 그 수만큼 칸으로 나눕니다.
@@ -1467,6 +1525,15 @@ $('#rc-view-gear')?.addEventListener('click', e => {
 });
 
 $('#bd-cards').addEventListener('change', e => {
+  for (const [field,prop] of [['scoreAmmo','ammoSlot'],['scoreSns','snsMode']]) if (e.target.dataset[field] !== undefined) {
+    const b=bdState.builds[+e.target.dataset[field]];
+    if (!b) return;
+    if (prop==='ammoSlot') {
+      if (/^\d+$/.test(e.target.value) && bdWeaponOf(b)?.x?.[+e.target.value]) b.ammoSlot=+e.target.value;
+      else delete b.ammoSlot;
+    } else b.snsMode=e.target.value==='fallbash' ? 'fallbash' : 'guard';
+    bdSave(); bdRender(); return;
+  }
   const style20 = e.target.closest('[data-style20]');
   if (style20) {
     const b = bdState.builds[+style20.dataset.style20];
@@ -1522,7 +1589,7 @@ $('#bd-modal-body').addEventListener('click', e => {
   const gi = e.target.closest('.bd-gi');
   if (gi) {
     if (bdPick.kind !== 'wt' || !bdTypeAllowed(b, gi.dataset.v) || b.wt === gi.dataset.v) return;
-    b.wt = gi.dataset.v; b.st = 0; bdNormalizeParams(b);
+    b.wt = gi.dataset.v; b.st = 0; delete b.ammoSlot; delete b.snsMode; bdNormalizeParams(b);
     bdSave(); bdRender(); return bdDlg().close();
   }
   /* 일괄선택: 스킬 뱃지 빼기. */
@@ -1554,7 +1621,7 @@ $('#bd-modal-body').addEventListener('click', e => {
   }
   if (bdPick.kind === 'gear') {
     const v = lr.dataset.v || null;
-    if (bdPick.target === 'weapon') { b.w = v; bdNormalizeParams(b); }
+    if (bdPick.target === 'weapon') { b.w = v; delete b.ammoSlot; bdNormalizeParams(b); }
     else { b[bdPick.target] = v; b.ds[bdPick.target] = []; }   // 세트가 바뀌면 슬롯 수도 바뀝니다
     bdSave(); bdRender(); return bdDlg().close();
   }
@@ -1770,6 +1837,9 @@ function bdParse(param, title) {
   b.style20 = kv.se === '1';
   b.params = String(kv.sp || '').split(';').slice(0, 3);
   bdNormalizeParams(b);
+  if (['light-gun','heavy-gun'].includes(b.wt) && /^\d+$/.test(kv.as || '')
+    && bdWeaponOf(b)?.x?.[+kv.as]) b.ammoSlot = +kv.as;
+  if (b.wt === 'shield-sword' && !b.st && kv.sns === 'fallbash') b.snsMode = 'fallbash';
   for (const { k } of BUILD.parts) if (bdSet(kv[k]) && bdSet(kv[k]).pieces[k]) b[k] = kv[k];
   /* 방어구를 먼저 채운 뒤에 표류석을 끼웁니다. 칸 수가 방어구에 달려 있습니다. */
   for (const e of String(kv.ds || '').split(';')) {

@@ -181,7 +181,7 @@ check('추가 공격 독·마비는 몬스터 상태 조건 체크 시에만 대
     assert.strictEqual(on.stats.co.F, valid ? 1 + values[lv - 1] / 100 : 1);
     assert.strictEqual(off.stats.now.atk, on.stats.now.atk);
     assert.strictEqual(off.stats.now.ele, on.stats.now.ele);
-    assert.strictEqual(on.stats.score, Math.round((1000 + weapon.ele) * on.stats.co.F));
+    assert.strictEqual(on.stats.score, Math.round((1000 + (['독','마비'].includes(element) ? 0 : weapon.ele)) * on.stats.co.F));
     assert.strictEqual(off.stats.conds.some(c => c.sk === name), valid);
     assert.strictEqual(off.html.includes(`몬스터 ${status} 상태`), valid);
     assert.ok(!off.html.includes(' checked'));
@@ -256,9 +256,8 @@ check('축적 시 위력은 상태이상 무기·슬래시액스 상태이상 �
     }
 });
 
-check('저스트 교격은 저장된 체크 상태와 무관하게 점수에서 제외한다', () => {
-  const name = '저스트 교격';
-  for (const [lv] of bdSkillLevels(name)) {
+check('저스트 교격과 지속형은 저장된 체크 상태와 무관하게 점수에서 제외한다', () => {
+  for (const name of ['저스트 교격', '저스트 교격【지속】']) for (const [lv] of bdSkillLevels(name)) {
     const off = calcSkills([[name, lv]]), on = calcSkills([[name, lv]], {}, { [name]: true });
     assert.strictEqual(on.stats.score, calcSkills([]).stats.score);
     assert.strictEqual(off.stats.score, on.stats.score);
@@ -285,7 +284,8 @@ check('추가 지정한 일곱 스킬은 조건 체크 시에만 대미지를 �
     assert.strictEqual(stats.score, 1500);
     assert.ok(!stats.conds.some(c => c.sk === name));
   }
-  assert.strictEqual(calcSkills([['포술', 1]]).stats.co.F, 1.1, '포술은 이번 변경에서 제외');
+  assert.strictEqual(calcSkills([['포술', 1]],{t:'charge-blade'}).stats.co.F, 1.1, '차지액스의 기존 포술 계산 유지');
+  assert.strictEqual(calcSkills([['포술', 1]],{t:'great-sword'}).stats.co.F, 1, '대검에 포술 피해 적용 금지');
 });
 
 check('탄 강화는 보우건과 해당 보유 탄종에서만 조건부로 계산한다', () => {
@@ -497,7 +497,7 @@ check('건랜스 포격 시안은 G10·포술·장탄수로 계산하고 기존 
     assert.strictEqual(shell(), null);
     assert.strictEqual(vm.runInContext('bdShellUI(shellBuild)', ctx), '');
     for (const type of ['charge-blade', 'light-gun', 'heavy-gun']) {
-      ctx.shellOtherWeapon = { t: type };
+      ctx.shellOtherWeapon = { t: type, x:['철갑유탄 2'] };
       assert.ok(vm.runInContext('bdEffects(bdSkillDesc("포술", 5), "포술", shellOtherWeapon).length', ctx) > 0);
     }
     delete ctx.shellOtherWeapon;

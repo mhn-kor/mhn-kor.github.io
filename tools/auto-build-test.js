@@ -8,11 +8,16 @@ for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'b
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx);
 const get = s => vm.runInContext(s, ctx);
 (async () => {
+  assert.strictEqual(get('abState.b.wt'), 'shield-sword', '자동빌드 초기 무기는 한손검');
+  assert.ok(get('bdWeaponOf(abState.b)'), '초기 몬스터에 한손검이 존재');
   assert.strictEqual(get('abValidate(abTargets(["연격", "연격", "슈퍼회심"]))').includes('중복'), true);
   assert.strictEqual(get('abTargets(["점프 철인"])[0].min'), 1);
   const originalWeapon = get('structuredClone(abState.b)');
-  assert.ok(!get('abSupportSkills(abState.b)').includes('저스트 교격'));
-  assert.deepStrictEqual(Array.from(get('bdEffects(bdSkillDesc("저스트 교격", 5), "저스트 교격", bdWeaponOf(abState.b))')), []);
+  for (const name of ['저스트 교격', '저스트 교격【지속】']) {
+    assert.ok(!get('abSupportSkills(abState.b)').includes(name));
+    for (let lv = 1; lv <= 5; lv++)
+      assert.deepStrictEqual(Array.from(get('bdEffects')(get('bdSkillDesc')(name,lv), name, get('bdWeaponOf(abState.b)'))), []);
+  }
   for (const [monster, type, accepted] of [
     ['mizu', 'long-sword', []], ['barr', 'switch-axe', ['마비']],
     ['arzu', 'switch-axe', ['독']], ['brachy', 'hammer', ['폭파']],
@@ -38,7 +43,7 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abMelee')(wt), false);
     assert.strictEqual(get('abSearchTargets')({b:{wt},targets:[{s:'연격',min:3,max:5}],lockon:true}).length, 1);
   }
-  assert.strictEqual(get('abDirections(abState.b)[0].id'), 'water');
+  assert.strictEqual(get('abDirections(abState.b)[0].id'), 'elder', '높은 자체 속성은 고룡 투자도 우선 비교');
   get('abState.b.st=1; abState.b.style20=true; abState.b.params=["crit","crit","crit"]');
   assert.strictEqual(get('bdWeaponBase(abState.b).crit'), 50);
   assert.strictEqual(get('abDirections(abState.b)[0].id'), 'critical');
@@ -94,7 +99,7 @@ const get = s => vm.runInContext(s, ctx);
   const morph = { ...guideSeed, wt:'switch-axe' };
   assert.ok(get('abDirections')(morph).find(d=>d.id==='morph-critical').targets.some(t=>t.s==='슈퍼회심'));
   const lance = { ...get('bdNewBuild')(),w:'mizu',wt:'lance',st:2 };
-  const just = get('abDirections')(lance)[0];
+  const just = get('abDirections')(lance).find(d=>d.id==='water');
   assert.strictEqual(just.id,'water','스타일이 무기의 투자 방향을 대체하지 않음');
   assert.deepStrictEqual(Array.from(get('abStyleRule')(lance).required,t=>[t.s,t.min,t.max]), [['불퇴전',4,5],['반사',1,5]]);
   assert.ok(!get('abSearchTargets')({b:lance,targets:just.targets}).some(t=>t.s==='매진'),'보완 권장 스킬은 필수화하지 않음');
@@ -108,7 +113,7 @@ const get = s => vm.runInContext(s, ctx);
     assert.deepStrictEqual(Array.from(get('abDirections')(critLance),d=>d.id),['critical','crit-attack','water']);
     const required = get('abSearchTargets')({b:critLance,targets:just.targets,lockon:true});
     assert.ok(required.some(t=>t.s==='반사'&&t.min===1));
-    const gated = get('abSearchTargets')({b:critLance,targets:just.targets.map(t=>({...t,min:1}))});
+    const gated = get('abSearchTargets')({b:critLance,targets:[{s:'물속성 공격 강화·경지',min:1,max:2}]});
     assert.ok(gated.some(t=>t.s==='물속성 공격 강화'&&t.min===5),'필수 경지의 선행 레벨 확보');
     const unrestricted = get('abSearchTargets')({b:critLance,targets:just.targets,styleGuide:false});
     assert.ok(!unrestricted.some(t=>t.s==='반사'),'스타일 자동 기준은 사용자 해제 가능');
