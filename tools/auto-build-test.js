@@ -11,7 +11,7 @@ const get = s => vm.runInContext(s, ctx);
   assert.strictEqual(get('abState.b.wt'), 'shield-sword', '자동빌드 초기 무기는 한손검');
   assert.ok(get('bdWeaponOf(abState.b)'), '초기 몬스터에 한손검이 존재');
   assert.strictEqual(get('abValidate(abTargets(["연격", "연격", "슈퍼회심"]))').includes('중복'), true);
-  assert.strictEqual(get('abTargets(["점프 철인"])[0].min'), 1);
+  assert.strictEqual(get('abTargets(["점프 철인"])[0].min'), 0);
   const originalWeapon = get('structuredClone(abState.b)');
   for (const name of ['저스트 교격', '저스트 교격【지속】']) {
     assert.ok(!get('abSupportSkills(abState.b)').includes(name));
@@ -57,7 +57,7 @@ const get = s => vm.runInContext(s, ctx);
     const direction = get('abDirections')(b)[0], rule = get('abStyleRule')(b);
     assert.ok(rule.avoid.includes(excluded));
     assert.ok(!get('abStyleRule')({...b, st:0}));
-    assert.strictEqual(direction.targets[0].min,1);
+    assert.strictEqual(direction.targets[0].min,0);
     assert.ok(direction.targets.slice(1).every(t => t.min === 0), '탄 운용 필수 조건과 보조 핵심을 분리');
     const policy = get('abPolicy')(b,direction.id,direction.targets);
     assert.ok(!policy.fillers.includes(excluded));
@@ -94,7 +94,7 @@ const get = s => vm.runInContext(s, ctx);
   const critAttack = get('abDirections')(guideSeed).find(d => d.id === 'crit-attack');
   assert.ok(critAttack.targets.some(t => t.s === '공격 증강【회심】'));
   assert.ok(get('abPolicy')(guideSeed, 'crit-attack', critAttack.targets).prefer.includes('공격 증강【회심】'));
-  assert.strictEqual(get('abDirections')(guideSeed).find(d=>d.id==='critical').critMin,80);
+  assert.strictEqual(get('abDirections')(guideSeed).find(d=>d.id==='critical').critMin,undefined);
   assert.ok(!get('abDirections')(guideSeed).find(d=>d.id==='critical').targets.some(t=>t.s==='슈퍼회심'));
   const morph = { ...guideSeed, wt:'switch-axe' };
   assert.ok(get('abDirections')(morph).find(d=>d.id==='morph-critical').targets.some(t=>t.s==='슈퍼회심'));
@@ -132,7 +132,7 @@ const get = s => vm.runInContext(s, ctx);
   const phial = { ...get('bdNewBuild')(),w:'barr',wt:'switch-axe' };
   assert.strictEqual(get('abDirections')(phial)[0].targets[0].s,'추가 공격【마비】');
   assert.deepStrictEqual(Array.from(get('abCurve')('불퇴전',lance).increments),[10,5,5,10,10]);
-  assert.strictEqual(get('abTargets(["불퇴전"])[0].min'),1);
+  assert.strictEqual(get('abTargets(["불퇴전"])[0].min'),0);
   assert.strictEqual(get('abCurve')('반사',lance),null,'비수치 효과의 임의 환산 금지');
   // 파라미터/스타일 변경은 자동 지침을 갱신하되 직접 수정은 보존한다.
   get('abState').b=guideSeed; get('abApplyDirection')('water'); get('abSyncDirection')();
@@ -262,7 +262,7 @@ const get = s => vm.runInContext(s, ctx);
   const sorted = [...result.pool].sort((a, b) => get('abCompare')(a, b, 'score'));
   assert.strictEqual(get('abBest')(result.pool, 'score')[0].score, sorted[0].score);
   assert.ok(get('abCompare')({levels:[5,3,3],score:100,drifts:0,b:best[0].b},
-    {levels:[4,5,5],score:10000,drifts:0,b:best[1].b},'priority') < 0);
+    {levels:[4,5,5],score:10000,drifts:0,b:best[1].b},'priority') > 0, '핵심 고레벨만으로 전체 점수 손해를 우대하지 않음');
   const oldLimit = get('AB_LIMIT.ms'); get('AB_LIMIT.ms=0');
   const limited = await get('abSearch')(config); assert.ok(limited.limited); get(`AB_LIMIT.ms=${oldLimit}`);
   if (process.argv.includes('--all-weapons')) for (const type of get('BUILD.weaponTypes')) {
