@@ -1,0 +1,44 @@
+/* docs/WEAPON_SETTING_GUIDE.md '규칙 일람'과 auto-build.js AB_RULES의 1:1 일치 검수. 한쪽만 고치면 실패한다. */
+const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
+const root=path.join(__dirname,'..');
+const ctx=vm.createContext({console,performance,structuredClone,setTimeout,
+  $:()=>({hidden:true,dataset:{},addEventListener(){},setAttribute(){},close(){}}),
+  location:{hash:'#build'},window:{},requestAnimationFrame(){},document:{querySelector(){return null;}},
+  esc:String,closeOnBackdrop(){},nickAuto(){},localStorage:{getItem(){return null;},setItem(){}}});
+for(const f of ['smelt-data.js','skill-desc.js','skill-desc-overrides.js','build-data.js','build-styles.js','build-style-data.js','build.js','build-bowgun-data.js','auto-build.js'])
+  vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx);
+const get=s=>vm.runInContext(s,ctx), rules=get('AB_RULES'), abMax=get('abMax');
+const doc=fs.readFileSync(path.join(root,'docs','WEAPON_SETTING_GUIDE.md'),'utf8');
+const table=doc.slice(doc.indexOf('## 규칙 일람'),doc.indexOf('\n---',doc.indexOf('## 규칙 일람')));
+const rows=new Map();
+for(const line of table.split('\n')) {
+  const cells=line.split('|').slice(1,-1).map(c=>c.trim()), id=cells[0]?.match(/^`(.+)`$/)?.[1];
+  if(!id) continue;
+  assert.ok(!rows.has(id),'문서 ID 중복: '+id);
+  rows.set(id,{required:cells[3],recommended:cells[4],avoid:cells[5],status:cells[6]});
+}
+const fmt=list=>list.map(t=>t.min===t.max?`${t.s} ${t.min}`:`${t.s} ${t.min}~${t.max}`).join(' · ')||'—';
+const names=list=>list.join(' · ')||'—';
+const known=new Set([...Object.keys(get('BUILD.maxLv')),...get('abStonePool')().keys()]);
+const data=[...rules.styles.map(r=>[r.id,r]),...Object.entries(rules.gunModes).map(([k,m])=>['gun-'+k,{required:m.required,recommended:[],avoid:m.avoid||[]}])];
+for(const [id,r] of data) {
+  const row=rows.get(id);
+  assert.ok(row,`문서 규칙 일람에 없음: ${id}`);
+  assert.ok(row.status.startsWith('구현'),`구현 규칙의 상태 표기: ${id}`);
+  // 보우건 스타일의 필수 칸 'B1' = 탄 자료로 계산하는 반동·장전 요구 (데이터 행 아님).
+  assert.strictEqual(row.required.replace(/^B1( · )?/,'')||'—',fmt(r.required),`필수 불일치: ${id}`);
+  assert.strictEqual(row.recommended,fmt(r.recommended),`권장 불일치: ${id}`);
+  assert.strictEqual(row.avoid,names(r.avoid),`비권장 불일치: ${id}`);
+  for(const t of [...r.required,...r.recommended]) {
+    assert.ok(known.has(t.s),`없는 스킬: ${id}/${t.s}`);
+    const max=t.max==='MAX'?abMax(t.s):t.max;
+    assert.ok(t.min>=0&&t.min<=max&&max<=abMax(t.s),`레벨 범위: ${id}/${t.s}`);
+  }
+  for(const s of r.avoid) assert.ok(known.has(s),`없는 스킬: ${id}/${s}`);
+}
+for(const id of rows.keys()) assert.ok(data.some(([x])=>x===id),`AB_RULES에 없는 문서 ID: ${id}`);
+// 모든 무기·스타일이 규칙 행 또는 지침 없음 행으로 표에 나온다.
+for(const t of get('BUILD.weaponTypes')) assert.ok(table.includes(`| ${t.n} |`),`규칙 일람 누락 무기: ${t.n}`);
+for(const r of rules.styles) for(const st of [].concat(r.style)) if(st)
+  assert.ok(get('bdStylesOf')(r.wt).includes(st),`게임 데이터에 없는 스타일: ${r.id}/${st}`);
+console.log(`규칙 일람 ↔ AB_RULES 일치 (${data.length}개 규칙)`);

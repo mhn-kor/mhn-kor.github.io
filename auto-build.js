@@ -43,32 +43,25 @@ function abGunInfo(b, setting = b._abGun || {}) {
   if (!abGun(b)) return null;
   const w = bdWeaponOf(b), saved = BD_BOWGUN_DATA.weapons[b.w + '/' + b.wt];
   const data = saved && JSON.stringify(saved.x) === JSON.stringify(w?.x) ? saved : null;
-  const style = bdStylesOf(b.wt)[b.st - 1];
-  const repeatable = (b.wt === 'light-gun' && style === '스텝 샷') || (b.wt === 'heavy-gun' && style === '앉아쏘기');
+  const style = bdStylesOf(b.wt)[b.st - 1], rule = abStyleRow(b), allowed = rule?.modes || [];
   const slots = (w?.x || []).map((x, i) => ({ i, name:x, ...(data?.ammo[i] || {}) }));
   const wyvern = slots.filter(a => /용격탄/.test(a.name));
-  const modes = [['cycle','전체 탄 순환'], ...(repeatable && slots.length ? [['repeat','특정 탄 · 회피 장전']] : []),
-    ...(repeatable && b.wt === 'heavy-gun' && wyvern.length ? [['sp','용격탄 · 회피/SP 연계']] : [])];
-  const mode = modes.some(([id]) => id === setting.mode) ? setting.mode : 'cycle';
+  const modes = Object.entries(AB_RULES.gunModes).filter(([id]) => id === 'cycle'
+    || allowed.includes(id) && (id === 'sp' ? wyvern : slots).length).map(([id, m]) => [id, m.name]);
+  const mode = modes.some(([id]) => id === setting.mode) ? setting.mode : 'cycle', spec = AB_RULES.gunModes[mode];
   const choices = mode === 'sp' ? wyvern : slots;
   const slot = choices.find(a => a.i === +setting.slot) || [...choices].sort((a,b) => abAmmoPreference(b.name)-abAmmoPreference(a.name))[0];
   const ammo = mode === 'cycle' ? slots : slot ? [slot] : [];
   const best = field => Math.max(0, ...ammo.map(a => a[field].indexOf(Math.min(...a[field]))));
-  const required = [], recommended = [], avoid = [];
+  const required = [], recommended = (rule?.recommended || []).map(t => ({...t})), avoid = [...(rule?.avoid || [])];
   const add = (s, min, max = min) => { if (min) required.push({s,min,max}); };
-  if (repeatable) avoid.push('반동 경감');
-  if (['슬라이딩 리로드','가드리로드'].includes(style) || mode !== 'cycle') avoid.push('장전 속도');
+  for (const s of spec.avoid || []) if (!avoid.includes(s)) avoid.push(s);
   if (data) {
     if (!avoid.includes('반동 경감')) add('반동 경감', best('recoil'));
     if (!avoid.includes('장전 속도')) add('장전 속도', best('reload'));
   }
-  if (mode !== 'cycle') add('회피 장전', 4, setting.reload5 ? 5 : 4);
-  if (mode === 'sp') {
-    add('특수 게이지 가속',3); add('특수 게이지 가속【저스트 회피】',3);
-    add('절대 회피【SP】',1,3); // 연계를 성립시키는 최소1, 사용자 권장 목표3.
-  }
-  if (style === '가드리로드') recommended.push({s:'가드 성능',min:0,max:3});
-  const name = modes.find(([id]) => id === mode)[1];
+  for (const t of spec.required) add(t.s, t.min, t.s === '회피 장전' && setting.reload5 ? 5 : t.max);
+  const name = spec.name;
   return { data, style, mode, slot:slot?.i || 0, slots, choices, ammo, modes, name, required, recommended, avoid,
     compare: mode === 'cycle' ? [...slots].sort((a,b) => abAmmoPreference(b.name)-abAmmoPreference(a.name))[0] : slot,
     settings:{mode,slot:slot?.i || 0,reload5:!!setting.reload5}, unknown:!data };
@@ -99,50 +92,92 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
   targets: abTargets(['물속성 공격 강화', '회심격【속성】', '슈퍼회심']), drift: true, lockon: true,
   gun:{mode:'cycle'}, styleGuide: true, order: 'priority', pool: [], stats: null, busy: false, run: 0, notice: '', scroll: 0, active: false };
 
-const AB_STYLE_RULES = {
-  '랜스 기본': {id:'lance-base',name:'기본 · 카운터 운용',required:[{s:'가드 성능',min:2,max:3}],
-    recommended:[{s:'불퇴전',min:0,max:5},{s:'공격적인 방어',min:0,max:5}],avoid:[],
-    desc:'가드 성능 최소2·목표3. 불퇴전·공격적인 방어는 권장 후보이며 가드 동작의 보정을 상시 스킬 레벨로 더하지 않습니다.'},
-  '한손검 기본': {id:'sns-base',name:'기본 · 가드/방패 연계',required:[{s:'가드 성능',min:5,max:5}],recommended:[],avoid:[],
-    desc:'가드 성능5 확보 후 밀림 없는 가드에서 방패 공격으로 연결합니다.'},
-  '폴배시': {id:'sns-fallbash',name:'기본 · 폴배시',required:[],recommended:[{s:'저스트 교격',min:0,max:5}],avoid:['가드 성능'],
-    desc:'가드 성능보다 공격 투자. 저스트 회피 후 폴배시 공격을 가정할 때만 저스트 교격을 조건부 점수에 반영합니다.'},
-  '파고들어베기': {id:'sns-dive',name:'파고들어베기 · 절단/다타수',required:[],recommended:[],avoid:[],
-    desc:'방패 대신 칼 공격의 다타수로 절단·상태이상 활용을 비교합니다. 임의 타수 배율은 더하지 않습니다.'},
-  '저스트러시': {id:'sns-rush',name:'저스트러시 · 가드베기',required:[{s:'가드 성능',min:5,max:5}],recommended:[],avoid:[],
-    desc:'가드 성능5 확보 후 가드베기 연계와 대미지 투자로 구성합니다.'},
-  '저스트 가드': { id: 'lance-just', name: '저스트가드 · 공격 특화',
-    required: [{ s: '불퇴전', min: 4, max: 5 }, { s: '반사', min: 1, max: 5 }],
-    recommended: [{ s: '매진', min: 0, max: 3 }],
-    avoid: ['가드 성능'], desc: '불퇴전 4~5 · 반사 1 이상 · 매진 2~3. 가드 성능은 우대하지 않습니다.' },
-  '실드 태클': { id: 'lance-shield', name: '실드태클 · 돌진 유지',
-    required: [{ s: '가드 성능', min: 5, max: 5 }, { s: '반사', min: 1, max: 5 }, { s: '불퇴전', min: 4, max: 5 }],
-    recommended: [],
-    avoid: [], desc: '가드 성능 5 · 반사 1 이상 · 불퇴전 4~5. 돌진 중 가드를 활용합니다.' },
-  '스텝 샷': { id: 'light-step', name: '스텝샷 · 반동 대체', required: [], recommended: [],
-    avoid: ['반동 경감'], desc: '스텝샷 중심 사격은 반동 경감을 자동 보충하지 않습니다. 탄 순환 시 장전 속도는 별도로 필요합니다. 일반 탭 사격의 반동까지 대체하지 않습니다.' },
-  '슬라이딩 리로드': { id: 'light-slide', name: '슬라이딩 리로드 · 장전 대체', required: [], recommended: [],
-    avoid: ['장전 속도'], desc: '한 발 이상 사용 후 슬라이딩 리로드로 장전을 대체합니다. 반동 경감은 사용하는 탄에 맞춰 별도로 확보해야 합니다.' },
-  '가드리로드': { id: 'heavy-guard', name: '가드리로드 · 장전 대체', required: [],
-    recommended: [{ s: '가드 성능', min: 0, max: 3 }], avoid: ['장전 속도'],
-    desc: '가드리로드로 장전을 대체하고 가드 성능 2~3을 권장 후보로 검토합니다. 필수 최소로 강제하지 않으며, 반동 경감은 사용하는 탄에 맞춰 별도로 필요합니다.' },
-  '앉아쏘기': { id: 'heavy-crouch', name: '앉아쏘기 · 반동 대체', required: [], recommended: [],
-    avoid: ['반동 경감'], desc: '앉아쏘기 중심 사격은 반동 경감을 자동 보충하지 않습니다. 탄 순환 시 장전 속도는 별도로 필요합니다. 일반 사격까지 같은 조건으로 취급하지 않습니다.' },
+/* 자동세팅 규칙 데이터. docs/WEAPON_SETTING_GUIDE.md '규칙 일람'과 1:1 (tools/auto-build-rules-test.js가 대조).
+   지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
+   styles: style ''=기본(스타일 없음). mode=같은 스타일 안의 운용 성향. when=무기 조건. max 'MAX'=스킬 최대.
+   label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
+const abT = (s, min, max = min) => ({ s, min, max });
+const AB_RULES = {
+  styles: [
+    { id:'lance-base', wt:'lance', style:'', name:'기본 · 카운터 운용', required:[abT('가드 성능',2,3)],
+      recommended:[abT('불퇴전',0,5),abT('공격적인 방어',0,5)], avoid:[],
+      desc:'가드 성능 최소2·목표3. 불퇴전·공격적인 방어는 권장 후보이며 가드 동작의 보정을 상시 스킬 레벨로 더하지 않습니다.' },
+    { id:'lance-just', wt:'lance', style:'저스트 가드', name:'저스트가드 · 공격 특화', required:[abT('불퇴전',4,5),abT('반사',1,5)],
+      recommended:[abT('매진',0,3)], avoid:['가드 성능'], desc:'불퇴전 4~5 · 반사 1 이상 · 매진 2~3. 가드 성능은 우대하지 않습니다.',
+      note:'반사 효과는 임의 피해 점수로 더하지 않습니다. 불퇴전이 발동한 점수에서는 매진을 끄고, 이동 후 보완 효과는 별도로 남깁니다.' },
+    { id:'lance-shield', wt:'lance', style:'실드 태클', name:'실드태클 · 돌진 유지',
+      required:[abT('가드 성능',5),abT('반사',1,5),abT('불퇴전',4,5)], recommended:[], avoid:[],
+      desc:'가드 성능 5 · 반사 1 이상 · 불퇴전 4~5. 돌진 중 가드를 활용합니다.',
+      note:'반사 효과는 임의 피해 점수로 더하지 않습니다. 불퇴전이 발동한 점수에서는 매진을 끄고, 이동 후 보완 효과는 별도로 남깁니다.' },
+    { id:'sns-base', wt:'shield-sword', style:'', name:'기본 · 가드/방패 연계', required:[abT('가드 성능',5)], recommended:[], avoid:[],
+      desc:'가드 성능5 확보 후 밀림 없는 가드에서 방패 공격으로 연결합니다.' },
+    { id:'sns-fallbash', wt:'shield-sword', style:'', mode:'fallbash', label:'폴배시', coreSlot:2, name:'기본 · 폴배시',
+      required:[], recommended:[abT('저스트 교격',0,5)], avoid:['가드 성능'],
+      desc:'가드 성능보다 공격 투자. 저스트 회피 후 폴배시 공격을 가정할 때만 저스트 교격을 조건부 점수에 반영합니다.' },
+    { id:'sns-dive', wt:'shield-sword', style:'파고들어베기', name:'파고들어베기 · 절단/다타수', required:[], recommended:[], avoid:[],
+      desc:'방패 대신 칼 공격의 다타수로 절단·상태이상 활용을 비교합니다. 임의 타수 배율은 더하지 않습니다.' },
+    { id:'sns-rush', wt:'shield-sword', style:'저스트러시', name:'저스트러시 · 가드베기', required:[abT('가드 성능',5)], recommended:[], avoid:[],
+      desc:'가드 성능5 확보 후 가드베기 연계와 대미지 투자로 구성합니다.' },
+    { id:'gs-element', wt:'great-sword', style:['','격앙참'], when:'element', coreSlot:1, name:'{style} · 대검 운용', required:[],
+      recommended:[abT('차지 마스터',0,'MAX'),abT('차지 스톡',0,3)], avoid:[],
+      desc:'모으기 연계에 차지 마스터·차지 스톡을 우선 검토하고 남은 장비는 공격에 투자합니다. 태클을 무피해로 가정하지 않습니다.' },
+    { id:'gs-raw', wt:'great-sword', style:['','격앙참'], when:'raw', coreSlot:1, name:'{style} · 대검 운용', required:[],
+      recommended:[abT('저스트 모으기 해방',0,'MAX'),abT('차지 스톡',0,3)], avoid:[],
+      desc:'모으기 연계에 저스트 모으기 해방·차지 스톡을 우선 검토하고 남은 장비는 공격에 투자합니다. 태클을 무피해로 가정하지 않습니다.' },
+    { id:'gs-stream', wt:'great-sword', style:'수류베기', name:'수류베기 · 대검 운용', required:[], recommended:[], avoid:[],
+      desc:'차지 없는 연속 공격 후 강/참모아베기. 상태이상 방향도 검토하며 별도 필수 스킬은 강제하지 않습니다.' },
+    { id:'bow-focus', wt:'bow', style:['','회피 근접공격','강연사'], name:'활 · 집중', required:[], recommended:[abT('집중',0,5)], avoid:[],
+      desc:'집중은 권장 투자로 비교하며, 자동추천 점수에 임의 딜사이클 배율을 더하지 않습니다.' },
+    { id:'light-step', wt:'light-gun', style:'스텝 샷', modes:['repeat'], name:'스텝샷 · 반동 대체', required:[], recommended:[], avoid:['반동 경감'],
+      desc:'스텝샷 중심 사격은 반동 경감을 자동 보충하지 않습니다. 탄 순환 시 장전 속도는 별도로 필요합니다. 일반 탭 사격의 반동까지 대체하지 않습니다.' },
+    { id:'light-slide', wt:'light-gun', style:'슬라이딩 리로드', name:'슬라이딩 리로드 · 장전 대체', required:[], recommended:[], avoid:['장전 속도'],
+      desc:'한 발 이상 사용 후 슬라이딩 리로드로 장전을 대체합니다. 반동 경감은 사용하는 탄에 맞춰 별도로 확보해야 합니다.' },
+    { id:'heavy-guard', wt:'heavy-gun', style:'가드리로드', name:'가드리로드 · 장전 대체', required:[], recommended:[abT('가드 성능',0,3)], avoid:['장전 속도'],
+      desc:'가드리로드로 장전을 대체하고 가드 성능 2~3을 권장 후보로 검토합니다. 필수 최소로 강제하지 않으며, 반동 경감은 사용하는 탄에 맞춰 별도로 필요합니다.' },
+    { id:'heavy-crouch', wt:'heavy-gun', style:'앉아쏘기', modes:['repeat','sp'], name:'앉아쏘기 · 반동 대체', required:[], recommended:[], avoid:['반동 경감'],
+      desc:'앉아쏘기 중심 사격은 반동 경감을 자동 보충하지 않습니다. 탄 순환 시 장전 속도는 별도로 필요합니다. 일반 사격까지 같은 조건으로 취급하지 않습니다.' },
+  ],
+  // 보우건 탄 운용(B2·B3). 반동·장전 요구는 탄 자료로 계산한다. 회피 장전 Lv5는 사용자 옵션.
+  gunModes: {
+    cycle: { name:'전체 탄 순환', required:[] },
+    repeat: { name:'특정 탄 · 회피 장전', required:[abT('회피 장전',4)], avoid:['장전 속도'] },
+    sp: { name:'용격탄 · 회피/SP 연계', avoid:['장전 속도'], // 절대 회피는 연계 성립 최소1, 권장 목표3.
+      required:[abT('회피 장전',4),abT('특수 게이지 가속',3),abT('특수 게이지 가속【저스트 회피】',3),abT('절대 회피【SP】',1,3)] },
+  },
+  // 무기 공통: 지침 출처, 동시 발동하지 않는 조건 (앞 조건 ON이면 뒤 조건 OFF).
+  weapons: { lance:{ source:'W5', exclusive:[['불퇴전','매진']] }, 'shield-sword':{ source:'W9' }, 'great-sword':{ source:'W10' },
+    bow:{ source:'기존 집중 기준' }, 'light-gun':{ source:'B1–B3' }, 'heavy-gun':{ source:'B1–B3' } },
+  // 문맥별 자동 보충 제외 (W2·W4·B5). 사용자가 직접 지정한 스킬은 제외하지 않는다.
+  avoid: [
+    { when:c => c.nativeNegative && c.tripleCrit, skills:['흉회심'] },
+    { when:c => c.base.crit < 0 && !c.tripleCrit, skills:['간파','약점 특효','슈퍼회심','회심격【속성】'] },
+    { when:c => c.style !== '블래스트 대시', skills:['기습 상태 이상'] },
+    { when:c => !c.critAllowed, skills:['간파','약점 특효','슈퍼회심','회심격【속성】','흉회심'] },
+  ],
+  // 효과 적용 범위 (A3). 위에서부터 처음 일치한 항목으로 판정. rules=해당 운용 규칙에서만.
+  scopes: [
+    { scope:/공중/, rules:['sns-fallbash'] },
+    { scope:/모으기/, wt:['great-sword','hammer','bow'] },
+    { scope:/탄·화살/, wt:['light-gun','heavy-gun','bow'] },
+    { skill:'공격적인 방어', wt:['shield-sword','lance','gunlance','charge-blade','heavy-gun'], styles:['격앙참'] },
+  ],
+  // 점수 밖 운용 스킬 (A0 운용 수준). 강화 지속은 스킬 설명의 무기군으로 판정한다.
+  operation: ['반사','가드 성능','집중','회피 장전','절대 회피【SP】','특수 게이지 가속','특수 게이지 가속【저스트 회피】'],
 };
-const abStyleRule = b => {
-  const style = bdStylesOf(b.wt)[b.st - 1];
-  if (b.wt === 'lance') return AB_STYLE_RULES[style || '랜스 기본'];
-  if (b.wt === 'shield-sword') return AB_STYLE_RULES[style || (b.snsMode === 'fallbash' ? '폴배시' : '한손검 기본')];
-  if (abGun(b)) return AB_STYLE_RULES[style] || null;
-  if (b.wt === 'bow') return {name:'활 · 집중',required:[],recommended:[{s:'집중',min:0,max:5}],avoid:[],desc:'집중은 권장 투자로 비교하며, 자동추천 점수에 임의 딜사이클 배율을 더하지 않습니다.'};
-  if (b.wt !== 'great-sword') return null;
-  const w = bdWeaponOf(b), stream = style === '수류베기';
-  const main = abElementSkill(b) || bdBuildupApplies(w) ? '차지 마스터' : '저스트 모으기 해방';
-  return {name:(style || '기본')+' · 대검 운용',required:[],
-    recommended:stream ? [] : [{s:main,min:0,max:abMax(main)},{s:'차지 스톡',min:0,max:3}],avoid:[],
-    desc:stream ? '차지 없는 연속 공격 후 강/참모아베기. 상태이상 방향도 검토하며 별도 필수 스킬은 강제하지 않습니다.'
-      : '모으기 연계에 '+main+'·차지 스톡을 우선 검토하고 남은 장비는 공격에 투자합니다. 태클을 무피해로 가정하지 않습니다.'};
-};
+function abStyleRow(b) {
+  const style = bdStylesOf(b.wt)[b.st - 1] || '', elemental = () => !!(abElementSkill(b) || bdBuildupApplies(bdWeaponOf(b)));
+  const rows = AB_RULES.styles.filter(r => r.wt === b.wt && [].concat(r.style).includes(style)
+    && (!r.when || (r.when === 'element') === elemental()));
+  return rows.find(r => r.mode && r.mode === b.snsMode) || rows.find(r => !r.mode) || null;
+}
+function abStyleRule(b) {
+  const r = abStyleRow(b), style = bdStylesOf(b.wt)[b.st - 1];
+  if (!r) return null;
+  const targets = list => list.map(t => abT(t.s, t.min, t.max === 'MAX' ? abMax(t.s) : t.max));
+  return { id:r.id, name:r.name.replace('{style}', style || '기본'),
+    required:targets(r.required), recommended:targets(r.recommended), avoid:[...r.avoid], desc:r.desc };
+}
+const abSustains = b => { const type = BUILD.weaponTypes.find(t => t.k === b.wt)?.n; return !!(type && bdSkillDesc('강화 지속',1)?.includes(type)); };
 /* W7: 단일 버프 분류는 선별 순위만 결정한다. 복합/회심 효과는 별도 실효 비교. */
 function abBuffTier(effects) {
   const types = effects.map(e => ['dmg','atk','ele'].includes(e.k) && !e.onCrit && !e.perBaseCrit && !e.hpx
@@ -166,13 +201,9 @@ function abBuffProfile(b,stats) {
 }
 const abEquipmentSkills = () => [...new Set(bdOrderedSets().flatMap(s => Object.values(s.pieces).flatMap(p => p.skills.map(x => x.s))))];
 function abScopeApplies(e,b) {
-  const scope=e.scope || '';
-  if(/공중/.test(scope)) return b.wt==='shield-sword'&&!b.st&&b.snsMode==='fallbash';
-  if(/모으기/.test(scope)) return ['great-sword','hammer','bow'].includes(b.wt);
-  if(/탄·화살/.test(scope)) return ['light-gun','heavy-gun','bow'].includes(b.wt);
-  if(e.sk==='공격적인 방어') return ['shield-sword','lance','gunlance','charge-blade','heavy-gun'].includes(b.wt)
-    || b.wt==='great-sword'&&bdStylesOf(b.wt)[b.st-1]==='격앙참';
-  return true;
+  const x=AB_RULES.scopes.find(x=>x.scope ? x.scope.test(e.scope || '') : x.skill===e.sk);
+  if(!x) return true;
+  return !!x.wt?.includes(b.wt) || !!x.styles?.includes(bdStylesOf(b.wt)[b.st-1]) || !!x.rules?.includes(abStyleRow(b)?.id);
 }
 function abSupportSkills(b, setting) {
   const c = abContext(b,setting);
@@ -272,17 +303,11 @@ function abDirections(b, setting) {
       else if (high) { fixed.name=d.name; fixed.targets=d.targets; fixed.desc=d.desc; }
     }
   }
+  const row=abStyleRow(b), core=row?.coreSlot!=null && abStyleRule(b).recommended[0];
   return dirs.map(d=>{
     const out={...d,targets:d.targets.map(t=>({...t})),desc:d.desc+(rule ? ' '+rule.desc : '')};
-    if (b.wt==='shield-sword'&&!b.st&&b.snsMode==='fallbash') {
-      out.name='폴배시 · '+d.name;
-      const i=out.targets.findIndex(t=>t.s==='저스트 교격');
-      if(i<0) out.targets[2]={s:'저스트 교격',min:0,max:5};
-    }
-    if (b.wt==='great-sword'&&c.style!=='수류베기') {
-      const main=rule.recommended[0].s;
-      if(!out.targets.some(t=>t.s===main)) out.targets[1]={s:main,min:0,max:abMax(main)};
-    }
+    if (row?.label) out.name=row.label+' · '+d.name;
+    if (core && !out.targets.some(t=>t.s===core.s)) out.targets[row.coreSlot]={...core};
     return out;
   });
 }
@@ -314,7 +339,7 @@ function abScoreBuild(b) {
   const conds = bdStats(b).conds;
   b.cond = Object.fromEntries(conds.map(c => [c.sk, !abSP(c.sk)&&c.list.some(e=>abScopeApplies({...e,sk:c.sk},b))]));
   for (const s of Object.keys(BD_AMMO_BOOST)) if (s in b.cond && !bdAmmoBoostApplies(s,abGunWeapon(b))) b.cond[s] = false;
-  if (b.wt === 'lance' && b.cond['불퇴전']) b.cond['매진'] = false;
+  for (const [on, off] of AB_RULES.weapons[b.wt]?.exclusive || []) if (b.cond[on]) b.cond[off] = false;
   b.bowEfficiency = false; // 집중 주기 보정은 추천 시 사용자가 지정하지 않은 가정이다.
   return bdStats(b).score;
 }
@@ -324,10 +349,7 @@ function abPolicy(b, direction, targets, styleGuide = true, setting) {
   const style = styleGuide ? abOperationRule(b,setting) : null;
   const explicit = new Set(targets.map(t => t.s));
   const skip = new Set(style?.avoid || []);
-  if (c.nativeNegative && c.tripleCrit) skip.add('흉회심');
-  if (c.base.crit < 0 && !c.tripleCrit) ['간파', '약점 특효', '슈퍼회심', '회심격【속성】'].forEach(s => skip.add(s));
-  if (c.style !== '블래스트 대시') skip.add('기습 상태 이상');
-  if (!c.critAllowed) ['간파','약점 특효','슈퍼회심','회심격【속성】','흉회심'].forEach(s=>skip.add(s));
+  for (const x of AB_RULES.avoid) if (x.when(c)) x.skills.forEach(s => skip.add(s));
   // 사용자가 직접 선택한 스킬은 우선한다. 비권장은 장비 자체의 금지가 아니다.
   explicit.forEach(s => skip.delete(s));
   const investmentSkills = c.element ? [c.element,c.element+'·경지',...BD_ELE_MUL].filter(s=>
@@ -362,8 +384,7 @@ const abArmorCompare = (a, b) => {
 function abArmorEvaluator(seed, targets, policy, stones) {
   const explicit = new Set([...targets, ...policy.styleTargets].map(t => t.s));
   const useful = new Set([...explicit, ...policy.fillers, ...abSupportSkills(seed)].filter(s => !policy.avoid.includes(s)));
-  const type = BUILD.weaponTypes.find(t => t.k === seed.wt)?.n;
-  if (type && bdSkillDesc('강화 지속',1)?.includes(type)) useful.add('강화 지속');
+  if (abSustains(seed)) useful.add('강화 지속');
   const weaponLevels = new Map();
   for (const x of bdBuildWSkills(seed)) weaponLevels.set(x.s,(weaponLevels.get(x.s)||0)+x.lv);
   const caps = new Map([...useful].map(s => [s, Math.max(0,([...targets,...policy.styleTargets].find(t => t.s === s)?.max ?? abMax(s))-(weaponLevels.get(s)||0))]));
@@ -456,14 +477,10 @@ function abFillDrift(original, targets, fillers, use, preferPriority, lowInvestm
 
 /* A0: 점수/운용/연성 비용을 섞지 않고, 실제 교체·보완 결과로 비교한다. */
 function abResolvePolicy(seed, targets, policy) {
-  const known = new Set(['반사','가드 성능','집중','회피 장전','절대 회피【SP】',
-    '특수 게이지 가속','특수 게이지 가속【저스트 회피】']);
-  const operation = new Map();
-  const sourceRule=abGun(seed)?'B1–B3':{lance:'W5','shield-sword':'W9','great-sword':'W10',bow:'기존 집중 기준'}[seed.wt]||'공통 운용 지침';
-  for (const t of [...policy.styleTargets,...targets]) if (known.has(t.s) && !policy.avoid.includes(t.s))
+  const operation = new Map(), sourceRule=AB_RULES.weapons[seed.wt]?.source||'공통 운용 지침';
+  for (const t of [...policy.styleTargets,...targets]) if (AB_RULES.operation.includes(t.s) && !policy.avoid.includes(t.s))
     operation.set(t.s,{...t,sourceRule});
-  const type=BUILD.weaponTypes.find(t=>t.k===seed.wt)?.n;
-  if(type && bdSkillDesc('강화 지속',1)?.includes(type)) operation.set('강화 지속',{s:'강화 지속',max:abMax('강화 지속'),sourceRule:'W6'});
+  if(abSustains(seed)) operation.set('강화 지속',{s:'강화 지속',max:abMax('강화 지속'),sourceRule:'W6'});
   return {...policy,operation:[...operation.values()],sourceRule:'A0/W1–W8',ruleVersion:'20261014b'};
 }
 const abCandidateKey = b => abSignature(b)+'|'+JSON.stringify(BD_PARTS().map(p=>b.ds[p.k]));
@@ -791,7 +808,7 @@ function abGuideUI(b, direction, targets) {
     ${extra.length ? `<p>추가 확보 조건: ${extra.filter(t=>t.min>0).map(t => `${esc(t.s)} ${t.min}${t.max>t.min ? ` (목표 ${t.max})` : ''}`).join(' · ')}. 운용 최소와 선택한 경지의 선행 레벨입니다.</p>` : ''}
     ${targets.map(t => { const curve = abCurve(t.s, b); return t.s ? `<p>${esc(t.s)}: ${curve ? `레벨별 효과 ${curve.values.join(' / ')} · 추가 증가량 ${curve.increments.join(' / ')} (동일 단위)` : '복합·확률 또는 비수치 효과: 임의 대미지 환산 없이 레벨 우선순위로 평가'}</p>` : ''; }).join('')}
     <p>명시한 필수 최소는 유지합니다. 권장 핵심은 미채용부터 목표까지 투자안을 비교하며, 장비 전체 효과와 연성 보충 비용을 함께 평가합니다. 모든 레벨 조합의 전수 탐색은 아닙니다.</p>
-    ${b.wt === 'lance' && AB_STYLE_RULES[c.style] ? '<p>반사 효과는 임의 피해 점수로 더하지 않습니다. 불퇴전이 발동한 점수에서는 매진을 끄고, 이동 후 보완 효과는 별도로 남깁니다.</p>' : ''}
+    ${abStyleRow(b)?.note ? `<p>${esc(abStyleRow(b).note)}</p>` : ''}
     ${c.status ? '<p>상태이상 축적 확률·임계치·발동 횟수·지속 시간은 미모델링입니다. 기존 점수는 상시 DPS나 실제 상태이상 피해를 뜻하지 않습니다.</p>' : ''}`;
 }
 
