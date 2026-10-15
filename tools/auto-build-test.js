@@ -221,13 +221,22 @@ const get = s => vm.runInContext(s, ctx);
   const config = get('({b:abState.b,targets:abState.targets,drift:true})');
   const result = await get('abSearch')(config);
   console.log('탐색', { expanded: result.expanded, evaluated: result.evaluated, valid: result.pool.length, ms: result.ms, limited: result.limited });
-  const best = get('abBest')(result.pool, 'priority');
+  const best = get('abBest')(result.pool);
   assert.strictEqual(best.length, 5, '샘플은 5개 후보를 추천');
-  assert.strictEqual(new Set(best.map(r => get('abSignature')(r.b))).size, 5);
-  const alternatives = get('abBest')(result.pool,'alternatives');
-  assert.strictEqual(alternatives[0].score,Math.max(...result.pool.map(r=>r.score)));
-  assert.strictEqual(new Set(alternatives.map(r=>r.profile)).size,5,'다섯 대안의 보조 투자 구성이 다름');
-  assert.ok(alternatives.every(r=>r.score===get('bdStats')(r.b).score),'다양성으로 실제 점수 변경 금지');
+  assert.strictEqual(new Set(best.map(r => get('abSignature')(r.b))).size, 5, '결과 5개는 서로 다른 방어구');
+  assert.strictEqual(best[0].score, Math.max(...result.pool.map(r => r.score)), '1위는 최고 ON 점수');
+  assert.ok(best.every((r, i) => !i || best[i - 1].score >= r.score), 'ON 점수순');
+  for (const g of best) {
+    assert.ok(g.variants.length >= 1 && g.variants.length <= get('AB_VARIANTS'));
+    assert.ok(g.variants.every(v => get('abSignature')(v.b) === get('abSignature')(g.b)), '연성 안은 같은 방어구');
+    assert.strictEqual(new Set(g.variants.map(v => v.profile)).size, g.variants.length, '연성 안끼리 스킬 구성이 다름');
+    assert.ok(g.variants.every(v => v.score === get('bdStats')(v.b).score), '묶음으로 실제 점수 변경 금지');
+  }
+  // 기준별 1위(배지)의 방어구는 결과에 반드시 포함된다.
+  const front = get('abFrontier')(result.pool);
+  assert.ok(best.some(g => g.variants.some(v => v.score === Math.max(...front.map(x => x.score)))));
+  assert.ok(best.some(g => g.variants.some(v => v.baseScore === Math.max(...front.map(x => x.baseScore)))), '조건 OFF 1위 포함');
+  assert.ok(best.some(g => g.variants.some(v => v.drifts === Math.min(...front.map(x => x.drifts)))), '연성 최소 포함');
   for (const r of best) {
     for (let i = 0; i < 3; i++) assert.ok(r.levels[i] >= config.targets[i].min);
     for (const part of get('BD_PARTS()')) assert.ok(r.b.ds[part.k].filter(Boolean).length <= get('bdSlotCount')(r.b, part.k));
@@ -240,7 +249,7 @@ const get = s => vm.runInContext(s, ctx);
   assert.ok(noDrift.pool.length > 0);
   assert.ok(noDrift.pool.every(r => r.drifts === 0));
   const locked = await get('abSearch')({ ...config, lockon: true });
-  assert.strictEqual(get('abBest')(locked.pool, 'priority').length, 5);
+  assert.strictEqual(get('abBest')(locked.pool).length, 5);
   assert.ok(locked.pool.every(r => new Map(get('bdTotals')(r.b)).get('록온') >= 1));
   assert.ok(locked.pool.every(r => r.levels.length === 3));
   const duplicateLock = get('abSearchTargets')({b:config.b,targets:[{s:'록온',min:1,max:1},...config.targets.slice(1)],lockon:true});
@@ -259,10 +268,24 @@ const get = s => vm.runInContext(s, ctx);
     console.log(set.name, '추천 검수 통과');
   }
   assert.strictEqual(await get('abSearch')(config, () => {}, () => true), null);
-  const sorted = [...result.pool].sort((a, b) => get('abCompare')(a, b, 'score'));
-  assert.strictEqual(get('abBest')(result.pool, 'score')[0].score, sorted[0].score);
-  assert.ok(get('abCompare')({levels:[5,3,3],score:100,drifts:0,b:best[0].b},
-    {levels:[4,5,5],score:10000,drifts:0,b:best[1].b},'priority') > 0, '핵심 고레벨만으로 전체 점수 손해를 우대하지 않음');
+  // 사용자 제외: 완전 제외는 해당 스킬의 방어구·연성을 빼고, 겸용 허용은 점수에서 효과만 뺀다.
+  const banned = best[0].support.map(x => x[0]).find(n => !get('bdBuildWSkills')(config.b).some(w => w.s === n));
+  const hard = await get('abSearch')({ ...config, exclude:[{ s:banned, shared:false }] });
+  assert.ok(hard.pool.length && hard.pool.every(r => !new Map(get('bdTotals')(r.b)).get(banned)), '완전 제외 스킬 미포함: ' + banned);
+  const shared = await get('abSearch')({ ...config, exclude:[{ s:banned, shared:true }] });
+  assert.ok(shared.pool.length && shared.pool.every(r => r.b.ignore.includes(banned) && r.score === get('bdStats')(r.b).score));
+  const withSkill = shared.pool.find(r => new Map(get('bdTotals')(r.b)).get(banned));
+  if (withSkill) assert.ok(get('bdStats')({ ...withSkill.b, ignore:[] }).score >= withSkill.score, '겸용 허용은 효과를 점수에서 제외');
+  assert.ok(!get('abPolicy')({ ...config.b, _abExclude:[{ s:banned }] }, 'manual', []).fillers.includes(banned));
+  assert.ok(get('abExcludeError')([{ s:'록온' }], [{ s:'록온', min:1, max:1 }]).includes('겹쳐'));
+  assert.ok(get('abExcludeError')([1,2,3,4].map(i => ({ s:'x' + i })), []).includes('최대'));
+  const weaponSkill = get('bdBuildWSkills')(config.b)[0]?.s;
+  if (weaponSkill) assert.ok(get('abExcludeError')([{ s:weaponSkill }], [], config.b).includes('무기 기본'));
+  // 규칙 스킬 개별 해제: 끈 스킬만 필수에서 빠지고 나머지 운용 조건은 유지.
+  const shieldLance = { ...get('bdNewBuild')(), w:'mizu', wt:'lance', st:1 };
+  const off = get('abSearchTargets')({ b:shieldLance, targets:[], styleGuide:['반사'] }).map(t => t.s);
+  assert.ok(!off.includes('반사') && off.includes('가드 성능') && off.includes('불퇴전'));
+  assert.strictEqual(get('abPriorityWeight')(0), 100);
   const oldLimit = get('AB_LIMIT.ms'); get('AB_LIMIT.ms=0');
   const limited = await get('abSearch')(config); assert.ok(limited.limited); get(`AB_LIMIT.ms=${oldLimit}`);
   if (process.argv.includes('--all-weapons')) for (const type of get('BUILD.weaponTypes')) {

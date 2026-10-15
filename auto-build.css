@@ -40,9 +40,9 @@
 .ab-base { margin: 14px 0 0; }
 .ab-base b { color: var(--bone); }
 .ab-directions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.ab-directions button { text-align: left; padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--bone); cursor: pointer; }
-.ab-directions button[aria-pressed="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 10%, var(--surface-2)); }
-.ab-directions span { display: block; font-size: 12px; color: var(--muted); margin-top: 7px; line-height: 1.6; }
+.ab-directions > button { text-align: left; padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--bone); cursor: pointer; }
+.ab-directions > button[aria-pressed="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 10%, var(--surface-2)); }
+.ab-directions > button span { display: block; font-size: 12px; color: var(--muted); margin-top: 7px; line-height: 1.6; }
 .ab-targets { display: grid; gap: 12px; }
 .ab-targets > div { display: grid; grid-template-columns: minmax(0, 1fr) 90px 90px; gap: 10px; }
 .ab-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
@@ -82,3 +82,32 @@
   .ab-targets > div { grid-template-columns: minmax(0, 1fr) 62px 62px; gap: 6px; }
   .ab-parameter { gap: 6px; }
 }
+/* 제안 카드: 고른 카드만 펼쳐 칩에서 바로 조정한다. */
+.ab-card.open { grid-column: 1 / -1; text-align: left; padding: 14px; border: 1px solid var(--amber); border-radius: 9px; background: color-mix(in srgb, var(--amber) 6%, var(--surface-2)); }
+.ab-card-head { display: flex; gap: 8px; align-items: baseline; font-size: 15px; }
+.ab-card-head small { color: var(--amber-hi); font-size: 12px; }
+.ab-directions .ab-card-skills { color: var(--bone); }
+.ab-card-row { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; align-items: start; margin: 10px 0; }
+.ab-card-row > span { font-size: 12px; color: var(--muted); padding-top: 8px; }
+.ab-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ab-chip { min-height: 36px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--bone); font: inherit; font-size: 13px; cursor: pointer; }
+.ab-chip b { color: var(--amber-hi); margin-left: 2px; }
+.ab-chip[aria-expanded="true"] { border-color: var(--amber); outline: 2px solid var(--amber); outline-offset: 1px; }
+.ab-chip.rule { border-style: dashed; }
+.ab-chip.off { opacity: .5; text-decoration: line-through; }
+.ab-chip.auto { cursor: default; color: var(--muted); display: inline-flex; align-items: center; }
+.ab-chip.ex b { color: var(--muted); }
+.ab-chip.plus { color: var(--amber-hi); min-width: 36px; }
+#ab-screen .ab-chips select { width: auto; min-height: 36px; padding: 6px 8px; }
+.ab-chip-editor { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 10px; margin: 6px 0; border-radius: 8px; background: var(--surface); font-size: 13px; }
+.ab-chip-editor button, .ab-notice button { min-height: 36px; min-width: 36px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--bone); font: inherit; cursor: pointer; }
+.ab-chip-editor button:disabled { opacity: .35; cursor: default; }
+.ab-chip-editor small { flex-basis: 100%; color: var(--muted); }
+.ab-notice { font-size: 13px; color: var(--amber-hi); }
+/* 결과: 배지·연성 안 탭 */
+.ab-badges { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px 0; margin: 0; }
+.ab-badge { font-size: 12px; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--amber) 15%, var(--surface)); }
+.ab-tabs { display: flex; gap: 6px; padding: 10px 12px 4px; overflow-x: auto; }
+.ab-tabs button { flex: none; min-height: 36px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-2); color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.ab-tabs button[aria-selected="true"] { border-color: var(--amber); color: var(--bone); background: color-mix(in srgb, var(--amber) 12%, var(--surface-2)); }
+.ab-diff { padding: 0 12px; margin: 4px 0; font-size: 13px; color: var(--amber-hi); overflow-wrap: anywhere; }

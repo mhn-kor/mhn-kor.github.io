@@ -12,8 +12,13 @@ assert.ok(d.targets.every(t=>t.min===0),'일반 권장 미채용 허용');
 const negative=get('BUILD.sets').find(s=>s.weapons.some(w=>w.t==='great-sword'&&w.crit<0));
 assert.ok(get('abDirections')({...b,w:negative.key,wt:'great-sword'}).every(d=>d.targets.every(t=>t.min===0)),'흉회심 방향도 투자 상한이지 강제 최소가 아님');
 assert.ok(get('abSearchTargets')({b,targets:[{s:'물속성 공격 강화·경지',min:1,max:2}]}).some(t=>t.s==='물속성 공격 강화'&&t.min===5));
-assert.ok(get('abCompare')({operation:[3],levels:[0],score:100,b},{operation:[1],levels:[5],score:200,b},'priority')<0,'점수 밖 운용 가치 유지');
-assert.ok(get('abCompare')({operation:[3],levels:[0],score:100,b},{operation:[1],levels:[5],score:200,b},'score')>0,'점수순은 순수 점수');
+// 점수 밖 운용 가치: 점수가 낮아도 운용 스킬 1위는 배지와 함께 결과에 남는다.
+{
+  const mk=(helm,score,op)=>({b:{...b,helm},score,baseScore:score,drifts:0,operation:[op],operationNames:['반사'],profile:helm,policyKey:'k'});
+  const pool=[mk('a',200,1),mk('b',100,3)], best=get('abBest')(pool);
+  assert.strictEqual(best[0].score,200,'결과는 ON 점수순');
+  assert.ok(best.some(r=>r.badges.includes('반사 최고')&&r.score===100),'점수 밖 운용 가치 유지');
+}
 // 통제된 장비 집합: 고룡 MAX와 다른 강한 부위의 비교. 실제 공개 스킬 효과 사용.
 const add=(key,k,skills)=>get('BUILD.sets').push({key,name:key,weapons:[],pieces:{[k]:{name:key,slot:0,skills}}});
 (async()=>{
@@ -27,7 +32,7 @@ const add=(key,k,skills)=>get('BUILD.sets').push({key,name:key,weapons:[],pieces
       assert.ok(required.every(t=>(lv.get(t.s)||0)>=t.min));
       if(id==='critical') assert.ok(direction.critMin==null,'회심80% 강제 없음');
     }
-    const chosen=get('abBest')(actual.pool,'priority');
+    const chosen=get('abBest')(actual.pool);
     console.log(wt,id,{candidates:actual.pool.length,ms:actual.ms,investments:chosen.map(r=>Array.from(r.levels)),scores:chosen.map(r=>r.score)});
   }
   get('BUILD.sets').forEach(s=>s.pieces={});
@@ -38,7 +43,7 @@ const add=(key,k,skills)=>get('BUILD.sets').push({key,name:key,weapons:[],pieces
   const result=await get('abSearch')(config);
   assert.ok(!result.limited&&result.pool.length);
   assert.ok(result.pool.some(r=>r.levels[0]===0)&&result.pool.some(r=>r.levels[0]===3),'미채용/MAX 후보 모두 탐색');
-  const best=get('abBest')(result.pool,'priority')[0];
+  const best=get('abBest')(result.pool)[0];
   assert.strictEqual(best.b.helm,'whole-gain','고룡MAX보다 전체 이득이 높은 부위 선택');
   for(const r of result.pool) assert.strictEqual(r.score,get('bdStats')(r.b).score,'임의 가중치 없는 공유 점수');
   const forced=await get('abSearch')({...config,targets:config.targets.map((t,i)=>i===0?{...t,min:3}:t)});

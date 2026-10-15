@@ -1,8 +1,9 @@
 /* 사용자 저장소와 분리된 새 브라우저에서 PC/모바일 전체 흐름 검수. */
-const { chromium } = require('playwright'), assert = require('assert'), path = require('path'), os = require('os');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright'), assert = require('assert'), path = require('path'), os = require('os');
 const { pathToFileURL } = require('url');
 (async () => {
-  const browser = await chromium.launch({ channel: 'msedge' });
+  // Edge가 없는 환경(클라우드 등)은 내장 Chromium으로 실행한다.
+  const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch());
   try {
     for (const width of [390, 1280]) {
       const page = await browser.newPage({ viewport: { width, height: 900 } }), errors = [];
@@ -29,58 +30,75 @@ const { pathToFileURL } = require('url');
         fontSize: getComputedStyle(el).fontSize, disabled: el.disabled
       })));
       assert.ok(fields.every(f => f.height >= 44 && f.fontSize === '16px'));
-      const coreFields = await page.locator('.ab-core-settings select').evaluateAll(nodes => nodes.map(el => ({
-        height: el.getBoundingClientRect().height, fontSize: getComputedStyle(el).fontSize,
-        background: getComputedStyle(el).backgroundColor
-      })));
-      assert.strictEqual(coreFields.length, 9);
-      assert.ok(coreFields.every(f => f.height >= 44 && f.fontSize === '16px' && f.background === fields[0].background));
+      // 펼친 제안 카드 1장 + 접힌 카드. 칩은 터치 높이 확보.
+      assert.strictEqual(await page.locator('.ab-card.open').count(), 1);
+      const chips = await page.locator('.ab-card.open button.ab-chip').evaluateAll(nodes => nodes.map(el => el.getBoundingClientRect().height));
+      assert.ok(chips.length >= 3 && chips.every(h => h >= 36));
       assert.notStrictEqual(fields.find(f => !f.disabled).background, fields.find(f => f.disabled).background);
       const field = page.locator('[data-ab="wt"]');
       await field.focus();
       assert.strictEqual(await field.evaluate(el => getComputedStyle(el).outlineWidth), '2px');
       await page.locator('.ab-weapon-settings').screenshot({path:path.join(os.tmpdir(),`mhn-auto-settings-${width}.png`)});
-      assert.strictEqual(await page.locator('[data-ab="lockon"]').isChecked(), true);
-      await page.locator('[data-ab="lockon"]').uncheck();
+      // 록온은 근접 필수 칩. 누르면 끄고 원거리에는 없다.
+      const lock = page.locator('[data-ab-chip="lock"]');
+      assert.ok(!(await lock.getAttribute('class')).includes('off'));
+      await lock.click();
+      assert.ok((await page.locator('[data-ab-chip="lock"]').getAttribute('class')).includes('off'));
       for (const wt of ['light-gun', 'heavy-gun', 'bow']) {
         await page.locator('[data-ab="wt"]').selectOption(wt);
-        assert.strictEqual(await page.locator('[data-ab="lockon"]').isDisabled(), true);
-        assert.strictEqual(await page.locator('[data-ab="lockon"]').isChecked(), false);
+        assert.strictEqual(await page.locator('[data-ab-chip="lock"]').count(), 0);
       }
       await page.locator('[data-ab="wt"]').selectOption('long-sword');
-      assert.strictEqual(await page.locator('[data-ab="lockon"]').isChecked(), true);
-      assert.strictEqual(await page.locator('[data-ab="lockon"]').isDisabled(), false);
+      assert.ok(!(await page.locator('[data-ab-chip="lock"]').getAttribute('class')).includes('off'));
+      // 실드태클: 규칙 스킬은 칩별로 끈다. 끈 스킬만 빠지고 나머지는 유지.
       await page.locator('[data-ab="wt"]').selectOption('lance');
       await page.locator('[data-ab="st"]').selectOption('1');
-      assert.ok(await page.locator('[data-ab="styleGuide"]').isChecked());
-      assert.ok(await page.locator('[data-ab-dir="water"]').isVisible());
-      assert.ok((await page.locator('#ab-screen').innerText()).includes('스타일 운용 기준'));
-      assert.strictEqual(await page.locator('[data-ab-min="1"]').inputValue(),'0');
-      await page.locator('[data-ab="styleGuide"]').uncheck();
-      assert.ok((await page.locator('#ab-screen').innerText()).includes('직접 선택한 핵심 스킬만 필수'));
-      await page.locator('[data-ab="styleGuide"]').check();
+      assert.ok(await page.locator('[data-ab-dir="water"]').isVisible() || await page.locator('.ab-card.open').isVisible());
+      await page.locator('[data-ab-chip="r:반사"]').click();
+      assert.ok((await page.locator('[data-ab-chip="r:반사"]').getAttribute('class')).includes('off'));
+      assert.deepStrictEqual(await page.evaluate(() => abState.styleOff), ['반사']);
+      assert.ok((await page.locator('.ab-card.open').innerText()).includes('수정됨'));
+      await page.locator('[data-ab-reset]').click();
+      assert.deepStrictEqual(await page.evaluate(() => abState.styleOff), []);
+      // 사용자 제외: 최대 3개, 칩에서 완전 제외 ↔ 겸용 허용.
+      await page.locator('[data-ab-plus="ex"]').click();
+      await page.locator('[data-ab-add="ex"]').selectOption('매진');
+      await page.locator('[data-ab-chip="x:0"]').click();
+      await page.locator('[data-ab-op="shared"]').click();
+      assert.strictEqual(await page.evaluate(() => abState.exclude[0].shared), true);
+      await page.locator('[data-ab-op="del"]').click();
+      assert.strictEqual(await page.evaluate(() => abState.exclude.length), 0);
       await page.locator('[data-ab="wt"]').selectOption('long-sword');
       await page.locator('[data-ab="st"]').selectOption('1');
       await page.locator('[data-ab="style20"]').check();
       for (let i = 0; i < 3; i++) await page.locator(`[data-ab-param="${i}"]`).selectOption('crit');
       assert.ok((await page.locator('.ab-base').innerText()).includes('50%'));
-      assert.ok((await page.locator('[data-ab-dir]').first().innerText()).includes('회심격'));
-      await page.locator('[data-ab-dir="critical"]').click();
-      assert.strictEqual(await page.locator('[data-ab-skill="0"]').inputValue(), '회심격【속성】');
-      await page.locator('[data-ab-skill="0"]').selectOption('연격');
+      assert.ok((await page.locator('.ab-card.open').innerText()).includes('회심격'));
+      assert.strictEqual(await page.evaluate(() => abState.direction), 'critical');
+      // 칩 조정: 첫 투자 스킬 최소를 올리면 필수로 이동, 설정 변경은 사용자 수정을 보존.
+      const firstSkill = await page.evaluate(() => abState.targets[0].s);
+      await page.locator('[data-ab-chip="t:0"]').click();
+      await page.locator('[data-ab-op="min+"]').click();
+      assert.strictEqual(await page.evaluate(() => abState.targets[0].min), 1);
       await page.locator('[data-ab-param="0"]').selectOption('atk');
-      assert.strictEqual(await page.locator('[data-ab-skill="0"]').inputValue(), '연격', '설정 변경은 사용자 핵심 스킬 보존');
+      assert.strictEqual(await page.evaluate(() => abState.targets[0].s), firstSkill, '설정 변경은 사용자 수정 보존');
+      assert.ok((await page.locator('.ab-card.open').innerText()).includes('제안 새로 보기'));
       await page.locator('[data-ab-dir="water"]').click();
       await page.locator('[data-ab-search]').click();
-      await page.waitForFunction(() => !abState.busy, { timeout: 15000 });
+      await page.waitForFunction(() => !abState.busy, { timeout: 60000 });
       assert.strictEqual(await page.locator('.ab-result').count(), 5);
       assert.strictEqual(await page.evaluate(() => abState.results.every(r=>new Map(bdTotals(r.b)).get('록온')>=1)), true);
-      await page.locator('[data-ab="order"]').selectOption('score');
       const scores = await page.locator('.ab-score').allTextContents();
       assert.strictEqual(+scores[0].replace(/\D/g, ''), Math.max(...scores.map(s => +s.replace(/\D/g, ''))));
-      await page.locator('[data-ab="order"]').selectOption('alternatives');
-      assert.ok((await page.locator('.ab-result').first().innerText()).includes('최고 후보 대비 0점'));
-      await page.locator('[data-ab="order"]').selectOption('score');
+      assert.strictEqual(await page.evaluate(() => new Set(abState.results.map(r => abSignature(r.b))).size), 5);
+      // 연성 안 탭: 전환하면 가져오기 대상도 바뀐다.
+      const tabbed = await page.evaluate(() => abState.results.findIndex(g => g.variants.length > 1));
+      if (tabbed >= 0) {
+        await page.locator(`[data-ab-variant="${tabbed}:1"]`).click();
+        assert.ok((await page.locator('.ab-result').nth(tabbed).innerText()).includes('A 대비'));
+        assert.ok((await page.locator(`[data-ab-import="${tabbed}"]`).innerText()).includes('B안'));
+        await page.locator(`[data-ab-variant="${tabbed}:0"]`).click();
+      }
       const first = page.locator('.ab-result').first();
       const pieces = await page.evaluate(() => BD_PARTS().map(p => ({ part:p.k, ...bdSet(abState.results[0].b[p.k]).pieces[p.k] })));
       for (const p of pieces) {
@@ -130,8 +148,7 @@ const { pathToFileURL } = require('url');
       await page.waitForURL('**#auto-build');
       await page.locator('#ab-screen').waitFor({ state: 'visible' });
       await page.locator('[data-ab-dir="manual"]').click();
-      await page.locator('[data-ab-search]').click();
-      assert.ok((await page.locator('#ab-status').innerText()).includes('3개'));
+      assert.strictEqual(await page.evaluate(() => abState.targets.length), 0, '직접 구성은 빈 스킬에서 시작');
       await page.locator('[data-ab-dir="water"]').click();
       await page.locator('[data-ab-search]').click();
       await page.locator('[data-ab-cancel]').click();

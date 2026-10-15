@@ -344,7 +344,8 @@ function bdStats(b) {
   /* 효과를 먼저 다 모읍니다. 조건부는 켜 둔 것만 씁니다.
      조건부 목록은 화면에서 켜고 끌 수 있도록 그대로 돌려줍니다. */
   const eff = [];
-  const entries = [...lvOf].map(([name, lv]) => ({ name, lv, list: bdCachedEffects(bdSkillDesc(name, lv) || '', name, w) }));
+  // ignore: 자동빌드 '겸용 허용' 제외 스킬. 장착은 하되 효과는 점수에 넣지 않는다.
+  const entries = [...lvOf].filter(([name]) => !b.ignore?.includes(name)).map(([name, lv]) => ({ name, lv, list: bdCachedEffects(bdSkillDesc(name, lv) || '', name, w) }));
   const eligible = e => !e.need || (lvOf.get(e.need.s) || 0) >= e.need.lv;
   const conditional = new Map();
   for (const { name, lv, list } of entries) {

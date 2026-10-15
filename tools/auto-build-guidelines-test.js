@@ -85,7 +85,7 @@ async function run(row, direction, gun) {
     for(const p of get('BD_PARTS')()) assert.ok(r.b.ds[p.k].filter(Boolean).length<=get('bdSlotCount')(r.b,p.k));
     assert.ok(!Object.entries(r.b.cond).some(([s,on])=>on&&get('abSP')(s)));
   }
-  const best=get('abBest')(result.pool,'priority');
+  const best=get('abBest')(result.pool);
   assert.ok(best.length<=5&&new Set(best.map(r=>get('abSignature')(r.b))).size===best.length);
   if(best[0]) assert.strictEqual(get('bdStats')(get('bdParse')(get('bdShareParam')(best[0].b))).score,best[0].score,'가져오기 계산 보존');
   return {label:row.label,w:row.b.w,wt:row.b.wt,st:row.b.st,direction:direction.id,

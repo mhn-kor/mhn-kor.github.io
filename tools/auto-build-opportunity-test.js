@@ -37,9 +37,9 @@ const registry=parts.map(p=>({part:p.k,rows:get('bdOrderedSets')().filter(s=>s.p
   assert.ok(winner.evidence.baseDelta===winner.baseScore-before.baseScore);
   const explanation=get('abOpportunityUI')(winner);
   assert.ok(explanation.includes('ON')&&explanation.includes('OFF')&&explanation.includes('연성'),'실제 비교 근거 출력');
-  const representatives=get('abBest')([before,...repaired.pool],'priority');
+  const representatives=get('abBest')([before,...repaired.pool]);
   assert.ok(representatives.length&&representatives.length<=5);
-  assert.ok(representatives.every(r=>r.role&&Number.isFinite(r.baseScore)),'역할별 제목·OFF 점수 제공');
+  assert.ok(representatives.every(r=>r.role&&Number.isFinite(r.baseScore)),'연성 안 제목·OFF 점수 제공');
   assert.ok(representatives.every(r=>!get('abFrontier')([before,...repaired.pool]).some(x=>get('abDominates')(x,r))));
   // 표류연성으로만 속성5+경지1을 완성하는 문턱 사례. 한칸씩의 탐욕 채우기에 의존하지 않음.
   add('bundle','helm',[{s:'물속성 공격 강화·경지',lv:1}],2);

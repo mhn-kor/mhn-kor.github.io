@@ -34,7 +34,7 @@ for(let i=0;i<parts.length;i++) {
 (async()=>{
   try {
     const config={b:seed,direction:'manual',targets,drift:true,lockon:false,styleGuide:false};
-    const result=await get('abSearch')(config), best=get('abBest')(result.pool,'priority');
+    const result=await get('abSearch')(config), best=get('abBest')(result.pool);
     assert.ok(best.length); assert.ok(parts.every(p=>best[0].b[p.k].startsWith('useful-')),'main gear must not be socket bait');
     assert.ok(result.pool.every(r=>r.driftOnly.every(Boolean)));
     const expensive=await get('abSearch')({...config,targets:targets.map(t=>({...t,min:2,max:2}))});

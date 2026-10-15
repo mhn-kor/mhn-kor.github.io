@@ -66,17 +66,21 @@ function abGunInfo(b, setting = b._abGun || {}) {
     compare: mode === 'cycle' ? [...slots].sort((a,b) => abAmmoPreference(b.name)-abAmmoPreference(a.name))[0] : slot,
     settings:{mode,slot:slot?.i || 0,reload5:!!setting.reload5}, unknown:!data };
 }
-function abOperationRule(b, setting) {
-  const gun = abGunInfo(b, setting);
-  return gun ? { name:gun.name, required:gun.required, recommended:gun.recommended, avoid:gun.avoid,
+function abOperationRule(b, setting, styleGuide = true) {
+  if (styleGuide === false) return null;
+  const gun = abGunInfo(b, setting), rule = gun ? { name:gun.name, required:gun.required, recommended:gun.recommended, avoid:gun.avoid,
     desc:'선택한 탄 운용의 필수 조건을 확보하고 몬스터·파라미터별 투자 방향을 결합합니다.' } : abStyleRule(b);
+  // 배열이면 사용자가 끈 규칙 스킬. 끈 스킬만 빼고 나머지 운용 조건은 유지한다.
+  const off = Array.isArray(styleGuide) ? styleGuide : [];
+  return rule && off.length ? { ...rule, required:rule.required.filter(t => !off.includes(t.s)),
+    recommended:rule.recommended.filter(t => !off.includes(t.s)) } : rule;
 }
 function abGunWeapon(b, setting) {
   const w = bdWeaponOf(b), g = abGunInfo(b, setting);
   return g?.compare ? {...w,x:[g.compare.name]} : bdScoreWeapon(b);
 }
 function abSearchTargets(config) {
-  const rows = [...config.targets, ...(config.styleGuide !== false ? abOperationRule(config.b,config.gun)?.required || [] : [])];
+  const rows = [...config.targets, ...(abOperationRule(config.b,config.gun,config.styleGuide ?? true)?.required || [])];
   if (config.lockon && abMelee(config.b.wt)) rows.unshift({ s: '록온', min: 1, max: 1 });
   // 경지 등 선택한 핵심 효과의 발동 선행 레벨도 확보한다.
   for (const t of config.targets) for (const e of bdEffects(bdSkillDesc(t.s, t.min) || '', t.s, bdWeaponOf(config.b)))
@@ -90,7 +94,8 @@ function abSearchTargets(config) {
 }
 let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction: '', edited: false,
   targets: abTargets(['물속성 공격 강화', '회심격【속성】', '슈퍼회심']), drift: true, lockon: true,
-  gun:{mode:'cycle'}, styleGuide: true, order: 'priority', pool: [], stats: null, busy: false, run: 0, notice: '', scroll: 0, active: false };
+  gun:{mode:'cycle'}, styleOff: [], exclude: [], chip: null, adding: null, stale: false, variant: {},
+  pool: [], stats: null, busy: false, run: 0, notice: '', scroll: 0, active: false };
 
 /* 자동세팅 규칙 데이터. docs/WEAPON_SETTING_GUIDE.md '규칙 일람'과 1:1 (tools/auto-build-rules-test.js가 대조).
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
@@ -183,21 +188,6 @@ function abBuffTier(effects) {
   const types = effects.map(e => ['dmg','atk','ele'].includes(e.k) && !e.onCrit && !e.perBaseCrit && !e.hpx
     ? (e.pct ? 0 : 4) + (e.k === 'dmg' ? 1 : 3) + (e.cond ? 1 : 0) : 9);
   return types.length && types.every(t=>t===types[0]) ? types[0] : 9;
-}
-const abBuffCompare = (a=[],b=[]) => {
-  for(let i=0;i<8;i++) if((a[i]||0)!==(b[i]||0)) return (b[i]||0)-(a[i]||0);
-  return 0;
-};
-function abBuffProfile(b,stats) {
-  const groups=new Map(), levels=new Map(bdTotals(b)), profile=Array(8).fill(0);
-  for(const e of stats.effects) if(e.v>0&&(!e.el||e.el===stats.el)) {
-    if(!groups.has(e.sk)) groups.set(e.sk,[]); groups.get(e.sk).push(e);
-  }
-  for(const [s,effects] of groups) {
-    const tier=abBuffTier(effects);
-    if(tier<=8) profile[tier-1]+=Math.min(abMax(s),levels.get(s)||0);
-  }
-  return profile;
 }
 const abEquipmentSkills = () => [...new Set(bdOrderedSets().flatMap(s => Object.values(s.pieces).flatMap(p => p.skills.map(x => x.s))))];
 function abScopeApplies(e,b) {
@@ -313,7 +303,9 @@ function abDirections(b, setting) {
 }
 
 function abSyncDirection() {
-  if (abState.edited || abState.direction === 'manual') return;
+  if (abState.direction === 'manual') return;
+  // 사용자가 고친 제안은 덮어쓰지 않고 새 제안이 있음만 알린다.
+  if (abState.edited) { abState.stale = true; return; }
   abApplyDirection(abDirections(abState.b,abState.gun)[0]?.id || 'manual');
 }
 
@@ -326,13 +318,13 @@ function abChangeWeapon(field, value) {
   s.b.st = 0; s.b.style20 = false; s.b.params = [null, null, null];
   delete s.b.snsMode; delete s.b.ammoSlot;
   s.gun = {mode:'cycle'};
-  if (!s.edited) abApplyDirection(abDirections(s.b)[0]?.id || 'manual');
+  if (!s.edited) abApplyDirection(abDirections(s.b)[0]?.id || 'manual'); else if (s.direction !== 'manual') s.stale = true;
 }
 
 function abApplyDirection(id) {
-  abState.direction = id; abState.edited = false;
-  abState.targets = id === 'manual' ? [{ s: '', min: 1, max: 1 }, { s: '', min: 1, max: 1 }, { s: '', min: 1, max: 1 }]
-    : structuredClone(abDirections(abState.b,abState.gun).find(d => d.id === id).targets);
+  const d = abDirections(abState.b,abState.gun).find(d => d.id === id);
+  Object.assign(abState, { direction:d ? id : 'manual', edited:false, stale:false, chip:null, adding:null, styleOff:[],
+    targets:d ? structuredClone(d.targets) : [] });
 }
 
 function abScoreBuild(b) {
@@ -346,32 +338,44 @@ function abScoreBuild(b) {
 
 function abPolicy(b, direction, targets, styleGuide = true, setting) {
   const c = abContext(b,setting), meta = abDirections(b,setting).find(d => d.id === direction) || {};
-  const style = styleGuide ? abOperationRule(b,setting) : null;
+  const excluded = (b._abExclude || []).map(x => x.s), style = abOperationRule(b,setting,styleGuide);
   const explicit = new Set(targets.map(t => t.s));
   const skip = new Set(style?.avoid || []);
   for (const x of AB_RULES.avoid) if (x.when(c)) x.skills.forEach(s => skip.add(s));
-  // 사용자가 직접 선택한 스킬은 우선한다. 비권장은 장비 자체의 금지가 아니다.
+  // 사용자가 직접 선택한 스킬은 우선한다. 비권장은 장비 자체의 금지가 아니다. 사용자 제외는 항상 제외.
   explicit.forEach(s => skip.delete(s));
+  excluded.forEach(s => skip.add(s));
   const investmentSkills = c.element ? [c.element,c.element+'·경지',...BD_ELE_MUL].filter(s=>
     bdEffects(bdSkillDesc(s,abMax(s)) || '',s,c.w).some(e=>e.k==='ele'&&(!e.el||e.el===c.w.e))) : [];
   const contextSkills = [c.status, c.element, ...(c.base.crit > 0 ? ['공격 증강【회심】'] : []),
     ...(['critical','morph-critical'].includes(direction) ? ['간파','약점 특효','힘의 해방'] : [])].filter(Boolean);
   const support = abSupportSkills(b,setting).filter(s => !skip.has(s));
-  const styleTargets = [...(style?.required || []), ...(style?.recommended || [])];
+  const styleTargets = [...(style?.required || []), ...(style?.recommended || [])].filter(t => !excluded.includes(t.s));
   const fillers = [...new Set([...explicit, ...styleTargets.map(t => t.s), ...contextSkills, ...investmentSkills, ...support.slice(0, 12), '전심전력'])]
     .filter(s => !skip.has(s) && !abSP(s)
       && (!BD_STATUS_BOOST[s] || bdStatusBoostApplies(s, c.w))
       && (!BD_SKILL_WEAPONS[s] || BD_SKILL_WEAPONS[s].includes(b.wt))
       && (!BD_AMMO_BOOST[s] || bdAmmoBoostApplies(s, abGunWeapon(b,setting))));
-  return { ...meta, style, styleTargets, investmentSkills, avoid: [...skip], lowPriority: c.base.crit < 0 ? ['전심전력'] : [], fillers,
+  return { ...meta, style, styleTargets, investmentSkills:investmentSkills.filter(s => !excluded.includes(s)), avoid: [...skip],
+    lowPriority: c.base.crit < 0 ? ['전심전력'] : [], fillers,
     prefer: [...new Set([...(meta.prefer || []), ...styleTargets.map(t => t.s), ...contextSkills,
-      ...support.filter(s => BD_ELE_MUL.has(s) || /경지/.test(s)).slice(0, 4)])] };
+      ...support.filter(s => BD_ELE_MUL.has(s) || /경지/.test(s)).slice(0, 4)])].filter(s => !excluded.includes(s)) };
 }
 
-function abValidate(targets) {
-  if (targets.some(t => !t.s)) return '핵심 스킬 3개를 선택해 주세요.';
+const AB_EXCLUDE_MAX = 3;
+function abValidate(targets, exclude = [], b) {
+  if (targets.some(t => !t.s)) return '스킬을 선택해 주세요.';
   if (new Set(targets.map(t => t.s)).size !== targets.length) return '핵심 스킬은 중복 없이 선택해 주세요.';
   if (targets.some(t => !abSkills().includes(t.s) || t.min < 0 || t.max < 1 || t.max > abMax(t.s) || t.min > t.max)) return '허용 레벨 범위를 확인해 주세요.';
+  return abExcludeError(exclude, targets, b);
+}
+/* 사용자 제외 충돌: 최대 개수, 필수·투자·선행 조건과 겹침, 무기 기본 스킬. */
+function abExcludeError(exclude, required, b) {
+  if (exclude.length > AB_EXCLUDE_MAX) return `제외 스킬은 최대 ${AB_EXCLUDE_MAX}개입니다.`;
+  const hit = exclude.find(x => required.some(t => t.s === x.s));
+  if (hit) return `${hit.s}: 필수·투자 스킬과 겹쳐 제외할 수 없습니다.`;
+  const weapon = b && exclude.find(x => bdBuildWSkills(b).some(w => w.s === x.s));
+  if (weapon) return `${weapon.s}: 무기 기본 스킬이라 제외할 수 없습니다.`;
   return '';
 }
 
@@ -404,39 +408,31 @@ function abArmorEvaluator(seed, targets, policy, stones) {
     return [fixed,concentrated,total,-cost];
   };
 }
-function abCompare(a, b, order) {
-  if(order!=='score' && a.baseScore!=null && b.baseScore!=null)
-    return abDominates(a,b)?-1:abDominates(b,a)?1:0;
-  if (order === 'priority') for (let i = 0; i < (a.operation?.length || 0); i++)
-    if (a.operation[i] !== b.operation[i]) return b.operation[i] - a.operation[i];
-  if (a.score !== b.score) return b.score - a.score;
-  const armor = abArmorCompare(a.armor,b.armor);
-  if (armor) return armor;
-  if ((a.discouraged || 0) !== (b.discouraged || 0)) return (a.discouraged || 0) - (b.discouraged || 0);
-  const buff=abBuffCompare(a.buff,b.buff); if(buff) return buff;
-  return b.score - a.score || a.drifts - b.drifts || abSignature(a.b).localeCompare(abSignature(b.b));
-}
-
-function abBest(pool, order, count = 5) {
-  if (pool[0]?.baseScore != null) return abSelectRepresentatives(pool,order,count);
-  const chosen = [], signatures = new Set(), profiles = new Set(), investments = new Set();
-  const sorted = [...pool].sort((a, b) => abCompare(a, b, order === 'alternatives' ? 'score' : order));
-  const add = r => { signatures.add(abSignature(r.b)); profiles.add(r.profile); investments.add(r.levels.join(':')); chosen.push(r); };
-  if (order !== 'score') for (const r of sorted) {
-    if (!signatures.has(abSignature(r.b)) && !investments.has(r.levels.join(':'))) add(r);
-    if (chosen.length === count) return chosen;
-  }
-  if (order !== 'score') for (const r of sorted) {
-    if (!signatures.has(abSignature(r.b)) && !profiles.has(r.profile)) add(r);
-    if (chosen.length === count) return chosen;
-  }
-  for (const r of sorted) {
-    const signature = abSignature(r.b);
-    if (signatures.has(signature)) continue;
-    add(r);
-    if (chosen.length === count) break;
-  }
-  return chosen;
+/* 결과: 서로 다른 방어구 조합 count개를 각 조합의 최고 ON 점수순으로. 기준별 1위(배지)의 조합은 반드시 포함하고,
+   같은 방어구에 연성만 다른 대안은 variants(최대 AB_VARIANTS)로 묶는다. A0: 점수 하나로만 고르지 않는다. */
+const AB_VARIANTS = 3;
+function abBest(pool, count = 5) {
+  const byScore = (a,b) => b.score-a.score || b.baseScore-a.baseScore || a.drifts-b.drifts || abCandidateKey(a.b).localeCompare(abCandidateKey(b.b));
+  const sorted = abFrontier(pool).sort(byScore), badges = new Map();
+  const award = (name, cmp, value) => {
+    if (!sorted.length || (name !== '공격 고점' && new Set(sorted.map(value)).size < 2)) return; // 모두 같으면 배지 없음
+    const r = [...sorted].sort((a,b) => cmp(a,b) || byScore(a,b))[0];
+    badges.set(r, [...(badges.get(r) || []), name]);
+  };
+  award('공격 고점', byScore, r => r.score);
+  award('조건 OFF 최고', (a,b) => b.baseScore-a.baseScore, r => r.baseScore);
+  (sorted[0]?.operationNames || []).forEach((s,i) => award(`${s} 최고`, (a,b) => b.operation[i]-a.operation[i], r => r.operation[i]));
+  award('연성 최소', (a,b) => a.drifts-b.drifts, r => r.drifts);
+  const groups = new Map();
+  for (const r of sorted) { const k = abSignature(r.b); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); }
+  const keys = [...new Set([...[...badges.keys()].map(r => abSignature(r.b)), ...groups.keys()])].slice(0, count);
+  return keys.map(k => groups.get(k)).sort((a,b) => byScore(a[0],b[0])).map(rows => {
+    const variants = [];
+    for (const r of [rows[0], ...rows.filter(r => badges.has(r)), ...rows])
+      if (variants.length < AB_VARIANTS && !variants.some(v => v === r || v.profile === r.profile)) variants.push(r);
+    const tagged = variants.map((r,i) => ({ ...r, badges:badges.get(r) || [], role:badges.get(r)?.[0] || (i ? '대안' : '최고 점수') }));
+    return { ...tagged[0], variants:tagged, badges:tagged.flatMap(v => v.badges) };
+  });
 }
 
 /* 부족한 핵심 레벨은 연성으로 먼저 확보. 이후 핵심 레벨 또는 실제 점수 증가를 비교한다.
@@ -657,6 +653,9 @@ async function abRepairBuilds(pool,all,targets,policy,config,started,progress,ca
   return {pool:found,evaluated,jobs,limited:stop()||constrained,expanded};
 }
 
+/* 부위 후보 선별용 핵심 순위 가중치. 최종 점수에 더하지 않는다. */
+const AB_PRIORITY_WEIGHTS = [100, 20, 4];
+const abPriorityWeight = i => AB_PRIORITY_WEIGHTS[i] ?? AB_PRIORITY_WEIGHTS.at(-1) * 0.2 ** (i - AB_PRIORITY_WEIGHTS.length + 1);
 async function abSearch(config, progress = () => {}, cancelled = () => false) {
   const started = performance.now(), parts = BD_PARTS(), { targets: userTargets, drift } = config;
   const seed = structuredClone(config.b);
@@ -664,12 +663,17 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
     const g=abGunInfo(seed,config.gun); seed._abGun=g.settings;
     if (g.compare) seed.ammoSlot=g.compare.i;
   }
+  // 사용자 제외: 완전 제외는 그 스킬이 붙은 방어구까지 후보에서 빼고, 겸용 허용은 점수에서 효과만 뺀다.
+  const exclude = config.exclude || [], banned = new Set(exclude.filter(x => !x.shared).map(x => x.s));
+  if (exclude.length) seed._abExclude = exclude.map(x => ({...x}));
+  if (exclude.some(x => x.shared)) seed.ignore = exclude.filter(x => x.shared).map(x => x.s);
   const targets = abSearchTargets(config).map(t=>({...t,user:userTargets.some(x=>x.s===t.s)})), requireLock = !!config.lockon && abMelee(seed.wt);
-  const policy = abResolvePolicy(seed,targets,abPolicy(seed, config.direction, userTargets, config.styleGuide !== false)), stones = abStonePool(), fillers = policy.fillers;
+  const policy = abResolvePolicy(seed,targets,abPolicy(seed, config.direction, userTargets, config.styleGuide ?? true)), stones = abStonePool(), fillers = policy.fillers;
   const optional = policy.styleTargets.filter(t => !targets.some(x => x.s === t.s));
   const operation = policy.operation;
   const curves = new Map(targets.map(t => [t.s, abCurve(t.s, seed)]));
-  let all = parts.map(({ k }) => bdOrderedSets().filter(s => s.pieces[k]).map(s => ({ key: s.key, piece: s.pieces[k] })));
+  let all = parts.map(({ k }) => bdOrderedSets().filter(s => s.pieces[k] && !s.pieces[k].skills.some(x => banned.has(x.s)))
+    .map(s => ({ key: s.key, piece: s.pieces[k] })));
   const registered = all.map((rows,i)=>({part:parts[i].k,rows}));
   const driftOnly = userTargets.map(t => stones.has(t.s) && !all.some(rows => rows.some(r=>r.piece.skills.some(x=>x.s===t.s)))
     && !bdBuildWSkills(seed).some(x=>x.s===t.s));
@@ -688,7 +692,7 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
       const level = Math.min(t.max, lv.get(t.s) || 0), values = curves.get(t.s)?.values;
       const contribution = values ? (values[level - 1] || 0) / (values[t.max - 1] || 1) : level / t.max;
       const index = userTargets.findIndex(x => x.s === t.s);
-      return n + contribution * (requireLock && t.s === '록온' ? 500 : index >= 0 ? [100, 20, 4][index] : 80);
+      return n + contribution * (requireLock && t.s === '록온' ? 500 : index >= 0 ? abPriorityWeight(index) : 80);
     }, 0);
     const score = abScoreBuild(b), stats=bdStats(b);
     const cost=policy.investmentSkills.reduce((n,s)=>n+Math.min(abMax(s),lv.get(s)||0),0);
@@ -762,8 +766,7 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
         const profile = levels.join(':')+'|'+[...support].sort(([a], [b]) => a.localeCompare(b)).map(([s, lv]) => s + ':' + lv).join('|');
         pool.push({ ...abEvaluateCandidate(b,targets,policy), levels, armor:armorOf(b), driftOnly, styleLevels: policy.styleTargets.map(t => Math.min(t.max, lv.get(t.s) || 0)),
           operation:operation.map(t=>Math.min(t.max,lv.get(t.s)||0)),
-          support, profile, buff:abBuffProfile(b,bdStats(b)),
-          discouraged: [...policy.avoid, ...policy.lowPriority].reduce((n, s) => n + (lv.get(s) || 0), 0), driftMode: mode?.s ? `${mode.s}:${mode.min}` : mode || 'score' });
+          support, profile, driftMode: mode?.s ? `${mode.s}:${mode.min}` : mode || 'score' });
       }
     }
     if (evaluated % 8 === 0) {
@@ -795,15 +798,16 @@ function abOptions(rows, selected) {
 
 function abGuideUI(b, direction, targets) {
   const setting = b._abGun || abState.gun;
-  const policy = abPolicy(b, direction, targets, abState.styleGuide,setting), c = abContext(b);
-  const extra = abSearchTargets({ b, targets, gun:setting, styleGuide: abState.styleGuide })
+  const policy = abPolicy(b, direction, targets, abState.styleOff,setting), c = abContext(b);
+  const extra = abSearchTargets({ b, targets, gun:setting, styleGuide: abState.styleOff })
     .filter(t => !targets.some(x => x.s === t.s && x.min >= t.min));
   return `<p>${esc(policy.desc || '직접 설정: 사용자 스킬과 레벨을 우선하며 적용 가능한 효과만 평가합니다.')}</p>
     <p>장비 기본 스킬의 대체 불가 여부·한 부위 확보 레벨·유효 스킬 합·연성 비용을 비교합니다. 연성전용 핵심은 최소 충족 후 장비 구성을 우선하며, 슬롯 수 자체에는 가산점을 주지 않습니다.</p>
-    ${policy.style ? `<p>스타일 골격: ${esc(policy.style.name)}. ${esc(policy.style.desc)} ${policy.style.required.length ? '필수 조건과 선택한 투자 방향을 결합하며 보조 핵심의 최소 레벨은 직접 높일 수 있습니다.' : ''} 권장 스킬은 최소 레벨로 강제하지 않습니다.</p>` : ''}
+    ${policy.style ? `<p>스타일 골격: ${esc(policy.style.name)}. ${esc(policy.style.desc)} ${policy.style.required.length ? '필수 조건과 선택한 투자 방향을 결합하며, 규칙 스킬은 제안 카드에서 하나씩 끌 수 있습니다.' : ''} 권장 스킬은 최소 레벨로 강제하지 않습니다.</p>` : ''}
     ${abGun(b) ? abGunGuideUI(b,setting) : ''}
     ${c.nativeNegative && c.tripleCrit ? '<p>회심 파라미터 3개: 흉회심 중심 방향과 자동 추가 연성은 제외합니다. 무기 기본 스킬·장비에 함께 붙은 효과는 실제 계산을 유지합니다.</p>' : ''}
-    ${policy.avoid.length ? `<p>자동 보충 비권장: ${policy.avoid.map(esc).join(' · ')}. 다른 유용한 스킬이 붙은 장비까지 금지하지 않습니다.</p>` : ''}
+    ${policy.avoid.length ? `<p>자동 보충 제외: ${policy.avoid.map(esc).join(' · ')}. 사용자 '완전 제외'가 아니면 다른 유용한 스킬이 붙은 장비까지 금지하지 않습니다.</p>` : ''}
+    ${b.ignore?.length ? `<p>겸용 허용 제외: ${b.ignore.map(esc).join(' · ')}. 장비에 붙어 있어도 이 화면의 점수에서는 효과를 빼며, 내 빌드로 가져오면 효과가 계산됩니다.</p>` : ''}
     ${policy.lowPriority.length ? `<p>낮은 우선순위: ${policy.lowPriority.map(esc).join(' · ')}. 후보에서 제외하지 않고 실제 점수로 비교합니다.</p>` : ''}
     ${extra.length ? `<p>추가 확보 조건: ${extra.filter(t=>t.min>0).map(t => `${esc(t.s)} ${t.min}${t.max>t.min ? ` (목표 ${t.max})` : ''}`).join(' · ')}. 운용 최소와 선택한 경지의 선행 레벨입니다.</p>` : ''}
     ${targets.map(t => { const curve = abCurve(t.s, b); return t.s ? `<p>${esc(t.s)}: ${curve ? `레벨별 효과 ${curve.values.join(' / ')} · 추가 증가량 ${curve.increments.join(' / ')} (동일 단위)` : '복합·확률 또는 비수치 효과: 임의 대미지 환산 없이 레벨 우선순위로 평가'}</p>` : ''; }).join('')}
@@ -830,46 +834,80 @@ function abGunUI(b) {
   return `<div class="ab-box ab-form-settings"><h3>보우건 운용 <small>딜링 방향과 별도로 결합</small></h3>
     <div class="ab-config"><label>탄 운용<select data-ab="gunMode">${abOptions(g.modes,g.mode)}</select></label>
     ${g.mode !== 'cycle' ? `<label>반복할 탄<select data-ab="gunSlot">${abOptions(g.choices.map(a=>[a.i,`${a.i+1}번 · ${a.name}`]),g.slot)}</select></label>` : ''}</div>
-    <label class="ab-check"><input type="checkbox" data-ab="styleGuide"${abState.styleGuide ? ' checked' : ''}>탄·스타일 운용 기준 적용</label>
-    <p class="ab-muted">${!abState.styleGuide ? '자동 운용 기준 해제. 직접 선택한 핵심 스킬만 요구합니다.' : (g.unknown ? '반동·장전 자료 미확인. 해당 스킬은 직접 지정해 주세요. ' : '')+'필수: '+(g.required.map(t=>`${esc(t.s)} ${t.min}${t.max>t.min ? ` → 목표${t.max}` : ''}`).join(' · ') || '추가 반동·장전 불필요')}
+    <p class="ab-muted">${(g.unknown ? '반동·장전 자료 미확인. 해당 스킬은 직접 지정해 주세요. ' : '')+'필수: '+(g.required.map(t=>`${esc(t.s)} ${t.min}${t.max>t.min ? ` → 목표${t.max}` : ''}`).join(' · ') || '추가 반동·장전 불필요')}
     ${g.recommended.length ? ' · 가드 성능 2~3 권장(필수 아님)' : ''}</p>
     ${g.mode !== 'cycle' ? `<label class="ab-check"><input type="checkbox" data-ab="reload5"${abState.gun.reload5 ? ' checked' : ''}>회피 장전 Lv5까지 투자 비교</label>` : ''}
     <details><summary>탄 운용 근거·한계</summary>${abGunGuideUI(b,abState.gun)}</details></div>`;
 }
 
+/* 같은 스타일 안의 운용 성향(규칙의 mode). 규칙에 성향이 있을 때만 고른다. */
+function abModeUI(b) {
+  const style = bdStylesOf(b.wt)[b.st - 1] || '';
+  const rows = AB_RULES.styles.filter(r => r.wt === b.wt && [].concat(r.style).includes(style));
+  if (!rows.some(r => r.mode)) return '';
+  return `<div class="ab-box ab-form-settings"><label>운용 성향<select data-ab="mode">${abOptions(rows.map(r => [r.mode || '', r.name]), abStyleRow(b)?.mode || '')}</select></label></div>`;
+}
+const abLevelText = t => t.min > 0 ? (t.max > t.min ? `${t.min}→${t.max}` : `${t.min}`) : `→${t.max}`;
+/* 펼친 제안 카드: 필수(최소1 이상) / 투자(최소0) / 제외. 칩에서 바로 조정한다. */
+function abCardUI(d) {
+  const s = abState, b = s.b, rule = abOperationRule(b, s.gun), off = s.styleOff, excluded = s.exclude.map(x => x.s);
+  const chip = (key, label, cls = '', title = '') => `<button type="button" class="ab-chip${cls}" data-ab-chip="${esc(key)}"${s.chip === key ? ' aria-expanded="true"' : ''}${title ? ` title="${esc(title)}"` : ''}>${label}</button>`;
+  const ruleChip = t => off.includes(t.s) ? chip('r:'+t.s, esc(t.s), ' rule off', '꺼짐 · 눌러서 켜기')
+    : chip('r:'+t.s, `${esc(t.s)} <b>${abLevelText(t)}</b>`, ' rule', '운용 규칙 · 눌러서 끄기');
+  const req = [], inv = [], exc = [];
+  if (abMelee(b.wt)) req.push(chip('lock', s.lockon ? '록온 <b>1</b>' : '록온', s.lockon ? ' rule' : ' rule off', s.lockon ? '눌러서 끄기' : '꺼짐 · 눌러서 켜기'));
+  for (const t of rule?.required || []) if (!excluded.includes(t.s)) req.push(ruleChip(t));
+  s.targets.forEach((t, i) => (t.min > 0 ? req : inv).push(chip('t:'+i, `${esc(t.s)} <b>${abLevelText(t)}</b>`)));
+  for (const t of rule?.recommended || []) if (!s.targets.some(x => x.s === t.s) && !excluded.includes(t.s)) inv.push(ruleChip(t));
+  const shown = new Set(['록온', ...(rule?.required || []).map(t => t.s), ...s.targets.map(t => t.s)]);
+  for (const t of abSearchTargets({ b, targets:s.targets, gun:s.gun, styleGuide:off })) if (t.min > 0 && !shown.has(t.s))
+    req.push(`<span class="ab-chip auto" title="선택한 효과의 선행 조건">${esc(t.s)} <b>${t.min}</b></span>`);
+  const policy = abPolicy({ ...b, _abExclude:s.exclude }, s.direction, s.targets, off, s.gun);
+  for (const x of policy.avoid) if (!excluded.includes(x)) exc.push(`<span class="ab-chip auto" title="자동 보충 제외 · 투자에 추가하면 사용">${esc(x)}</span>`);
+  s.exclude.forEach((x, i) => exc.push(chip('x:'+i, `${esc(x.s)} <b>${x.shared ? '↔ 겸용 허용' : '🚫 완전'}</b>`, ' ex')));
+  const used = new Set([...shown, ...(rule?.recommended || []).map(t => t.s), ...excluded]);
+  const plus = (group, label) => s.adding === group
+    ? `<select data-ab-add="${group}" aria-label="${label} 추가">${abOptions([['', label+' 추가…'], ...abSkills().filter(n => !used.has(n)).map(n => [n, n])], '')}</select>`
+    : `<button type="button" class="ab-chip plus" data-ab-plus="${group}" aria-label="${label} 추가">＋</button>`;
+  const row = (name, chips, group, label) => `<div class="ab-card-row"><span>${name}</span><div class="ab-chips">${chips.join('')}${plus(group, label)}</div></div>`;
+  const [kind, id] = [s.chip?.[0], s.chip?.slice(2)], t = kind === 't' && s.targets[+id], x = kind === 'x' && s.exclude[+id];
+  const op = (o, label, disabled) => `<button type="button" data-ab-op="${o}"${disabled ? ' disabled' : ''}>${label}</button>`;
+  const editor = t ? `<div class="ab-chip-editor"><b>${esc(t.s)}</b> 최소 ${op('min-','−',!t.min)}${t.min}${op('min+','＋',t.min >= abMax(t.s))}
+      목표 ${op('max-','−',t.max <= Math.max(1, t.min))}${t.max}${op('max+','＋',t.max >= abMax(t.s))}${op('up','↑ 우선',+id === 0)}${op('del','✕ 빼기')}</div>`
+    : x ? `<div class="ab-chip-editor"><b>${esc(x.s)}</b> ${op('shared', x.shared ? '↔ 겸용 허용 → 완전 제외로' : '🚫 완전 제외 → 겸용 허용으로')}${op('del','✕ 빼기')}
+      <small>${x.shared ? '자동 투자·연성만 막고 겸용 장비는 허용, 점수에서 효과는 0' : '이 스킬이 붙은 방어구·연성을 후보에서 제외'}</small></div>` : '';
+  return `<div class="ab-card open"><div class="ab-card-head"><b>${esc(d.name)}</b>${d.recommended ? '<small>추천</small>' : ''}</div>
+    <p class="ab-muted">${esc(d.desc)}</p>
+    ${row('필수', req, 'req', '필수 스킬')}${row('투자', inv, 'inv', '투자 스킬')}${row('제외', exc, 'ex', '제외 스킬')}${editor}
+    <p class="ab-muted">최소가 1 이상이면 필수, 0이면 투자 후보입니다. 투자는 왼쪽부터 우선합니다. 제외는 최대 ${AB_EXCLUDE_MAX}개입니다.</p>
+    ${s.stale ? '<p class="ab-notice">설정이 바뀌어 새 제안이 있습니다. <button type="button" data-ab-reset>제안 새로 보기</button></p>'
+      : s.edited ? '<p class="ab-notice">수정됨 · <button type="button" data-ab-reset>되돌리기</button></p>' : ''}
+    <div class="ab-actions"><label class="ab-check"><input type="checkbox" data-ab="drift"${s.drift ? ' checked' : ''}>표류연성 사용</label>
+    <button class="btn primary" data-ab-search${s.busy ? ' disabled' : ''}>${s.busy ? '후보 탐색 중…' : '이 방향으로 빌드 찾기'}</button>${s.busy ? '<button class="btn ghost" data-ab-cancel>중지</button>' : ''}</div>
+    <p id="ab-status" role="status" aria-live="polite">${esc(s.notice)}</p>
+    <details><summary>적용 지침과 레벨 근거</summary>${abGuideUI({ ...b, _abExclude:s.exclude }, s.direction, s.targets)}</details></div>`;
+}
+
 function abRender() {
-  const s = abState, b = s.b, base = bdWeaponBase(b), info = bdStyleInfo(b), dirs = abDirections(b,s.gun);
-  const skills = abSkills(), w = bdWeaponOf(b);
+  const s = abState, b = s.b, base = bdWeaponBase(b), info = bdStyleInfo(b), w = bdWeaponOf(b);
+  const dirs = [...abDirections(b,s.gun).map((d, i) => ({ ...d, recommended:!i })), { id:'manual', name:'직접 구성', desc:'필수·투자 스킬을 직접 고릅니다.', targets:[] }];
+  if (!dirs.some(d => d.id === s.direction)) s.direction = 'manual'; // 무기 변경으로 사라진 제안의 수정본은 직접 구성으로 유지
   $('#ab-screen').innerHTML = `<div class="ab-heading"><button class="btn ghost" data-ab-back>← 내 빌드</button><h2>자동빌드 (테스트중)</h2></div>
-    <div class="ab-box ab-form-settings ab-weapon-settings"><h3>무기 설정</h3><div class="ab-config">
+    <div class="ab-box ab-form-settings ab-weapon-settings"><h3>① 무기 설정</h3><div class="ab-config">
       <label>무기군<select data-ab="wt">${abOptions(BUILD.weaponTypes.filter(t => abMonsters(t.k).length).map(t => [t.k, t.n]), b.wt)}</select></label>
       <label>몬스터·소재<select data-ab="monster">${abOptions(abMonsters(b.wt).map(s => [s.key, s.name]), b.w)}</select></label>
       <label>스타일<select data-ab="st"${info.selectable ? '' : ' disabled'}>${abOptions([[0, '스타일 없음'], ...bdStylesOf(b.wt).map((n, i) => [i + 1, n])], b.st)}</select></label>
       <label class="ab-check"><input type="checkbox" data-ab="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
     </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-ab-param="${i}"${info.active ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
     <p class="ab-base">${esc(w.name)} · 공격력 <b>${base.atk}</b>${w.e ? ` · ${esc(w.e)} <b>${base.ele}</b>` : ''} · 회심 <b>${base.crit}%</b></p></div>
-    ${abGunUI(b)}
-    ${b.wt==='shield-sword'&&!b.st ? `<div class="ab-box ab-form-settings"><label>기본스타일 운용<select data-ab="snsMode">${abOptions([['guard','가드 · 방패 연계'],['fallbash','폴배시 · 저스트 교격']],b.snsMode || 'guard')}</select></label></div>` : ''}
-    ${!abGun(b) && abStyleRule(b) ? `<div class="ab-box ab-form-settings"><h3>스타일 운용 기준 <small>투자 방향과 별도로 결합</small></h3>
-      <label class="ab-check"><input type="checkbox" data-ab="styleGuide"${s.styleGuide ? ' checked' : ''}>${esc(abStyleRule(b).name)} 기준 적용</label>
-      <p class="ab-muted">${esc(abStyleRule(b).desc)}</p>
-      <p class="ab-muted">${s.styleGuide ? '아래 핵심 3개와 함께 적용합니다. 같은 스타일에서도 몬스터·파라미터에 따라 투자 방향이 달라집니다.' : '스타일의 자동 기준을 해제했습니다. 직접 선택한 핵심 스킬은 유지합니다.'}</p></div>` : ''}
-    <div class="ab-box"><h3>세팅 방향 <small>무기 특성 × 파라미터 × 운용 지침</small></h3><div class="ab-directions" role="group" aria-label="세팅 방향">
-      ${[...dirs, { id: 'manual', name: '직접 설정', desc: '핵심 스킬과 순위를 직접 정합니다.' }].map((d, i) => `<button data-ab-dir="${d.id}" aria-pressed="${s.direction === d.id}"><b>${esc(d.name)}${i === 0 && dirs.length ? ' · 추천' : ''}</b><span>${esc(d.desc)}</span></button>`).join('')}</div>
-      <p class="ab-muted">${s.edited ? '사용자 수정 유지 중. 새 방향을 선택하면 핵심 스킬이 교체됩니다.' : '무기·스타일·회심·파라미터에 맞는 지침으로 핵심 스킬과 레벨을 설정합니다.'}</p>
-      <details><summary>적용 지침과 레벨 근거</summary>${abGuideUI(b, s.direction, s.targets)}</details></div>
-    <div class="ab-box ab-form-settings ab-core-settings"><h3>핵심 스킬</h3><div class="ab-targets">${s.targets.map((t, i) => `<div><label>${i + 1}순위<select data-ab-skill="${i}">${abOptions([['', '스킬 선택'], ...skills.map(n => [n, n])], t.s)}</select></label>
-      <label>최소 Lv<select data-ab-min="${i}">${abOptions(Array.from({ length: abMax(t.s) + 1 }, (_, n) => [n, n ? String(n) : '권장(0)']), t.min)}</select></label>
-      <label>목표 Lv<select data-ab-max="${i}">${abOptions(Array.from({ length: abMax(t.s) }, (_, n) => [n + 1, String(n + 1)]), t.max)}</select></label></div>`).join('')}</div>
-      <p class="ab-muted">1·2·3순위는 먼저 효율을 검토할 투자 대상입니다. 권장(0)은 미채용도 비교하며, 최소를 직접 높이면 필수 조건이 됩니다. 운용·투자 비교는 점수 밖 운용 권장과 서로 다른 투자안을 보존하고, 공격 스킬은 장비 전체 점수로 비교합니다.</p>
-      <div class="ab-actions"><label class="ab-check"><input type="checkbox" data-ab="drift"${s.drift ? ' checked' : ''}>표류연성 사용</label>
-      <label class="ab-check" title="체크하면 핵심 스킬과 별도로 록온 Lv1을 반드시 확보합니다"><input type="checkbox" data-ab="lockon"${s.lockon && abMelee(b.wt) ? ' checked' : ''}${abMelee(b.wt) ? '' : ' disabled'}>록온 필수</label>
-      <button class="btn primary" data-ab-search${s.busy ? ' disabled' : ''}>${s.busy ? '후보 탐색 중…' : '추천 빌드 찾기'}</button>${s.busy ? '<button class="btn ghost" data-ab-cancel>중지</button>' : ''}</div>
-      <p id="ab-status" role="status" aria-live="polite">${esc(s.notice)}</p>
-      <details class="ab-basis"><summary>추천 기준과 출처</summary><p>기존 빌드 점수로 평가합니다. 조건부 효과는 발동한 상태로 가정하며 특수 위력·SP 전용 효과는 제외합니다. 동시 발동 가능성·유지율은 보정하지 않아 실제 DPS가 아닙니다. 특수 게이지 가속은 선택 가능한 핵심 스킬로 유지하며 임의 대미지 점수는 부여하지 않습니다.</p>
-      <p>스타일 골격과 무기의 투자 방향을 함께 적용합니다. 핵심 3개가 같아도 몬스터·스타일·파라미터에 따라 보조 스킬과 연성이 달라질 수 있습니다. 회심 방향은 무기 자체 회심의 투자 효율을 비교하며 특정 회심률을 강제하지 않습니다. 사용자 수정 스킬과 레벨은 설정 변경으로 덮어쓰지 않습니다.</p>
-      <p>록온 필수는 근접무기에서 기본 적용하며 Lv1을 내부 0순위로 확보합니다. 핵심 스킬 3개는 그대로 유지하며 록온이 없는 후보는 점수와 관계없이 제외합니다. 원거리 3종은 이 옵션을 사용하지 않습니다.</p>
-      <p>방어구 전 부위를 제한 폭으로 탐색하고 연성은 핵심 스킬 보충 후 소수의 공격 관련 후보로 채웁니다. 최대 ${AB_LIMIT.ms / 1000}초, 탐색 폭 ${AB_LIMIT.beam}. 최적해 보장은 아니며 같은 방어구 조합의 중복 추천은 제외합니다. 장비·연성의 보유 여부와 획득 난도는 고려하지 않습니다.</p>
+    ${abGunUI(b)}${abModeUI(b)}
+    <div class="ab-box"><h3>② 세팅 제안 <small>무기 특성 × 파라미터 × 운용 지침</small></h3><div class="ab-directions" role="group" aria-label="세팅 제안">
+      ${dirs.map(d => d.id === s.direction ? abCardUI(d) : `<button class="ab-card" data-ab-dir="${d.id}" aria-pressed="false"><b>${esc(d.name)}${d.recommended ? ' · 추천' : ''}</b>
+        <span>${esc(d.desc.split('. ')[0])}</span>${d.targets.length ? `<span class="ab-card-skills">${d.targets.slice(0, 3).map(t => esc(t.s)).join(' · ')}</span>` : ''}</button>`).join('')}</div>
+      <details class="ab-basis"><summary>추천 기준과 출처</summary><p>기존 빌드 점수로 평가합니다. 조건부 효과는 발동한 상태로 가정하며 특수 위력·SP 전용 효과는 제외합니다. 동시 발동 가능성·유지율은 보정하지 않아 실제 DPS가 아닙니다. 특수 게이지 가속은 선택 가능한 스킬로 유지하며 임의 대미지 점수는 부여하지 않습니다.</p>
+      <p>스타일 골격과 무기의 투자 방향을 함께 적용합니다. 같은 제안이라도 몬스터·스타일·파라미터에 따라 보조 스킬과 연성이 달라질 수 있습니다. 회심 방향은 무기 자체 회심의 투자 효율을 비교하며 특정 회심률을 강제하지 않습니다. 사용자 수정 스킬과 레벨은 설정 변경으로 덮어쓰지 않습니다.</p>
+      <p>근접무기는 록온 Lv1을 기본 필수로 확보하며 칩에서 끌 수 있습니다. 록온이 없는 후보는 점수와 관계없이 제외합니다. 원거리 3종은 사용하지 않습니다.</p>
+      <p>방어구 전 부위를 제한 폭으로 탐색하고 연성은 필수 스킬 보충 후 소수의 공격 관련 후보로 채웁니다. 최대 ${AB_LIMIT.ms / 1000}초, 탐색 폭 ${AB_LIMIT.beam}. 최적해 보장은 아닙니다. 장비·연성의 보유 여부와 획득 난도는 고려하지 않습니다.</p>
       ${AB_SOURCES.map(([n, url]) => `<a href="${url}" target="_blank" rel="noopener noreferrer">공식 ${esc(n)}</a>`).join(' · ')}</details></div>
     <div id="ab-results"></div>`;
   abRenderResults();
@@ -878,7 +916,7 @@ function abRender() {
 /* 빌드의 장비 행/스킬 칩을 공유하되 편집용 인덱스와 버튼은 생성하지 않는다. */
 function abEquipmentUI(b) {
   const core = new Set(abState.targets.map(t => t.s));
-  if (abState.styleGuide) abOperationRule(b)?.required.forEach(t => core.add(t.s));
+  abOperationRule(b, undefined, abState.styleOff)?.required.forEach(t => core.add(t.s));
   if (abState.lockon && abMelee(b.wt)) core.add('록온');
   const chips = (skills, drift = false) => skills.map(x => `<span class="chip${core.has(x.s) ? ' ab-core' : ''}${drift ? ' ab-drift-skill' : ''}"${drift ? ' title="표류연성 스킬"' : ''}>${esc(x.s)}<b>${x.lv}</b></span>`).join('');
   const dots = part => `<span class="bd-ds">${Array.from({ length: bdSlotCount(b, part) }, (_, i) => {
@@ -913,30 +951,45 @@ function abOpportunityUI(r) {
     <p>운용 변화: ${e.operationDelta.map((n,i)=>n?`${esc(r.operationNames[i])} ${n>0?'+':''}${n}`:'').filter(Boolean).join(' · ')||'동일'}. 다른 부위·연성을 보완한 관측 구성 차이이며 전역 최적은 아닙니다.</p>`;
 }
 
+/* 같은 방어구에서 연성 안 A 대비 달라진 스킬·연성·점수. */
+function abVariantDiff(a, r) {
+  const x = new Map(bdTotals(a.b)), y = new Map(bdTotals(r.b)), lv = (m, s) => Math.min(abMax(s), m.get(s) || 0);
+  const sign = (n, unit = '') => `${n > 0 ? '+' : ''}${n.toLocaleString()}${unit}`;
+  const skills = [...new Set([...x.keys(), ...y.keys()])].map(s => [s, lv(y,s) - lv(x,s)]).filter(([, n]) => n).map(([s, n]) => `${s} ${sign(n)}`);
+  return `A 대비: ${[...skills, `연성 ${sign(r.drifts - a.drifts, '칸')}`, sign(r.score - a.score, '점')].map(esc).join(' · ')}`;
+}
 function abRenderResults() {
-  const s = abState, results = abBest(s.pool, s.order);
-  s.results = results;
-  $('#ab-results').innerHTML = !s.stats ? '' : `<div class="ab-heading"><h3>추천 결과 ${results.length}개</h3><label>정렬 <select data-ab="order">${abOptions([['priority', '운용·투자 비교'], ['score', '빌드 점수순'], ['alternatives', '투자 대안 비교']], s.order)}</select></label></div>
-    ${s.order !== 'score' ? '<p class="ab-muted">공격 고점·조건 OFF 효율·운용 보완·연성 저투자의 대표를 보여줍니다. 역할별 대안이며 단일 점수순이 아닙니다.</p>' : ''}
+  const s = abState, groups = abBest(s.pool);
+  s.results = groups;
+  $('#ab-results').innerHTML = !s.stats ? '' : `<div class="ab-heading"><h3>③ 추천 결과 ${groups.length}개</h3></div>
+    <p class="ab-muted">서로 다른 방어구 조합을 조건 ON 점수순으로 보여줍니다. 🏅는 기준별 1위이며 그 조합은 항상 포함합니다. 같은 방어구에 연성만 다른 안은 카드 안 탭으로 비교합니다.</p>
     <p class="ab-muted">${s.stats.expanded.toLocaleString()}개 조합 탐색 · ${s.stats.evaluated}개 연성 구성 검토 · ${s.pool.length}개 유효 후보 · ${(s.stats.ms / 1000).toFixed(1)}초${s.stats.limited ? ' · 탐색 제한 도달' : ''}</p>
     ${s.stats.repair ? `<p class="ab-muted">교체·보완 ${s.stats.repair.jobs}개 구성 검사${s.stats.repair.limited?' · 기회비용 검토 일부 미완료':''}. 모든 장비 조합의 전수 검사가 아닙니다.</p>`:''}
-    ${results.length ? `<div class="bd-cards ab-result-grid">` + results.map((r, i) => `<article class="bd-card ab-result"><div class="ab-heading"><h3>${esc(r.role||'추천 '+(i+1))}</h3><b class="ab-score">${r.score.toLocaleString()}점</b></div>
-      <p class="ab-muted" style="padding:0 12px">조건 ON ${r.score.toLocaleString()} · 조건 OFF ${(r.baseScore??r.score).toLocaleString()} · 연성 ${r.drifts}칸</p>
-      <div class="ab-levels">${s.targets.map((t, j) => `<span>${j + 1}순위 ${esc(t.s)} <b>Lv${r.levels[j]}</b> / 목표 ${t.max}</span>`).join('')}</div>
-      <p class="ab-muted" style="padding:0 12px">보조 투자: ${(r.support || []).slice(0, 3).map(([n, lv]) => `${esc(n)} ${lv}`).join(' · ') || '핵심 스킬 중심'}${r.support?.length > 3 ? ` 외 ${r.support.length - 3}개` : ''}${s.order === 'alternatives' ? ` · 최고 후보 대비 ${Math.max(...s.pool.map(x => x.score)) - r.score}점 차이` : ''}</p>
+    ${groups.length ? `<div class="bd-cards ab-result-grid">` + groups.map((g, i) => {
+      const v = Math.min(s.variant[i] || 0, g.variants.length - 1), r = g.variants[v], lv = new Map(bdTotals(r.b));
+      const keys = [...new Map([...(abOperationRule(r.b, undefined, s.styleOff)?.required || []), ...s.targets].map(t => [t.s, t])).values()];
+      const ignored = (r.b.ignore || []).filter(x => lv.get(x));
+      return `<article class="bd-card ab-result"><div class="ab-heading"><h3>${i + 1}위</h3><b class="ab-score">${r.score.toLocaleString()}점</b></div>
+      ${g.badges.length ? `<p class="ab-badges">${[...new Set(g.badges)].map(n => `<span class="ab-badge">🏅 ${esc(n)}</span>`).join('')}</p>` : ''}
+      ${g.variants.length > 1 ? `<div class="ab-tabs" role="tablist" aria-label="연성 안">${g.variants.map((x, j) => `<button type="button" role="tab" aria-selected="${j === v}" data-ab-variant="${i}:${j}">${'ABC'[j]} ${esc(x.role)}</button>`).join('')}</div>` : ''}
+      <p class="ab-muted" style="padding:0 12px">조건 ON ${r.score.toLocaleString()} · 조건 OFF ${r.baseScore.toLocaleString()} · 연성 ${r.drifts}칸</p>
+      ${v ? `<p class="ab-diff">${abVariantDiff(g.variants[0], r)}</p>` : ''}
+      <div class="ab-levels">${keys.map(t => `<span>${esc(t.s)} <b>Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)}</b> / 목표 ${t.max}</span>`).join('')}</div>
+      <p class="ab-muted" style="padding:0 12px">보조 투자: ${(r.support || []).slice(0, 3).map(([n, l]) => `${esc(n)} ${l}`).join(' · ') || '핵심 스킬 중심'}${r.support?.length > 3 ? ` 외 ${r.support.length - 3}개` : ''}</p>
+      ${ignored.length ? `<p class="ab-muted" style="padding:0 12px">겸용 허용 ${ignored.map(esc).join(' · ')}: 이 점수에서는 효과 제외, 내 빌드에서는 계산됩니다.</p>` : ''}
       ${abEquipmentUI(r.b)}
       <details><summary>추천 · 계산 근거</summary>
       <div class="ab-reason"><h4>요구 스킬 충족</h4><ul>
       ${s.lockon && abMelee(s.b.wt) ? '<li>필수 록온: Lv1 확보</li>' : ''}
-      ${s.targets.map((t, j) => `<li>${j + 1}순위 ${esc(t.s)}: <b>Lv${r.levels[j]}</b> 확보 <small>(최소 ${t.min} · 목표 ${t.max})</small></li>`).join('')}</ul>
-      ${s.styleGuide && abOperationRule(r.b)?.required.length ? `<h4>운용 조건 확보</h4><p>${abOperationRule(r.b).required.map(t => `${esc(t.s)} ${Math.min(abMax(t.s), new Map(bdTotals(r.b)).get(t.s) || 0)} / 최소 ${t.min}${t.max>t.min ? ` · 목표 ${t.max}` : ''}`).join(' · ')}</p>` : ''}
+      ${keys.map(t => `<li>${esc(t.s)}: <b>Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)}</b> 확보 <small>(최소 ${t.min} · 목표 ${t.max})</small></li>`).join('')}</ul>
       <h4>기회비용 비교 근거</h4>${abOpportunityUI(r)}
       <h4>적용한 운용 지침</h4>${abGuideUI(r.b, s.direction, s.targets)}
       <h4>연성 배치</h4><p>${r.drifts}개 사용 · 같은 스킬이 기본으로 붙은 부위의 빈 슬롯부터 배치합니다.</p>
       <h4>점수 계산 가정</h4><p>발동 가정: ${Object.entries(r.b.cond).filter(([, on]) => on).map(([n]) => esc(n)).join(' · ') || '없음'}</p>
       <p>특수 위력·SP 전용 효과와 집중 보정은 제외합니다. 실제 전투 DPS가 아닌 비교 점수입니다.</p>
       <h4>기대 점수</h4>${abCalculationUI(r.b)}<p class="ab-muted">일반·회심 공격을 회심률로 평균합니다. 표시와 최종 점수만 반올림합니다.</p></div></details>
-      <footer><button class="btn primary" data-ab-import="${i}">내 빌드로 가져오기</button></footer></article>`).join('') + '</div>' : '<p class="ab-box">설정한 최소 레벨을 만족하는 후보를 찾지 못했습니다. 연성을 켜거나 최소 레벨을 낮춰 보세요. 제한 탐색이므로 불가능한 조합이라는 뜻은 아닙니다.</p>'}`;
+      <footer><button class="btn primary" data-ab-import="${i}">내 빌드로 가져오기${g.variants.length > 1 ? ` (${'ABC'[v]}안)` : ''}</button></footer></article>`; }).join('') + '</div>'
+    : `<p class="ab-box">설정한 최소 레벨을 만족하는 후보를 찾지 못했습니다. ${s.exclude.some(x => !x.shared) ? '완전 제외한 스킬 때문에 후보 방어구가 줄었을 수 있습니다. ' : ''}연성을 켜거나 최소 레벨을 낮춰 보세요. 제한 탐색이므로 불가능한 조합이라는 뜻은 아닙니다.</p>`}`;
 }
 
 function abInvalidate() {
@@ -956,62 +1009,101 @@ function abRoute() {
 }
 
 $('#bd-auto').addEventListener('click', () => { abState.scroll = window.scrollY; location.hash = 'auto-build'; });
+/* 칩 조정. 규칙·록온 칩은 누르면 켜고 끈다. 사용자 스킬·제외 칩은 조정줄을 연다. */
+function abEditChip(key, op) {
+  const s = abState, kind = key[0], id = key.slice(2);
+  if (key === 'lock') { s.lockon = !s.lockon; return; } // 록온·제외는 제안과 무관한 사용자 설정
+  if (kind === 'r') s.styleOff = s.styleOff.includes(id) ? s.styleOff.filter(x => x !== id) : [...s.styleOff, id];
+  else if (kind === 't') {
+    const i = +id, t = s.targets[i], max = abMax(t.s);
+    if (op === 'min-') t.min = Math.max(0, t.min - 1);
+    if (op === 'min+') { t.min = Math.min(max, t.min + 1); t.max = Math.max(t.max, t.min); }
+    if (op === 'max-') { t.max = Math.max(1, t.max - 1); t.min = Math.min(t.min, t.max); }
+    if (op === 'max+') t.max = Math.min(max, t.max + 1);
+    if (op === 'up' && i) { [s.targets[i - 1], s.targets[i]] = [t, s.targets[i - 1]]; s.chip = 't:' + (i - 1); }
+    if (op === 'del') { s.targets.splice(i, 1); s.chip = null; }
+  } else if (kind === 'x') {
+    const i = +id;
+    if (op === 'shared') s.exclude[i].shared = !s.exclude[i].shared;
+    if (op === 'del') { s.exclude.splice(i, 1); s.chip = null; }
+    return;
+  }
+  s.edited = true;
+}
+function abAddSkill(group, name) {
+  const s = abState;
+  s.adding = null;
+  if (!name) return;
+  if (group === 'ex') {
+    const exclude = [...s.exclude, { s:name, shared:false }];
+    const required = abSearchTargets({ b:s.b, targets:s.targets, gun:s.gun, lockon:s.lockon, styleGuide:s.styleOff });
+    const error = abExcludeError(exclude, [...required, ...s.targets], s.b);
+    if (error) { s.notice = error; return; }
+    s.exclude = exclude; return;
+  }
+  if (s.exclude.some(x => x.s === name)) { s.notice = `${name}: 제외 스킬입니다. 제외에서 먼저 빼 주세요.`; return; }
+  s.targets.push({ s:name, min:group === 'req' ? 1 : 0, max:abMax(name) }); s.edited = true;
+}
 $('#ab-screen').addEventListener('change', e => {
   const el = e.target, s = abState;
-  if (el.dataset.ab === 'order') { s.order = el.value; return abRenderResults(); }
   abInvalidate();
+  if (el.hasAttribute('data-ab-add')) { abAddSkill(el.dataset.abAdd, el.value); return abRender(); }
   if (['wt', 'monster'].includes(el.dataset.ab)) abChangeWeapon(el.dataset.ab, el.value);
   if (el.dataset.ab === 'st') { s.b.st = +el.value; if (!s.b.st) s.b.style20 = false; }
-  if (el.dataset.ab === 'snsMode') s.b.snsMode=el.value;
+  if (el.dataset.ab === 'mode') { if (el.value) s.b.snsMode = el.value; else delete s.b.snsMode; }
   if (el.dataset.ab === 'style20') s.b.style20 = el.checked;
   if (el.dataset.ab === 'drift') s.drift = el.checked;
-  if (el.dataset.ab === 'lockon') s.lockon = abMelee(s.b.wt) && el.checked;
-  if (el.dataset.ab === 'styleGuide') s.styleGuide = el.checked;
   if (el.dataset.ab === 'gunMode') s.gun = { ...s.gun, mode:el.value, slot:undefined };
   if (el.dataset.ab === 'gunSlot') s.gun.slot = +el.value;
   if (el.dataset.ab === 'reload5') s.gun.reload5 = el.checked;
   if (['st','gunMode','gunSlot','reload5'].includes(el.dataset.ab) && abGun(s.b)) s.gun = abGunInfo(s.b,s.gun).settings;
   if (el.hasAttribute('data-ab-param')) s.b.params[+el.dataset.abParam] = el.value || null;
-  for (const field of ['skill', 'min', 'max']) if (el.hasAttribute('data-ab-' + field)) {
-    const i = +el.dataset['ab' + field[0].toUpperCase() + field.slice(1)], t = s.targets[i];
-    if (field === 'skill') s.targets[i] = abTargets([el.value])[0]; else t[field] = +el.value;
-    s.edited = true;
-  }
   bdNormalizeParams(s.b);
-  if (['st', 'style20','snsMode','styleGuide','gunMode','gunSlot','reload5'].includes(el.dataset.ab) || el.hasAttribute('data-ab-param')) abSyncDirection();
+  if (['st', 'style20','mode','gunMode','gunSlot','reload5'].includes(el.dataset.ab) || el.hasAttribute('data-ab-param')) abSyncDirection();
   abRender();
 });
 $('#ab-screen').addEventListener('click', async e => {
-  const el = e.target.closest('button');
+  const el = e.target.closest('button'), s = abState;
   if (!el) return;
   if (el.hasAttribute('data-ab-back')) { location.hash = 'build'; return; }
+  if (el.hasAttribute('data-ab-variant')) { const [i, v] = el.dataset.abVariant.split(':').map(Number); s.variant[i] = v; return abRenderResults(); }
   if (el.hasAttribute('data-ab-dir')) { abInvalidate(); abApplyDirection(el.dataset.abDir); abRender(); return; }
-  if (el.hasAttribute('data-ab-cancel')) { abInvalidate(); abState.notice = '탐색을 중지했습니다.'; abRender(); return; }
+  if (el.hasAttribute('data-ab-reset')) { abInvalidate(); abApplyDirection(s.stale ? abDirections(s.b,s.gun)[0]?.id : s.direction); abRender(); return; }
+  if (el.hasAttribute('data-ab-plus')) { s.adding = el.dataset.abPlus; s.chip = null; abRender(); $(`[data-ab-add="${s.adding}"]`)?.focus(); return; }
+  if (el.hasAttribute('data-ab-chip')) {
+    const key = el.dataset.abChip;
+    if (/^[tx]:/.test(key)) s.chip = s.chip === key ? null : key; else { abInvalidate(); abEditChip(key); }
+    s.adding = null; abRender(); return;
+  }
+  if (el.hasAttribute('data-ab-op')) { abInvalidate(); abEditChip(s.chip, el.dataset.abOp); abRender(); return; }
+  if (el.hasAttribute('data-ab-cancel')) { abInvalidate(); s.notice = '탐색을 중지했습니다.'; abRender(); return; }
   if (el.hasAttribute('data-ab-import')) {
-    const r = abState.results[+el.dataset.abImport];
+    const i = +el.dataset.abImport, g = s.results[i], r = g?.variants[Math.min(s.variant[i] || 0, g.variants.length - 1)];
     if (!r) return;
-    const b = structuredClone(r.b), direction = abDirections(b).find(d => d.id === abState.direction)?.name || '직접 설정', gun = abGunInfo(b);
-    delete b._abGun; // 자동추천 운용 메타데이터는 저장 빌드 형식에 추가하지 않는다.
+    const b = structuredClone(r.b), direction = abDirections(b).find(d => d.id === s.direction)?.name || '직접 구성', gun = abGunInfo(b);
+    delete b._abGun; delete b._abExclude; delete b.ignore; // 자동추천 메타데이터는 저장 빌드 형식에 추가하지 않는다.
     b.n = `${bdSet(b.w).name} · ${direction}${gun ? ' · '+gun.name+(gun.mode !== 'cycle' ? ' · '+gun.ammo[0]?.name : '') : ''}`;
     if (bdAdopt(bdShareParam(b), b.n)) {
-      abState.scroll = 0; location.hash = 'build';
+      s.scroll = 0; location.hash = 'build';
       requestAnimationFrame(() => bdFocusBuild(0)); toast('최신 내 빌드로 가져왔습니다');
     }
     return;
   }
-  if (!el.hasAttribute('data-ab-search') || abState.busy) return;
-  const error = abValidate(abState.targets);
-  if (error) { abState.notice = error; abRender(); return; }
-  abInvalidate(); const run = abState.run;
-  abState.busy = true; abState.notice = '후보를 탐색하고 있습니다…'; abRender();
+  if (!el.hasAttribute('data-ab-search') || s.busy) return;
+  const required = abSearchTargets({ b:s.b, targets:s.targets, gun:s.gun, lockon:s.lockon, styleGuide:s.styleOff });
+  const error = abValidate(s.targets, s.exclude, s.b) || abExcludeError(s.exclude, required, s.b);
+  if (error) { s.notice = error; abRender(); return; }
+  abInvalidate(); const run = s.run;
+  s.busy = true; s.notice = '후보를 탐색하고 있습니다…'; s.variant = {}; abRender();
   try {
-    const result = await abSearch(structuredClone({ b: abState.b, gun:abState.gun, direction: abState.direction, targets: abState.targets, drift: abState.drift, lockon: abState.lockon, styleGuide: abState.styleGuide }),
+    const result = await abSearch(structuredClone({ b:s.b, gun:s.gun, direction:s.direction, targets:s.targets, drift:s.drift,
+      lockon:s.lockon, styleGuide:s.styleOff, exclude:s.exclude }),
       p => { $('#ab-status').textContent = `${p.phase||'초기 구성'} · ${p.stage}/5부위 · ${p.expanded.toLocaleString()}개 조합 탐색 · ${p.evaluated}개 연성 구성 검토`; },
       () => run !== abState.run);
     if (!result || run !== abState.run) return;
-    abState.pool = result.pool; abState.stats = result; abState.notice = '후보 탐색이 완료되었습니다.';
-  } catch (err) { if (run === abState.run) abState.notice = '추천 중 오류가 발생했습니다. 다시 시도해 주세요.'; console.error(err); }
-  if (run === abState.run) { abState.busy = false; abRender(); }
+    s.pool = result.pool; s.stats = result; s.notice = '후보 탐색이 완료되었습니다.';
+  } catch (err) { if (run === abState.run) s.notice = '추천 중 오류가 발생했습니다. 다시 시도해 주세요.'; console.error(err); }
+  if (run === abState.run) { s.busy = false; abRender(); }
 });
 abApplyDirection('water');
 abRoute();
