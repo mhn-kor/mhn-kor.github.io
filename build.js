@@ -257,7 +257,8 @@ function bdEffects(desc, name = '', weapon = null) {
   scan('회심률이 (\\d+)% (?:상승|증가)', (m, c) => out.push({ onCrit, k: 'crit', v: +m[1], need, cond: c }));
   scan('회심률이 (\\d+)% 감소', (m, c) => out.push({ onCrit, k: 'crit', v: -m[1], need, cond: c }));
   scan('(\\S+?)속성 (?:수치|공격력)[이가] (\\d+)% 증가', (m, c) => out.push({ onCrit, k: 'ele', pct: 1, v: +m[2], el: m[1], need, cond: c }));
-  scan('(\\S+?)속성 (?:수치|공격력)[이가] (\\d+) (?:증가|상승)', (m, c) => out.push({ onCrit, k: 'ele', v: +m[2], el: m[1], need, cond: c }));
+  // 용속성 강화만 공식 문구가 «무기의 용속성이 500 증가한다» (수치 없음) 형태다.
+  scan('(\\S+?)속성(?: 수치| 공격력)?[이가] (\\d+) (?:증가|상승)', (m, c) => out.push({ onCrit, k: 'ele', v: +m[2], el: m[1], need, cond: c }));
   scan('무기의 속성 공격력이 (\\d+)% 증가', (m, c) => out.push({ onCrit, k: 'ele', pct: 1, v: +m[1], need, cond: c }));
   /* F = 대미지 % 증가(가산). G 쪽의 회심 배율은 «대미지 배율이 130%로 강화» 로 적힙니다. */
   scan('(?:주는 )?대미지가 (\\d+)% 증가', (m, c) => out.push({ onCrit, k: 'dmg', pct: 1, v: +m[1], need, cond: c }));
