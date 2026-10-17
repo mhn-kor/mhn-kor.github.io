@@ -1,6 +1,6 @@
 # 보우건 세팅 지침
 
-근거 확인·정리: 2026-10-12. 공통 원칙은 [AUTO_BUILD.md](AUTO_BUILD.md), 공격 투자 방향은 [WEAPON_SETTING_GUIDE.md](WEAPON_SETTING_GUIDE.md)를 따른다.
+근거 확인·정리: 2026-10-12. 공통 원칙은 [AUTO_BUILD.md](AUTO_BUILD.md), 공격 투자 방향은 [CONCEPTS.md](CONCEPTS.md), 무기 특성·운용 가이드는 [WEAPONS.md](WEAPONS.md)를 따른다.
 
 ## 빠른 접근·근거 구분
 

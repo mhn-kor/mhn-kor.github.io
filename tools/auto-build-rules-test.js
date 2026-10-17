@@ -1,4 +1,4 @@
-/* docs/WEAPON_SETTING_GUIDE.md '규칙 일람'과 auto-build.js AB_RULES의 1:1 일치 검수. 한쪽만 고치면 실패한다. */
+/* docs/weapons/*.md 운용 규칙 표와 auto-build.js AB_RULES의 1:1 일치 검수. 한쪽만 고치면 실패한다. */
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
 const root=path.join(__dirname,'..');
 const ctx=vm.createContext({console,performance,structuredClone,setTimeout,
@@ -8,14 +8,17 @@ const ctx=vm.createContext({console,performance,structuredClone,setTimeout,
 for(const f of ['smelt-data.js','skill-desc.js','skill-desc-overrides.js','build-data.js','build-styles.js','build-style-data.js','build.js','build-bowgun-data.js','auto-build.js'])
   vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx);
 const get=s=>vm.runInContext(s,ctx), rules=get('AB_RULES'), abMax=get('abMax');
-const doc=fs.readFileSync(path.join(root,'docs','WEAPON_SETTING_GUIDE.md'),'utf8');
-const table=doc.slice(doc.indexOf('## 규칙 일람'),doc.indexOf('\n---',doc.indexOf('## 규칙 일람')));
-const rows=new Map();
-for(const line of table.split('\n')) {
-  const cells=line.split('|').slice(1,-1).map(c=>c.trim()), id=cells[0]?.match(/^`(.+)`$/)?.[1];
-  if(!id) continue;
-  assert.ok(!rows.has(id),'문서 ID 중복: '+id);
-  rows.set(id,{required:cells[3],recommended:cells[4],avoid:cells[5],status:cells[6]});
+const dir=path.join(root,'docs','weapons'), rows=new Map();
+for(const file of fs.readdirSync(dir).filter(f=>f.endsWith('.md'))) {
+  let cols=null;
+  for(const line of fs.readFileSync(path.join(dir,file),'utf8').split('\n')) {
+    const cells=line.split('|').slice(1,-1).map(c=>c.trim());
+    if(cells[0]==='ID') { cols=Object.fromEntries(cells.map((c,i)=>[c,i])); continue; }
+    const id=cells[0]?.match(/^`(.+)`$/)?.[1];
+    if(!id||!cols) continue;
+    assert.ok(!rows.has(id),'문서 ID 중복: '+id);
+    rows.set(id,{file,required:cells[cols['필수 최소']],recommended:cells[cols['권장']],avoid:cells[cols['비권장']],status:cells[cols['상태 · 근거']]});
+  }
 }
 const fmt=list=>list.map(t=>t.min===t.max?`${t.s} ${t.min}`:`${t.s} ${t.min}~${t.max}`).join(' · ')||'—';
 const names=list=>list.join(' · ')||'—';
@@ -23,7 +26,7 @@ const known=new Set([...Object.keys(get('BUILD.maxLv')),...get('abStonePool')().
 const data=[...rules.styles.map(r=>[r.id,r]),...Object.entries(rules.gunModes).map(([k,m])=>['gun-'+k,{required:m.required,recommended:[],avoid:m.avoid||[]}])];
 for(const [id,r] of data) {
   const row=rows.get(id);
-  assert.ok(row,`문서 규칙 일람에 없음: ${id}`);
+  assert.ok(row,`운용 가이드 규칙 표에 없음: ${id}`);
   assert.ok(row.status.startsWith('구현'),`구현 규칙의 상태 표기: ${id}`);
   // 보우건 스타일의 필수 칸 'B1' = 탄 자료로 계산하는 반동·장전 요구 (데이터 행 아님).
   assert.strictEqual(row.required.replace(/^B1( · )?/,'')||'—',fmt(r.required),`필수 불일치: ${id}`);
@@ -37,8 +40,13 @@ for(const [id,r] of data) {
   for(const s of r.avoid) assert.ok(known.has(s),`없는 스킬: ${id}/${s}`);
 }
 for(const id of rows.keys()) assert.ok(data.some(([x])=>x===id),`AB_RULES에 없는 문서 ID: ${id}`);
-// 모든 무기·스타일이 규칙 행 또는 지침 없음 행으로 표에 나온다.
-for(const t of get('BUILD.weaponTypes')) assert.ok(table.includes(`| ${t.n} |`),`규칙 일람 누락 무기: ${t.n}`);
+// 모든 무기가 무기 특성 표에 나오고, 모든 무기·스타일에 운용 가이드 파일이 있다.
+const weapons=fs.readFileSync(path.join(root,'docs','WEAPONS.md'),'utf8');
+for(const t of get('BUILD.weaponTypes')) {
+  assert.ok(weapons.includes(`| ${t.n} |`),`무기 특성 누락: ${t.n}`);
+  const file=['light-gun','heavy-gun'].includes(t.k)?'bowgun':t.k;
+  assert.ok(fs.existsSync(path.join(dir,file+'.md')),`운용 가이드 파일 누락: ${file}.md`);
+}
 for(const r of rules.styles) for(const st of [].concat(r.style)) if(st)
   assert.ok(get('bdStylesOf')(r.wt).includes(st),`게임 데이터에 없는 스타일: ${r.id}/${st}`);
-console.log(`규칙 일람 ↔ AB_RULES 일치 (${data.length}개 규칙)`);
+console.log(`운용 가이드 ↔ AB_RULES 일치 (${data.length}개 규칙)`);

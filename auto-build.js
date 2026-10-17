@@ -1,4 +1,4 @@
-/* docs/WEAPON_SETTING_GUIDE.md의 사용자 규칙을 조건별 추천과 탐색에 적용한다.
+/* docs/WEAPONS.md·CONCEPTS.md의 사용자 규칙을 조건별 추천과 탐색에 적용한다.
    bounded beam search: 전역 최적 보장이 아닌 제한 탐색, 점수는 기존 bdStats를 공유. */
 const AB_LIMIT = { beam: 160, armor: 24, evaluated: 6000, ms: 8000 };
 const AB_SOURCES = [
@@ -97,7 +97,7 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
   gun:{mode:'cycle'}, styleOff: [], exclude: [], chip: null, adding: null, stale: false, variant: {},
   pool: [], stats: null, busy: false, run: 0, notice: '', scroll: 0, active: false };
 
-/* 자동세팅 규칙 데이터. docs/WEAPON_SETTING_GUIDE.md '규칙 일람'과 1:1 (tools/auto-build-rules-test.js가 대조).
+/* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
    styles: style ''=기본(스타일 없음). mode=같은 스타일 안의 운용 성향. when=무기 조건. max 'MAX'=스킬 최대.
    label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
