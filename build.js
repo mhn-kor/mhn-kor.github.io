@@ -141,7 +141,7 @@ const BD_AMMO_BOOST = {
   '참렬탄/속성 참렬탄 강화': /^참렬(화염|수냉|전격|빙결|멸룡)?탄$/,
 };
 /* 동작 전용 스킬의 무기 제한. 장비 스킬 목록은 유지하고 계산 효과만 제한한다. */
-const BD_SKILL_WEAPONS = { '변형 공격 강화': ['switch-axe', 'charge-blade'] };
+const BD_SKILL_WEAPONS = { '변형 공격 강화': ['switch-axe', 'charge-blade'], '체인지 부스트': ['dual-blades', 'switch-axe', 'charge-blade'] };
 const BD_STATUS_BOOST = { '추가 공격【독】': '독', '추가 공격【마비】': '마비', '추가 공격【폭파】': '폭파' };
 const bdStatusBoostApplies = (name, w) => w?.e === BD_STATUS_BOOST[name]
   || (w?.t === 'switch-axe' && (w.x || []).includes(BD_STATUS_BOOST[name] + '병'));
@@ -188,9 +188,10 @@ function bdEffects(desc, name = '', weapon = null) {
   if (['포술','포술·경지'].includes(name) && !['charge-blade','light-gun','heavy-gun','gunlance'].includes(weapon?.t)) return [];
   if (gun && name === '적정 거리 위력 UP' && !families.some(x => ['통상','산탄','관통'].includes(x))) return [];
   if (gun && ['포술','포술·경지'].includes(name) && !families.some(x => ['철갑','용격'].includes(x))) return [];
-  if (name === '저스트 교격' && weapon?.fallbash) {
+  if (['저스트 교격', '저스트 교격【지속】'].includes(name) && weapon?.fallbash) {
     const m = /대미지가 (\d+)% 증가/.exec(desc);
-    return m ? [{k:'dmg',pct:1,v:+m[1],cond:true,scope:'폴배시 · 저스트 회피 후 다음 공격'}] : [];
+    const scope = name === '저스트 교격' ? '폴배시 · 저스트 회피 후 다음 공격' : '폴배시 · 저스트 회피 후 15초';
+    return m ? [{k:'dmg',pct:1,v:+m[1],cond:true,scope}] : [];
   }
   if (name === '상태 이상 축적 시 위력 UP' && !bdBuildupApplies(weapon)) return [];
   if (BD_STATUS_BOOST[name] && !bdStatusBoostApplies(name, weapon)) return [];
