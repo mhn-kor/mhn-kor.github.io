@@ -87,6 +87,15 @@ function rules() {
   for(const [wt,st,on] of [['dual-blades',0,true],['long-sword',1,true],['gunlance',1,true],['gunlance',0,false],['great-sword',0,false],['bow',0,false]])
     assert.strictEqual(assumed('기습',seed('mizu',wt,st)),on,`기습 ${wt}/${st}`);
   assert.strictEqual(assumed('기습',{...seed('mizu','great-sword'),_abAssume:{on:['기습']}}),true,'직접 넣은 기습은 켬');
+  // 매진은 앞회피로 발동해 불퇴전을 끈다 (불퇴전이 매진을 끄는 게 아님).
+  // 불퇴전은 방어구에 없어 연성으로 넣는다. 매진을 쓰는 무기(태도)는 불퇴전 OFF, 매진을 쓰지 않는 랜스는 불퇴전 유지.
+  const withBoth=(wt,st)=>{ const x={...seed('mizu',wt,st),belt:'quem'};
+    x.ds={...x.ds,belt:Array(get('bdSlotCount')(x,'belt')).fill(null)}; assert.ok(x.ds.belt.length,'검수용 연성 칸');
+    x.ds.belt[0]={s:'불퇴전',c:get('abStonePool()').get('불퇴전')}; get('abScoreBuild')(x); return x.cond; };
+  const ls=withBoth('long-sword',0), ln=withBoth('lance',2);
+  assert.ok(ls['매진']===true&&ls['불퇴전']===false,'매진이 있으면 불퇴전 OFF');
+  assert.ok(ln['매진']===false&&ln['불퇴전']===true,'랜스는 매진 비권장이라 불퇴전 유지');
+  assert.ok(get('abStyleRule')(seed('mizu','lance',2)).avoid.includes('매진'),'랜스는 매진 비권장');
   const levels=get('(l=>new Map(l))')([['귀화 망토',1]]);
   assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{lv:levels}),true,'자체 상태이상이 있으면 돌파구 ON');
   assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{fill:true}),true,'자동 보충 후보로는 유지');

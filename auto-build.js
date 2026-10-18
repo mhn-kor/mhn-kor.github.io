@@ -106,15 +106,15 @@ const abT = (s, min, max = min) => ({ s, min, max });
 const AB_RULES = {
   styles: [
     { id:'lance-base', wt:'lance', style:'', name:'기본 · 카운터 운용', required:[abT('가드 성능',2,3)],
-      recommended:[abT('불퇴전',0,5),abT('공격적인 방어',0,5)], avoid:[],
+      recommended:[abT('불퇴전',0,5),abT('공격적인 방어',0,5)], avoid:['매진'],
       desc:'가드 성능 최소2·목표3. 불퇴전·공격적인 방어는 권장 후보이며 가드 동작의 보정을 상시 스킬 레벨로 더하지 않습니다.' },
     { id:'lance-just', wt:'lance', style:'저스트 가드', name:'저스트가드 · 공격 특화', required:[abT('불퇴전',4,5),abT('반사',1,5)],
-      recommended:[abT('매진',0,3)], avoid:['가드 성능'], desc:'불퇴전 4~5 · 반사 1 이상 · 매진 2~3. 가드 성능은 우대하지 않습니다.',
-      note:'반사 효과는 임의 피해 점수로 더하지 않습니다. 불퇴전이 발동한 점수에서는 매진을 끄고, 이동 후 보완 효과는 별도로 남깁니다.' },
+      recommended:[], avoid:['가드 성능','매진'], desc:'불퇴전 4~5 · 반사 1 이상. 가드 성능은 우대하지 않습니다. 매진은 앞회피로 불퇴전을 꺼서 쓰지 않습니다.',
+      note:'반사 효과는 임의 피해 점수로 더하지 않습니다.' },
     { id:'lance-shield', wt:'lance', style:'실드 태클', name:'실드태클 · 돌진 유지',
-      required:[abT('가드 성능',5),abT('반사',1,5),abT('불퇴전',4,5)], recommended:[], avoid:[],
+      required:[abT('가드 성능',5),abT('반사',1,5),abT('불퇴전',4,5)], recommended:[], avoid:['매진'],
       desc:'가드 성능 5 · 반사 1 이상 · 불퇴전 4~5. 돌진 중 가드를 활용합니다.',
-      note:'반사 효과는 임의 피해 점수로 더하지 않습니다. 불퇴전이 발동한 점수에서는 매진을 끄고, 이동 후 보완 효과는 별도로 남깁니다.' },
+      note:'반사 효과는 임의 피해 점수로 더하지 않습니다.' },
     { id:'sns-base', wt:'shield-sword', style:'', name:'기본 · 가드/방패 연계', required:[abT('가드 성능',5)], recommended:[], avoid:['비연'],
       desc:'가드 성능5 확보 후 밀림 없는 가드에서 방패 공격으로 연결합니다.' },
     { id:'sns-fallbash', wt:'shield-sword', style:'', mode:'fallbash', label:'폴배시', coreSlot:2, name:'기본 · 폴배시',
@@ -155,7 +155,7 @@ const AB_RULES = {
       required:[abT('회피 장전',4),abT('특수 게이지 가속',3),abT('특수 게이지 가속【저스트 회피】',3),abT('절대 회피【SP】',1,3)] },
   },
   // 무기 공통: 지침 출처, 동시 발동하지 않는 조건 (앞 조건 ON이면 뒤 조건 OFF).
-  weapons: { lance:{ source:'W5', exclusive:[['불퇴전','매진']] }, 'shield-sword':{ source:'W9' }, 'great-sword':{ source:'W10' },
+  weapons: { lance:{ source:'W5' }, 'shield-sword':{ source:'W9' }, 'great-sword':{ source:'W10' },
     bow:{ source:'기존 집중 기준' }, 'light-gun':{ source:'B1–B3' }, 'heavy-gun':{ source:'B1–B3' } },
   // 문맥별 자동 보충 제외 (W2·W4·B5). 사용자가 직접 지정한 스킬은 제외하지 않는다.
   avoid: [
@@ -196,7 +196,8 @@ const AB_ASSUME = {
   actions: { '공격적인 방어':'가드', '저스트 모으기 해방':'모으기', '차지 마스터':'모으기', '변형 공격 강화':'변형', '비연':'공중',
     '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기', '연격':'연속 타격', '기습':'후방' },
   linked: { skills:['돌파구','전화위복'], by:['거품의 춤','견인불발','겁혈 망토','귀화 망토'] },
-  exclusive: [['과감','저스트 교격'],['과감','저스트 교격【지속】'],['멸진룡의 갈망','투기 활성'],['멸진룡의 갈망','속성 공격 증강【SP】']],
+  exclusive: [['과감','저스트 교격'],['과감','저스트 교격【지속】'],['멸진룡의 갈망','투기 활성'],['멸진룡의 갈망','속성 공격 증강【SP】'],
+    ['매진','불퇴전']], // 매진은 앞회피로 발동해 불퇴전(회피하면 꺼짐)을 끈다
 };
 // 회심 관련 무기 스킬 (CONCEPTS W1, 2026-10-18 사용자).
 const AB_CRIT_WEAPON_SKILLS = ['간파','약점 특효','슈퍼회심','회심격【속성】','힘의 해방'];
