@@ -35,12 +35,8 @@ for(let i=0;i<parts.length;i++) {
   try {
     const config={b:seed,direction:'manual',targets,drift:true,lockon:false,styleGuide:false};
     const result=await get('abSearch')(config), best=get('abBest')(result.pool);
-    assert.ok(best.length);
-    // 슬롯 수 자체에는 가산점이 없다: 빈 슬롯 장비는 연성으로 실제 점수가 더 높을 때만 이긴다.
-    // (연성 전용 스킬도 보충 후보라 슬롯이 실제 가치를 가질 수 있다.)
-    const useful=result.pool.find(r=>parts.every(p=>r.b[p.k].startsWith('useful-')));
-    assert.ok(useful,'useful gear candidate kept');
-    if(!parts.every(p=>best[0].b[p.k].startsWith('useful-'))) assert.ok(best[0].score>useful.score,'main gear must not be socket bait');
+    // 메인 스킬 활용도 조건: 기본 스킬이 쓸모없는 2소켓 장비는 연성 칸 때문에 채용되지 않는다.
+    assert.ok(best.length); assert.ok(result.pool.every(r=>parts.every(p=>r.b[p.k].startsWith('useful-'))),'main gear must not be socket bait');
     assert.ok(result.pool.every(r=>r.driftOnly.every(Boolean)));
     const expensive=await get('abSearch')({...config,targets:targets.map(t=>({...t,min:2,max:2}))});
     assert.ok(expensive.pool.length,'preserve feasible 6-slot combinations');

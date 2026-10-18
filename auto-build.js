@@ -460,10 +460,16 @@ const abArmorCompare = (a, b) => {
   return 0;
 };
 /* 선별 평가만 사용. 대체 불가 레벨 → 한 부위 집중 → 유효 레벨 합 → 적은 연성 비용. */
+/* 이 빌드에서 쓸모 있는 스킬: 핵심·운용 규칙·보충 후보·점수 밖 운용 스킬. 비권장·꺼진 스킬은 제외. */
+function abUsefulSkills(seed, targets, policy) {
+  const useful = new Set([...targets, ...policy.styleTargets, ...(policy.operation || [])].map(t => t.s)
+    .concat(policy.fillers, abSupportSkills(seed)).filter(s => !policy.avoid.includes(s)));
+  if (abSustains(seed)) useful.add('강화 지속');
+  return useful;
+}
 function abArmorEvaluator(seed, targets, policy, stones) {
   const explicit = new Set([...targets, ...policy.styleTargets].map(t => t.s));
-  const useful = new Set([...explicit, ...policy.fillers, ...abSupportSkills(seed)].filter(s => !policy.avoid.includes(s)));
-  if (abSustains(seed)) useful.add('강화 지속');
+  const useful = abUsefulSkills(seed, targets, policy);
   const weaponLevels = new Map();
   for (const x of bdBuildWSkills(seed)) weaponLevels.set(x.s,(weaponLevels.get(x.s)||0)+x.lv);
   const caps = new Map([...useful].map(s => [s, Math.max(0,([...targets,...policy.styleTargets].find(t => t.s === s)?.max ?? abMax(s))-(weaponLevels.get(s)||0))]));
@@ -658,6 +664,7 @@ function abSearchDriftStates(original,targets,policy,stop,width=8,onEvaluate=()=
   return abFrontier(results);
 }
 async function abRepairBuilds(pool,all,targets,policy,config,started,progress,cancelled) {
+  const useful=policy.useful||abUsefulSkills(config?.b||pool[0]?.b,targets,policy);
   const seeds=abSelectRepresentatives(pool,'priority',5), found=[], checked=new Set(), parts=BD_PARTS();
   let evaluated=0, jobs=0, expanded=0, constrained=false;
   const stop=()=>cancelled()||performance.now()-started>=AB_LIMIT.ms||evaluated>=2400;
@@ -665,7 +672,9 @@ async function abRepairBuilds(pool,all,targets,policy,config,started,progress,ca
   for(const before of seeds) {
     // 초기24개 밖의 장비도 재검토. 공급/핵심/전체 이득 경로를 교대로 작업한다.
     const alternatives=parts.map(p=>{
-      const rows=all.find(x=>x.part===p.k).rows.filter(x=>x.key!==before.b[p.k]);
+      // 메인 스킬 활용도 조건: 그 부위에 쓸모 있는 장비가 하나라도 있으면 쓸모 있는 장비끼리만 교체한다.
+      const partRows=all.find(x=>x.part===p.k).rows, usefulRow=x=>x.piece.skills.some(s=>useful.has(s.s));
+      const rows=(partRows.some(usefulRow) ? partRows.filter(usefulRow) : partRows).filter(x=>x.key!==before.b[p.k]);
       if(rows.length>24)constrained=true;
       const rated=rows.map(x=>({...x,relevance:x.piece.skills.reduce((n,s)=>n+(targets.some(t=>t.s===s.s)?s.lv:0),0),
         score:abScoreBuild({...before.b,[p.k]:x.key,ds:{...before.b.ds,[p.k]:[]}})}))
@@ -748,6 +757,7 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
     on:[...(config.assumeOn || []), ...userTargets.map(t => t.s), ...[...(rule?.required || []), ...(rule?.recommended || [])].map(t => t.s)] };
   const targets = abSearchTargets(config).map(t=>({...t,user:userTargets.some(x=>x.s===t.s)})), requireLock = !!config.lockon && abMelee(seed.wt);
   const policy = abResolvePolicy(seed,targets,abPolicy(seed, config.direction, userTargets, config.styleGuide ?? true)), stones = abStonePool(), fillers = policy.fillers;
+  policy.useful = abUsefulSkills(seed, targets, policy);
   const optional = policy.styleTargets.filter(t => !targets.some(x => x.s === t.s));
   const operation = policy.operation;
   const curves = new Map(targets.map(t => [t.s, abCurve(t.s, seed)]));
@@ -781,15 +791,22 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
   const compare = key => (a,b) => key === 'armor' ? abArmorCompare(a.armor,b.armor) || b.score-a.score
     : b[key]-a[key] || abArmorCompare(a.armor,b.armor);
   // 모든 방어구를 단품 평가한 뒤 핵심 스킬 / 점수 / 슬롯 경로를 묶어 부위 후보를 제한한다.
+  /* 메인 스킬 활용도 조건 (AUTO_BUILD A2): 기본 스킬이 하나도 쓸모없는 장비는 연성 칸이 많아도 후보에서 뺀다.
+     필수 최소를 연성으로만 채울 수 있을 때의 슬롯 경로만 예외. 쓸모 있는 장비가 없는 부위는 전체를 쓴다. */
+  const usefulPiece = r => r.piece.skills.some(x => policy.useful.has(x.s));
+  const weaponLv = new Map(); for (const x of bdBuildWSkills(seed)) weaponLv.set(x.s, (weaponLv.get(x.s) || 0) + x.lv);
+  const needSlots = drift ? targets.filter(t => stones.has(t.s) && t.min > 0).reduce((n, t) => n + Math.max(0, t.min - (weaponLv.get(t.s) || 0)), 0) : 0;
+  const usefulSlots = all.reduce((n, rows) => n + Math.max(0, ...rows.filter(usefulPiece).map(r => r.piece.slot)), 0);
   all = all.map((rows, i) => {
-    const rated = rows.map(r => ({ ...r, ...rank({ ...seed, [parts[i].k]: r.key }) })), keep = new Map();
+    const every = rows.map(r => ({ ...r, ...rank({ ...seed, [parts[i].k]: r.key }) })), keep = new Map();
+    const rated = every.some(usefulPiece) ? every.filter(usefulPiece) : every;
     for (const t of targets) for (const r of [...rated].filter(r => r.piece.skills.some(x => x.s === t.s)).sort((a, b) =>
       (b.piece.skills.find(x => x.s === t.s)?.lv || 0) - (a.piece.skills.find(x => x.s === t.s)?.lv || 0) || b.score - a.score).slice(0, 2)) keep.set(r.key, r);
     for (const s of policy.prefer) for (const r of [...rated].filter(r => r.piece.skills.some(x => x.s === s))
       .sort((a, b) => b.score - a.score).slice(0, 1)) keep.set(r.key, r);
     for (const key of ['priority', 'score','armor','element']) for (const r of [...rated].sort(compare(key)).slice(0, 5)) keep.set(r.key, r);
     // 필수 연성 칸을 확보할 선택지는 별도 보존. 슬롯은 이 경로에서만 자격 확인 용도로 사용.
-    if (drift && targets.some(t=>stones.has(t.s)&&t.min>0)) for (const r of [...rated].sort((a,b)=>
+    if (drift && needSlots > 0) for (const r of [...(needSlots > usefulSlots ? every : rated)].sort((a,b)=>
       b.piece.slot-a.piece.slot || compare('armor')(a,b)).slice(0,2)) keep.set(r.key,r);
     return [...keep.values()].slice(0, AB_LIMIT.armor);
   });
