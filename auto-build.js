@@ -186,15 +186,15 @@ const AB_TRAITS = {
 };
 /* 조건부 스킬의 기본 가정: docs/SKILLS.md 기본 가정 칸과 1:1 (테스트 대조).
    monster=ON(사용자가 칩으로 끔) · off=OFF · candidate·sp=직접 넣거나 칩으로 켤 때만 (sp는 SP 게이지·특수 스킬이 트리거인 버프) ·
-   actions=무기 특성에 그 동작이 있을 때만 ON (미확인·없음은 OFF, 운용 규칙에 적힌 스킬은 ON) · linked=연계 스킬이 빌드에 있을 때만 ON ·
+   actions=무기 특성에 그 동작(' · '로 여러 개면 하나라도)이 있을 때만 ON (미확인·없음은 OFF, 운용 규칙에 적힌 스킬은 ON) · linked=연계 스킬이 빌드에 있을 때만 ON ·
    exclusive=앞 스킬이 발동하면 뒤 스킬 OFF. */
 const AB_ASSUME = {
-  monster: ['완전 충전','용맹','매진','무심','불퇴전','추격','약점 특효'],
+  monster: ['완전 충전','용맹','매진','무심','추격','약점 특효'],
   off: ['그룹 사냥 강화【공격】','불굴','재난대처능력'],
   candidate: ['앙심','힘의 해방'],
   sp: ['속성 공격 증강【SP】','투기 활성'],
   actions: { '공격적인 방어':'가드', '저스트 모으기 해방':'모으기', '차지 마스터':'모으기', '변형 공격 강화':'변형', '비연':'공중',
-    '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기', '연격':'연속 타격', '기습':'후방' },
+    '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기', '연격':'연속 타격', '기습':'후방', '불퇴전':'가드 · 카운터' },
   linked: { skills:['돌파구','전화위복'], by:['거품의 춤','견인불발','겁혈 망토','귀화 망토'] },
   exclusive: [['과감','저스트 교격'],['과감','저스트 교격【지속】'],['멸진룡의 갈망','투기 활성'],['멸진룡의 갈망','속성 공격 증강【SP】'],
     ['매진','불퇴전']], // 매진은 앞회피로 발동해 불퇴전(회피하면 꺼짐)을 끈다
@@ -226,7 +226,7 @@ function abAssumed(s, b, { fill = false, lv = null, row = abStyleRow(b) } = {}) 
     return AB_ASSUME.linked.by.some(x => levels.get(x) > 0);
   }
   const code = AB_ASSUME.actions[s];
-  return !code || ruled || abTrait(b, code) === 'yes';
+  return !code || ruled || abTraitList(code).some(x => abTrait(b, x) === 'yes');
 }
 function abStyleRow(b) {
   const style = bdStylesOf(b.wt)[b.st - 1] || '', elemental = () => !!(abElementSkill(b) || bdBuildupApplies(bdWeaponOf(b)));
