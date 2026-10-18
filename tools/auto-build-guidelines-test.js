@@ -93,7 +93,7 @@ function rules() {
     x.ds={...x.ds,belt:Array(get('bdSlotCount')(x,'belt')).fill(null)}; assert.ok(x.ds.belt.length,'검수용 연성 칸');
     x.ds.belt[0]={s:'불퇴전',c:get('abStonePool()').get('불퇴전')}; get('abScoreBuild')(x); return x.cond; };
   // 불퇴전: 가드·카운터 무기에서만 ON.
-  for(const [wt,st,on] of [['lance',0,true],['shield-sword',0,true],['switch-axe',2,true],['great-sword',0,true],['long-sword',0,true],['charge-blade',1,true],['hammer',1,true],['hammer',0,false],['dual-blades',0,false],['switch-axe',0,false]]) {
+  for(const [wt,st,on] of [['lance',0,true],['shield-sword',0,true],['switch-axe',2,true],['great-sword',0,false],['great-sword',2,true],['long-sword',0,true],['charge-blade',1,true],['hammer',1,true],['hammer',0,false],['dual-blades',0,false],['switch-axe',0,false]]) {
     assert.strictEqual(assumed('불퇴전',seed('mizu',wt,st)),on,`불퇴전 ${wt}/${st}`);
     assert.strictEqual(assumed('매진',seed('mizu',wt,st)),!on,`매진 ${wt}/${st}`);
   }
