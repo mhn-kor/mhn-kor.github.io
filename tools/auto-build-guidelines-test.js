@@ -93,10 +93,12 @@ function rules() {
     x.ds={...x.ds,belt:Array(get('bdSlotCount')(x,'belt')).fill(null)}; assert.ok(x.ds.belt.length,'검수용 연성 칸');
     x.ds.belt[0]={s:'불퇴전',c:get('abStonePool()').get('불퇴전')}; get('abScoreBuild')(x); return x.cond; };
   // 불퇴전: 가드·카운터 무기에서만 ON.
-  for(const [wt,st,on] of [['lance',0,true],['shield-sword',0,true],['switch-axe',2,true],['great-sword',2,true],['long-sword',0,false],['dual-blades',0,false]])
+  for(const [wt,st,on] of [['lance',0,true],['shield-sword',0,true],['switch-axe',2,true],['great-sword',0,true],['long-sword',0,true],['charge-blade',1,true],['hammer',1,true],['hammer',0,false],['dual-blades',0,false],['switch-axe',0,false]]) {
     assert.strictEqual(assumed('불퇴전',seed('mizu',wt,st)),on,`불퇴전 ${wt}/${st}`);
-  const ls=withBoth('shield-sword',0), ln=withBoth('lance',2);
-  assert.ok(ls['매진']===true&&ls['불퇴전']===false,'매진이 있으면 불퇴전 OFF');
+    assert.strictEqual(assumed('매진',seed('mizu',wt,st)),!on,`매진 ${wt}/${st}`);
+  }
+  const ls=withBoth('shield-sword',0), ln=withBoth('lance',2), us={...ls};
+  assert.ok(ls['매진']===false&&ls['불퇴전']===true,'가드·카운터 보유 무기는 매진 OFF·불퇴전 유지');
   assert.ok(ln['매진']===false&&ln['불퇴전']===true,'랜스는 매진 비권장이라 불퇴전 유지');
   assert.ok(get('abStyleRule')(seed('mizu','lance',2)).avoid.includes('매진'),'랜스는 매진 비권장');
   const levels=get('(l=>new Map(l))')([['귀화 망토',1]]);

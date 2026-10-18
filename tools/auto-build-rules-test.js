@@ -70,6 +70,8 @@ same(pick(c=>c[4]==='OFF'),sorted(assume.off),'기본 가정 OFF 불일치');
 same(pick(c=>c[4]==='조건부 후보'),sorted([...assume.candidate,...assume.sp]),'조건부 후보 불일치');
 same(pick(c=>c[4]==='ON'&&c[3]==='조건부'),sorted(assume.monster),'몬스터 의존 ON 불일치');
 same(pick(c=>c[4]==='조건부 ON (연계 스킬)'),sorted(assume.linked.skills),'연계 스킬 불일치');
+for(const [s,code] of Object.entries(assume.blockedBy)) assert.strictEqual(skills.find(c=>c[0]===s)?.[4],`ON (${code} 무기는 OFF)`,`무기 동작 OFF 불일치: ${s}`);
+same(pick(c=>/^ON \(.+ 무기는 OFF\)$/.test(c[4])),sorted(Object.keys(assume.blockedBy)),'무기 동작 OFF 목록 불일치');
 const actions=skills.filter(c=>c[4]==='조건부 ON (무기 동작)'&&!get('abSP')(c[0]));
 same(actions.map(c=>c[0]).sort(),sorted(Object.keys(assume.actions)),'무기 동작 스킬 불일치');
 for(const c of actions) assert.strictEqual(assume.actions[c[0]],c[5],`액션 조건 불일치: ${c[0]}`);
