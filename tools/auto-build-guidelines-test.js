@@ -78,6 +78,7 @@ function rules() {
   for(const [wt,st,on] of [['dual-blades',0,true],['bow',1,true],['bow',0,false],['lance',0,false],['switch-axe',0,false],['hammer',1,false]])
     assert.strictEqual(assumed('연격',seed('mizu',wt,st)),on,`연격 ${wt}/${st}`);
   assert.strictEqual(assumed('연격',{...seed('mizu','lance'),_abAssume:{on:['연격']}}),true,'직접 넣은 연격은 켬');
+  assert.strictEqual(assumed('불퇴전',{...seed('mizu','lance'),_abAssume:{off:['불퇴전']}}),false,'불퇴전 칩으로 끄기');
   const core=(wt,st,w='mizu')=>Array.from(get('abDirections')(seed(w,wt,st)),d=>Array.from(d.targets,t=>t.s)).flat();
   const raw=get('abMonsters("lance").find(s=>!s.weapons.find(w=>w.t==="lance").e)').key;
   assert.ok(core('lance',0,raw).includes('공격적인 방어')&&!core('lance',0,raw).includes('연격'),'가드 무기는 공격적인 방어');

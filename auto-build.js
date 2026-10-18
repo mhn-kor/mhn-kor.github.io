@@ -197,6 +197,8 @@ const AB_ASSUME = {
     '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기', '연격':'연속 타격', '기습':'후방', '불퇴전':'가드·카운터 보유' },
   // 무기 특성에 이 동작이 있으면 OFF (매진의 앞회피는 불퇴전을 끈다).
   blockedBy: { '매진':'가드·카운터 보유' },
+  // 컨트롤에 따라 유지가 갈리는 무기 동작 스킬: 켜지는 무기에서는 고수 기준으로 켠 채 시작하고, 발동 가정 칩으로 끌 수 있다.
+  control: ['연격','기습','불퇴전'],
   linked: { skills:['돌파구','전화위복'], by:['거품의 춤','견인불발','겁혈 망토','귀화 망토'] },
   exclusive: [['과감','저스트 교격'],['과감','저스트 교격【지속】'],['멸진룡의 갈망','투기 활성'],['멸진룡의 갈망','속성 공격 증강【SP】'],
     ['매진','불퇴전']], // 매진은 앞회피로 발동해 불퇴전(회피하면 꺼짐)을 끈다
@@ -946,12 +948,13 @@ function abModeUI(b) {
 /* 발동 가정: 몬스터·전투에 따라 갈리는 조건은 켠 채로, 조건부 후보는 끈 채로 시작한다. 칩으로 바꾼다. */
 function abAssumeUI(b) {
   const s = abState, chip = (n, on, title) => `<button type="button" class="ab-chip${on ? ' rule' : ' rule off'}" data-ab-assume="${esc(n)}" title="${title}">${esc(n)}</button>`;
-  const monster = AB_ASSUME.monster.map(n => chip(n, !s.assumeOff.includes(n), '몬스터·전투에 따라 갈림 · 눌러서 끄기/켜기'));
+  const control = AB_ASSUME.control.filter(n => abAssumed(n, { ...b, _abAssume:{} }));
+  const monster = [...AB_ASSUME.monster, ...control].map(n => chip(n, !s.assumeOff.includes(n), control.includes(n) ? '컨트롤로 유지하는 조건 · 고수 기준으로 켬 · 눌러서 끄기/켜기' : '몬스터·전투에 따라 갈림 · 눌러서 끄기/켜기'));
   const candidate = [...AB_ASSUME.candidate, ...AB_ASSUME.sp].map(n => chip(n, s.assumeOn.includes(n) || (!s.assumeOff.includes(n) && abAutoCandidate(n, b)), '조건부 후보 · 눌러서 켜기/끄기'));
   return `<div class="ab-box ab-form-settings"><h3>발동 가정 <small>켠 것만 점수에 들어갑니다</small></h3>
     <div class="ab-chips">${monster.join('')}</div>
     <p class="ab-muted">조건부 후보 · 이번 세팅에 포함할 스킬만 켜기</p><div class="ab-chips">${candidate.join('')}</div>
-    <p class="ab-muted">불굴·재난대처능력·그룹 사냥 강화는 끈 채로 계산합니다. 무기 동작이 필요한 스킬은 무기 특성에 그 동작이 있는 스타일에서만 켭니다. 돌파구·전화위복은 자체 상태이상 스킬이 있을 때만 켭니다. 직접 넣은 스킬은 켭니다.</p></div>`;
+    <p class="ab-muted">불굴·재난대처능력·그룹 사냥 강화는 끈 채로 계산합니다. 무기 동작이 필요한 스킬은 무기 특성에 그 동작이 있는 스타일에서만 켭니다. 연격·기습·불퇴전은 켜지는 무기에서 회피·자리 유지를 잘하는 고수 기준으로 켠 채 시작하며 칩으로 끌 수 있습니다. 돌파구·전화위복은 자체 상태이상 스킬이 있을 때만 켭니다. 직접 넣은 스킬은 켭니다.</p></div>`;
 }
 /* 결과 빌드에 붙어 있지만 포함하지 않은 조건부 후보: 포함했을 때 늘어나는 점수. */
 function abCandidateGains(r) {
