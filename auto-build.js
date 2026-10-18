@@ -7,7 +7,7 @@ const AB_SOURCES = [
   ['슈퍼회심', 'https://monsterhunternow.com/ko/skills/critical_boost'],
 ];
 const abMax = s => BUILD.maxLv[s] || bdSkillLevels(s)?.at(-1)?.[0] || 1;
-// SP 전용 공격(특수 스킬 위력). 짧은 구간 버프(속성 공격 증강【SP】·투기 활성)는 AB_ASSUME.sp로 따로 다룬다.
+// SP 전용 공격(특수 스킬 위력). SP 연계 버프(속성 공격 증강【SP】·투기 활성)는 AB_ASSUME.sp 조건부 후보로 따로 다룬다.
 const abSP = s => /특수.*위력|위력.*특수/.test(s);
 const abStonePool = () => {
   const pool = new Map();
@@ -95,7 +95,7 @@ function abSearchTargets(config) {
 }
 let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction: '', edited: false,
   targets: abTargets(['물속성 공격 강화', '회심격【속성】', '슈퍼회심']), drift: true, lockon: true,
-  gun:{mode:'cycle'}, styleOff: [], exclude: [], sp: false, assumeOn: [], assumeOff: [], chip: null, adding: null, stale: false, variant: {},
+  gun:{mode:'cycle'}, styleOff: [], exclude: [], assumeOn: [], assumeOff: [], chip: null, adding: null, stale: false, variant: {},
   pool: [], stats: null, busy: false, run: 0, notice: '', scroll: 0, active: false };
 
 /* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
@@ -185,7 +185,7 @@ const AB_TRAITS = {
   bow: [['모으기 · 탄·화살','—'],['탄·화살 · 회피','모으기'],['모으기 · 탄·화살','—']],
 };
 /* 조건부 스킬의 기본 가정: docs/SKILLS.md 기본 가정 칸과 1:1 (테스트 대조).
-   monster=ON(사용자가 칩으로 끔) · off=OFF · candidate=직접 넣거나 칩으로 켤 때만 · sp='SP 사용 직후' 옵션 ·
+   monster=ON(사용자가 칩으로 끔) · off=OFF · candidate·sp=직접 넣거나 칩으로 켤 때만 (sp는 SP 게이지·특수 스킬이 트리거인 버프) ·
    actions=무기 특성에 그 동작이 있을 때만 ON (미확인·없음은 OFF, 운용 규칙에 적힌 스킬은 ON) · linked=연계 스킬이 빌드에 있을 때만 ON ·
    exclusive=앞 스킬이 발동하면 뒤 스킬 OFF. */
 const AB_ASSUME = {
@@ -211,7 +211,7 @@ function abAssumed(s, b, { fill = false, lv = null, row = abStyleRow(b) } = {}) 
   if (abSP(s) || a.off?.includes(s)) return false;
   if (a.on?.includes(s)) return true;
   if (AB_ASSUME.off.includes(s) || row?.avoid.includes(s)) return false;
-  if (AB_ASSUME.sp.includes(s)) return !!a.sp;
+  if (AB_ASSUME.sp.includes(s)) return false;
   if (AB_ASSUME.candidate.includes(s)) return abAutoCandidate(s, b);
   if (AB_ASSUME.linked.skills.includes(s)) {
     if (fill) return true;
@@ -723,7 +723,7 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
   if (exclude.some(x => x.shared)) seed.ignore = exclude.filter(x => x.shared).map(x => x.s);
   // 발동 가정: 사용자가 직접 넣은 스킬·운용 규칙 스킬은 켜고, 칩으로 끈 가정은 끈다.
   const rule = abOperationRule(seed, config.gun, config.styleGuide ?? true);
-  seed._abAssume = { sp:!!config.sp, off:[...(config.assumeOff || [])],
+  seed._abAssume = { off:[...(config.assumeOff || [])],
     on:[...(config.assumeOn || []), ...userTargets.map(t => t.s), ...[...(rule?.required || []), ...(rule?.recommended || [])].map(t => t.s)] };
   const targets = abSearchTargets(config).map(t=>({...t,user:userTargets.some(x=>x.s===t.s)})), requireLock = !!config.lockon && abMelee(seed.wt);
   const policy = abResolvePolicy(seed,targets,abPolicy(seed, config.direction, userTargets, config.styleGuide ?? true)), stones = abStonePool(), fillers = policy.fillers;
@@ -909,18 +909,18 @@ function abModeUI(b) {
 function abAssumeUI(b) {
   const s = abState, chip = (n, on, title) => `<button type="button" class="ab-chip${on ? ' rule' : ' rule off'}" data-ab-assume="${esc(n)}" title="${title}">${esc(n)}</button>`;
   const monster = AB_ASSUME.monster.map(n => chip(n, !s.assumeOff.includes(n), '몬스터·전투에 따라 갈림 · 눌러서 끄기/켜기'));
-  const candidate = AB_ASSUME.candidate.map(n => chip(n, s.assumeOn.includes(n) || (!s.assumeOff.includes(n) && abAutoCandidate(n, b)), '조건부 후보 · 눌러서 켜기/끄기'));
+  const candidate = [...AB_ASSUME.candidate, ...AB_ASSUME.sp].map(n => chip(n, s.assumeOn.includes(n) || (!s.assumeOff.includes(n) && abAutoCandidate(n, b)), '조건부 후보 · 눌러서 켜기/끄기'));
   return `<div class="ab-box ab-form-settings"><h3>발동 가정 <small>켠 것만 점수에 들어갑니다</small></h3>
     <div class="ab-chips">${monster.join('')}</div>
-    <p class="ab-muted">조건부 후보</p><div class="ab-chips">${candidate.join('')}</div>
-    <label class="ab-check"><input type="checkbox" data-ab="sp"${s.sp ? ' checked' : ''}>SP 사용 직후(20초) 기준 · ${AB_ASSUME.sp.map(esc).join(' · ')} 포함</label>
+    <p class="ab-muted">조건부 후보 · 이번 세팅에 포함할 스킬만 켜기</p><div class="ab-chips">${candidate.join('')}</div>
     <p class="ab-muted">불굴·재난대처능력·그룹 사냥 강화는 끈 채로 계산합니다. 무기 동작이 필요한 스킬은 무기 특성에 그 동작이 있는 스타일에서만 켭니다. 돌파구·전화위복은 자체 상태이상 스킬이 있을 때만 켭니다. 직접 넣은 스킬은 켭니다.</p></div>`;
 }
-/* SP 구간 버프를 켰을 때 늘어나는 점수. 옵션이 꺼져 있을 때 결과 빌드에 붙은 경우만 표시한다. */
-function abSpGain(r) {
-  if (abState.sp || !bdTotals(r.b).some(([s, lv]) => lv && AB_ASSUME.sp.includes(s))) return 0;
-  const b = structuredClone(r.b); b._abAssume = { ...(b._abAssume || {}), sp:true };
-  return abScoreBuild(b) - r.score;
+/* 결과 빌드에 붙어 있지만 포함하지 않은 조건부 후보: 포함했을 때 늘어나는 점수. */
+function abCandidateGains(r) {
+  return bdTotals(r.b).filter(([s, lv]) => lv && [...AB_ASSUME.candidate, ...AB_ASSUME.sp].includes(s) && r.b.cond[s] === false).map(([s]) => {
+    const b = structuredClone(r.b); b._abAssume = { ...(b._abAssume || {}), on:[...(b._abAssume?.on || []), s], off:(b._abAssume?.off || []).filter(x => x !== s) };
+    return [s, abScoreBuild(b) - r.score];
+  }).filter(([, n]) => n > 0);
 }
 const abLevelText = t => t.min > 0 ? (t.max > t.min ? `${t.min}→${t.max}` : `${t.min}`) : `→${t.max}`;
 /* 펼친 제안 카드: 필수(최소1 이상) / 투자(최소0) / 제외. 칩에서 바로 조정한다. */
@@ -1047,7 +1047,7 @@ function abRenderResults() {
       return `<article class="bd-card ab-result"><div class="ab-heading"><h3>${i + 1}위</h3><b class="ab-score">${r.score.toLocaleString()}점</b></div>
       ${g.badges.length ? `<p class="ab-badges">${[...new Set(g.badges)].map(n => `<span class="ab-badge">🏅 ${esc(n)}</span>`).join('')}</p>` : ''}
       ${g.variants.length > 1 ? `<div class="ab-tabs" role="tablist" aria-label="연성 안">${g.variants.map((x, j) => `<button type="button" role="tab" aria-selected="${j === v}" data-ab-variant="${i}:${j}">${'ABC'[j]} ${esc(x.role)}</button>`).join('')}</div>` : ''}
-      <p class="ab-muted" style="padding:0 12px">조건 ON ${r.score.toLocaleString()} · 조건 OFF ${r.baseScore.toLocaleString()} · 연성 ${r.drifts}칸${(gain => gain ? ` · SP 구간 +${gain.toLocaleString()}점` : '')(abSpGain(r))}</p>
+      <p class="ab-muted" style="padding:0 12px">조건 ON ${r.score.toLocaleString()} · 조건 OFF ${r.baseScore.toLocaleString()} · 연성 ${r.drifts}칸${abCandidateGains(r).map(([n, d]) => ` · ${esc(n)} 포함 시 +${d.toLocaleString()}점`).join('')}</p>
       ${v ? `<p class="ab-diff">${abVariantDiff(g.variants[0], r)}</p>` : ''}
       <div class="ab-levels">${keys.map(t => `<span>${esc(t.s)} <b>Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)}</b> / 목표 ${t.max}</span>`).join('')}</div>
       <p class="ab-muted" style="padding:0 12px">보조 투자: ${(r.support || []).slice(0, 3).map(([n, l]) => `${esc(n)} ${l}`).join(' · ') || '핵심 스킬 중심'}${r.support?.length > 3 ? ` 외 ${r.support.length - 3}개` : ''}</p>
@@ -1061,7 +1061,7 @@ function abRenderResults() {
       <h4>적용한 운용 지침</h4>${abGuideUI(r.b, s.direction, s.targets)}
       <h4>연성 배치</h4><p>${r.drifts}개 사용 · 같은 스킬이 기본으로 붙은 부위의 빈 슬롯부터 배치합니다.</p>
       <h4>점수 계산 가정</h4><p>발동 가정: ${Object.entries(r.b.cond).filter(([, on]) => on).map(([n]) => esc(n)).join(' · ') || '없음'}</p>
-      <p>특수 위력·SP 전용 효과와 집중 보정은 제외합니다.${s.sp ? ' SP 사용 직후(20초) 기준입니다.' : ''}${r.b.wt === 'switch-axe' || r.b.wt === 'charge-blade' ? ' 변형 공격 강화는 모든 공격에 적용한 값이라 실제보다 높습니다.' : ''} 실제 전투 DPS가 아닌 비교 점수입니다.</p>
+      <p>특수 위력·SP 전용 효과와 집중 보정은 제외합니다.${r.b.wt === 'switch-axe' || r.b.wt === 'charge-blade' ? ' 변형 공격 강화는 모든 공격에 적용한 값이라 실제보다 높습니다.' : ''} 실제 전투 DPS가 아닌 비교 점수입니다.</p>
       <h4>기대 점수</h4>${abCalculationUI(r.b)}<p class="ab-muted">일반·회심 공격을 회심률로 평균합니다. 표시와 최종 점수만 반올림합니다.</p></div></details>
       <footer><button class="btn primary" data-ab-import="${i}">내 빌드로 가져오기${g.variants.length > 1 ? ` (${'ABC'[v]}안)` : ''}</button></footer></article>`; }).join('') + '</div>'
     : `<p class="ab-box">설정한 최소 레벨을 만족하는 후보를 찾지 못했습니다. ${s.exclude.some(x => !x.shared) ? '완전 제외한 스킬 때문에 후보 방어구가 줄었을 수 있습니다. ' : ''}연성을 켜거나 최소 레벨을 낮춰 보세요. 제한 탐색이므로 불가능한 조합이라는 뜻은 아닙니다.</p>`}`;
@@ -1128,7 +1128,6 @@ $('#ab-screen').addEventListener('change', e => {
   if (el.dataset.ab === 'mode') { if (el.value) s.b.snsMode = el.value; else delete s.b.snsMode; }
   if (el.dataset.ab === 'style20') s.b.style20 = el.checked;
   if (el.dataset.ab === 'drift') s.drift = el.checked;
-  if (el.dataset.ab === 'sp') s.sp = el.checked;
   if (el.dataset.ab === 'gunMode') s.gun = { ...s.gun, mode:el.value, slot:undefined };
   if (el.dataset.ab === 'gunSlot') s.gun.slot = +el.value;
   if (el.dataset.ab === 'reload5') s.gun.reload5 = el.checked;
@@ -1146,7 +1145,7 @@ $('#ab-screen').addEventListener('click', async e => {
   if (el.hasAttribute('data-ab-dir')) { abInvalidate(); abApplyDirection(el.dataset.abDir); abRender(); return; }
   if (el.hasAttribute('data-ab-reset')) { abInvalidate(); abApplyDirection(s.stale ? abDirections(s.b,s.gun)[0]?.id : s.direction); abRender(); return; }
   if (el.hasAttribute('data-ab-assume')) { // 사용자 설정이며 제안 수정으로 보지 않는다
-    const n = el.dataset.abAssume, candidate = AB_ASSUME.candidate.includes(n);
+    const n = el.dataset.abAssume, candidate = [...AB_ASSUME.candidate, ...AB_ASSUME.sp].includes(n);
     const on = candidate ? s.assumeOn.includes(n) || (!s.assumeOff.includes(n) && abAutoCandidate(n, s.b)) : !s.assumeOff.includes(n);
     s.assumeOn = s.assumeOn.filter(x => x !== n); s.assumeOff = s.assumeOff.filter(x => x !== n);
     if (on) s.assumeOff.push(n); else if (candidate) s.assumeOn.push(n);
@@ -1180,7 +1179,7 @@ $('#ab-screen').addEventListener('click', async e => {
   s.busy = true; s.notice = '후보를 탐색하고 있습니다…'; s.variant = {}; abRender();
   try {
     const result = await abSearch(structuredClone({ b:s.b, gun:s.gun, direction:s.direction, targets:s.targets, drift:s.drift,
-      lockon:s.lockon, styleGuide:s.styleOff, exclude:s.exclude, sp:s.sp, assumeOn:s.assumeOn, assumeOff:s.assumeOff }),
+      lockon:s.lockon, styleGuide:s.styleOff, exclude:s.exclude, assumeOn:s.assumeOn, assumeOff:s.assumeOff }),
       p => { $('#ab-status').textContent = `${p.phase||'초기 구성'} · ${p.stage}/5부위 · ${p.expanded.toLocaleString()}개 조합 탐색 · ${p.evaluated}개 연성 구성 검토`; },
       () => run !== abState.run);
     if (!result || run !== abState.run) return;

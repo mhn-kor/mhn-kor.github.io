@@ -52,7 +52,7 @@ function rules() {
   // 기본 가정: OFF·조건부 후보·SP 구간·연계 스킬, 사용자 칩·직접 지정.
   for(const s of ['불굴','재난대처능력','그룹 사냥 강화【공격】','힘의 해방','투기 활성','속성 공격 증강【SP】','돌파구'])
     assert.strictEqual(assumed(s,seed('mizu','long-sword')),false,s);
-  assert.strictEqual(assumed('투기 활성',{wt:'long-sword',_abAssume:{sp:true}}),true);
+  assert.strictEqual(assumed('투기 활성',{wt:'long-sword',_abAssume:{on:['투기 활성']}}),true);
   assert.strictEqual(assumed('힘의 해방',{wt:'long-sword',_abAssume:{on:['힘의 해방']}}),true);
   assert.strictEqual(assumed('용맹',{wt:'long-sword',_abAssume:{off:['용맹']}}),false);
   const levels=get('(l=>new Map(l))')([['귀화 망토',1]]);
