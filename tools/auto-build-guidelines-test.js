@@ -55,6 +55,25 @@ function rules() {
   assert.strictEqual(assumed('투기 활성',{wt:'long-sword',_abAssume:{on:['투기 활성']}}),true);
   assert.strictEqual(assumed('힘의 해방',{wt:'long-sword',_abAssume:{on:['힘의 해방']}}),true);
   assert.strictEqual(assumed('용맹',{wt:'long-sword',_abAssume:{off:['용맹']}}),false);
+  // 회심 의지 (CONCEPTS W1): 스타일강화는 회심 파라미터 3개, 미적용은 기본 회심 30% 이상 또는 20% 이상 + 회심 관련 무기 스킬.
+  const dirs=b=>Array.from(get('abDirections')(b),d=>d.id);
+  const ansan=get('bdOrderedSets().find(s=>s.name==="안쟈나프 아종").key');
+  assert.ok(dirs(seed(ansan,'shield-sword')).includes('critical'),'회심 20% + 회심격【속성】 무기 스킬');
+  assert.ok(!dirs(seed('mizu','shield-sword')).includes('critical'),'회심 의지 없음');
+  assert.ok(dirs({...seed('mizu','shield-sword',1),style20:true,params:['crit','crit','crit']}).includes('critical'),'회심 파라미터 3개');
+  const bari={...seed('bari','shield-sword',1),style20:true};
+  assert.ok(get('bdStyleInfo')(bari).available&&get('bdWeaponOf')(bari).crit>=20,'스타일 지원 + 기본 회심 20% 검수 무기');
+  assert.ok(!dirs({...bari,params:['atk','atk','atk']}).includes('critical'),'기본 회심이 있어도 공격 파라미터면 회심 방향 없음');
+  assert.ok(dirs({...bari,params:['crit','crit','crit']}).includes('critical'));
+  // 변형 공격 강화 중심: 첫 추천, 회심 100%까지 약점 특효 레벨 자동.
+  const water=get('abMonsters("switch-axe").find(s=>s.weapons.find(w=>w.t==="switch-axe").e==="물").key');
+  for(const [wt,w,st] of [['switch-axe',water,0],['switch-axe',water,1],['charge-blade','mizu',1]]) {
+    const d=get('abDirections')(seed(w,wt,st))[0], crit=get('bdWeaponBase')(seed(w,wt,st)).crit;
+    assert.strictEqual(d.id,'morph-critical',`${wt}/${st} 변형 회심 첫 추천`);
+    const weak=d.targets.find(t=>t.s==='약점 특효');
+    if(crit<20) assert.ok(weak&&[20,25,30,40,50][weak.max-1]>=100-80-crit,`${wt}/${st} 약점 특효 레벨`); else assert.ok(!weak);
+  }
+  assert.ok(!dirs(seed(water,'switch-axe',2)).includes('morph-critical'),'속성충전 카운터는 변형 없음');
   const levels=get('(l=>new Map(l))')([['귀화 망토',1]]);
   assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{lv:levels}),true,'자체 상태이상이 있으면 돌파구 ON');
   assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{fill:true}),true,'자동 보충 후보로는 유지');

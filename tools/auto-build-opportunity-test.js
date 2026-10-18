@@ -14,7 +14,8 @@ assert.ok(get('abDominates')(metric(110,90,[2],2),metric(100,80,[1],3)));
 assert.ok(!get('abDominates')(metric(110,70,[2],2),metric(100,80,[1],3)),'OFF 효율 손실이면 장단점 대안');
 assert.ok(!get('abDominates')(metric(110,90,[0],2),metric(100,80,[1],3)),'운용 손실이면 장단점 대안');
 assert.ok(!get('abDominates')({...metric(110,90,[2],2),policyKey:'different'},metric(100,80,[1],3)));
-assert.ok(get('abDirections')(seed).find(d=>d.id==='critical').critMin==null);
+// 회심 방향은 회심 파라미터 3개일 때 제안된다 (CONCEPTS W1).
+assert.ok(get('abDirections')({...seed,st:1,style20:true,params:['crit','crit','crit']}).find(d=>d.id==='critical').critMin==null);
 get('BUILD.sets').forEach(s=>s.pieces={});
 const add=(key,k,skills,slot=0)=>get('BUILD.sets').push({key,name:key,weapons:[],pieces:{[k]:{name:key,slot,skills}}});
 for(const p of parts){add('neutral-'+p.k,p.k,[]);seed[p.k]='neutral-'+p.k;}

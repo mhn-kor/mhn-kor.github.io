@@ -23,7 +23,8 @@ assert.ok(get('abSearchTargets')({b,targets:[{s:'물속성 공격 강화·경지
 const add=(key,k,skills)=>get('BUILD.sets').push({key,name:key,weapons:[],pieces:{[k]:{name:key,slot:0,skills}}});
 (async()=>{
   for (const [wt,st,id] of [['long-sword',0,'elder'],['lance',2,'critical']]) {
-    const weapon={...get('bdNewBuild')(),w:'mizu',wt,st}, direction=get('abDirections')(weapon).find(d=>d.id===id);
+    // 회심 방향은 회심 파라미터 3개일 때 제안된다 (CONCEPTS W1).
+    const weapon={...get('bdNewBuild')(),w:'mizu',wt,st,...(id==='critical'?{style20:true,params:['crit','crit','crit']}:{})}, direction=get('abDirections')(weapon).find(d=>d.id===id);
     const actual=await get('abSearch')({b:weapon,direction:id,targets:direction.targets,drift:true,lockon:true});
     assert.ok(actual.pool.length,`${wt}/${id}: 실제 후보 생성`);
     const required=get('abSearchTargets')({b:weapon,targets:direction.targets,lockon:true});

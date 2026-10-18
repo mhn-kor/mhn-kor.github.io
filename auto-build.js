@@ -198,6 +198,8 @@ const AB_ASSUME = {
   linked: { skills:['돌파구','전화위복'], by:['거품의 춤','견인불발','겁혈 망토','귀화 망토'] },
   exclusive: [['과감','저스트 교격'],['과감','저스트 교격【지속】'],['멸진룡의 갈망','투기 활성'],['멸진룡의 갈망','속성 공격 증강【SP】']],
 };
+// 회심 관련 무기 스킬 (CONCEPTS W1, 2026-10-18 사용자).
+const AB_CRIT_WEAPON_SKILLS = ['간파','약점 특효','슈퍼회심','회심격【속성】','힘의 해방'];
 const abTraitList = cell => cell === '—' ? [] : cell.split(' · ');
 function abTrait(b, code) {
   const [has, no] = AB_TRAITS[b.wt]?.[b.st || 0] || ['—','—'];
@@ -265,7 +267,10 @@ function abSupportSkills(b, setting) {
 function abContext(b, setting) {
   const w = bdWeaponOf(b), base = bdWeaponBase(b), info = bdStyleInfo(b);
   const tripleCrit = info.active && info.params.every(p => p?.stat === 'crit');
-  return { w, base, element: abElementSkill(b), tripleCrit,
+  // 회심 세팅 의지 (CONCEPTS W1): 스타일강화 무기는 회심 파라미터 3개, 미적용 무기는 기본 회심 30% 이상 또는 20% 이상 + 회심 관련 무기 스킬.
+  const critIntent = info.active ? tripleCrit
+    : base.crit >= 30 || base.crit >= 20 && bdBuildWSkills(b).some(x => AB_CRIT_WEAPON_SKILLS.includes(x.s));
+  return { w, base, element: abElementSkill(b), tripleCrit, critIntent, morph: abTrait(b, '변형') === 'yes',
     nativeNegative: (w?.crit || 0) < 0,
     critAllowed: !abGun(b) || ['통상','산탄','관통','참렬'].includes(bdAmmoFamily(abGunWeapon(b,setting).x?.[0])),
     style: bdStylesOf(b.wt)[b.st - 1],
@@ -305,22 +310,28 @@ function abInvestmentDirections(b, setting) {
   const plain = make('water', c.element ? `${c.w.e}속성${mastery ? ' · 경지' : ''} 중심` : '물리 · 피해 효율',
     [offense, mastery || (c.element ? elder || '연격' : '용맹'), mastery ? elder || '연격' : c.element ? '용맹' : null].filter(Boolean),
     c.nativeNegative && c.tripleCrit ? '회심 파라미터 3개의 역회심 보정 의도를 반영해 흉회심 방향을 제외합니다.' : '회심 확보 비용을 강제하지 않고 속성·피해 스킬의 투자 효율을 비교합니다.');
-  if (c.critAllowed && c.base.crit > 0) {
+  if (c.critAllowed && c.critIntent) {
     directions.push(make('critical', c.element ? '회심격 · 자체 회심 활용' : '자체 회심 · 투자 비교',
       [c.element ? '회심격【속성】' : offense, '간파', offense === '연격' ? '용맹' : offense],
       '파라미터 포함 무기 자체 회심을 활용할 투자안을 비교합니다. 특정 회심률을 강제하지 않으며 슈퍼회심도 필수가 아닙니다.'));
     if (c.tripleCrit) directions.push(make('crit-attack', '무기 회심 · 공격 증강',
       ['공격 증강【회심】', offense, '연격'].filter((s, i, a) => a.indexOf(s) === i).concat(c.element ? [] : ['용맹']),
       `무기 자체 회심 ${c.base.crit}%에 대한 공격 증가를 비교합니다. 장비 강제 착용이나 추가 점수 보너스는 없습니다.`, { prefer: ['공격 증강【회심】'] }));
-    if (b.wt === 'switch-axe') directions.push(make('morph-critical', '변형 공격 · 회심 활용',
-      ['변형 공격 강화', c.element ? '회심격【속성】' : '슈퍼회심', c.element ? '슈퍼회심' : offense],
-      '변형 공격의 회심 증가를 활용합니다. 해당 공격의 발동 가정이며 전체 공격의 상시 효과는 아닙니다.'));
   }
   if (c.tripleCrit && !c.nativeNegative) directions.push(plain); else directions.unshift(plain);
-  // 3회심에서도 속성 대안을 유지한다. 슬래시액스의 변형 방향은 일반 회심 방향을 대체한다.
-  const morph = directions.find(d => d.id === 'morph-critical');
-  const selected = morph ? directions.filter(d => d.id !== 'critical') : directions;
-  return selected.slice(0, 3);
+  // 변형 공격 강화 중심 무기는 파라미터와 상관없이 변형 회심 방향을 첫 추천으로 두고, 일반 회심 방향을 대체한다.
+  // 변형 회심 80%와 무기 회심으로 100%에 모자란 만큼 약점 특효 레벨을 핵심에 넣는다 (CONCEPTS W1).
+  if (c.morph && c.critAllowed) {
+    const need = 100 - c.base.crit - (bdEffects(bdSkillDesc('변형 공격 강화', abMax('변형 공격 강화')) || '', '변형 공격 강화', c.w).find(e => e.k === 'crit')?.v || 0);
+    const rows = bdSkillLevels('약점 특효') || [], value = r => +(/(\d+)%/.exec(r[1])?.[1] || 0);
+    const weak = need > 0 ? (rows.find(r => value(r) >= need) || rows.at(-1))?.[0] : 0;
+    const d = make('morph-critical', '변형 공격 · 회심 활용',
+      ['변형 공격 강화', ...(weak ? ['약점 특효'] : []), c.element ? '회심격【속성】' : '슈퍼회심', c.element ? '슈퍼회심' : offense],
+      `변형 공격의 회심 80%를 활용합니다.${weak ? ` 회심 100%까지 모자란 ${need}%는 약점 특효 Lv${weak}로 보충합니다.` : ''} 해당 공격의 발동 가정이며 전체 공격의 상시 효과는 아닙니다.`);
+    if (weak) d.targets[1].max = weak;
+    directions.splice(0, directions.length, d, ...directions.filter(x => x.id !== 'critical'));
+  }
+  return directions.slice(0, 3);
 }
 
 function abDirections(b, setting) {
