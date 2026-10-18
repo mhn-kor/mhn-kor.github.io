@@ -41,7 +41,8 @@ const get = s => vm.runInContext(s, ctx);
   assert.strictEqual(get('abMax("록온")'), 1);
   for (const wt of ['light-gun', 'heavy-gun', 'bow']) {
     assert.strictEqual(get('abMelee')(wt), false);
-    assert.strictEqual(get('abSearchTargets')({b:{wt},targets:[{s:'연격',min:3,max:5}],lockon:true}).length, 1);
+    // 록온 없음. 활 기본은 운용 규칙의 집중5가 함께 붙는다.
+    assert.strictEqual(get('abSearchTargets')({b:{wt},targets:[{s:'연격',min:3,max:5}],lockon:true}).map(t=>t.s).join(), wt === 'bow' ? '연격,집중' : '연격');
   }
   assert.strictEqual(get('abDirections(abState.b)[0].id'), 'elder', '높은 자체 속성은 고룡 투자도 우선 비교');
   get('abState.b.st=1; abState.b.style20=true; abState.b.params=["crit","crit","crit"]');

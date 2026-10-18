@@ -35,11 +35,29 @@ function rules() {
     assert.strictEqual(tier([{k,pct,cond,v:10}]),(pct?0:4)+(k==='dmg'?1:3)+cond);
   assert.strictEqual(tier([{k:'crit',v:10}]),9);
   assert.strictEqual(tier([{k:'atk',pct:1,v:10},{k:'ele',v:100}]),9);
+  // 무기 동작 조건: 무기 특성에 그 동작이 있는 스타일에서만 ON (WEAPONS.md, AB_ASSUME.actions).
+  const assumed=(s,b)=>get('abAssumed')(s,b);
   for(const wt of ['long-sword','dual-blades','shield-sword']) {
-    assert.strictEqual(get('abScopeApplies')({scope:'모으기 공격 기준'},{wt}),false);
-    assert.strictEqual(get('abScopeApplies')({scope:'공중 공격 기준'},{wt}),false);
+    assert.strictEqual(assumed('차지 스톡',{wt}),false);
+    assert.strictEqual(assumed('비연',{wt}),false);
   }
-  assert.strictEqual(get('abScopeApplies')({scope:'공중 공격 기준'},fall),true);
+  assert.strictEqual(assumed('비연',fall),true);
+  assert.strictEqual(assumed('비연',{wt:'charge-blade',st:1}),true,'차지액스 검 강화 엑스호퍼는 공중 공격');
+  for(const [wt,st,valid] of [['switch-axe',0,true],['switch-axe',1,true],['switch-axe',2,false],['charge-blade',0,false],['charge-blade',1,true],['charge-blade',2,false]])
+    assert.strictEqual(assumed('변형 공격 강화',{wt,st}),valid,`변형 공격 강화 ${wt}/${st}`);
+  assert.strictEqual(assumed('차지 스톡',{wt:'bow',st:1}),false,'활 회피 근접공격은 모으기 없음');
+  assert.strictEqual(assumed('저스트 모으기 해방',{wt:'bow',st:0}),true);
+  assert.strictEqual(assumed('공격적인 방어',{wt:'gunlance'}),false,'미확인 동작은 OFF');
+  assert.strictEqual(assumed('공격적인 방어',{wt:'great-sword',st:2,w:seed('mizu','great-sword').w}),true);
+  // 기본 가정: OFF·조건부 후보·SP 구간·연계 스킬, 사용자 칩·직접 지정.
+  for(const s of ['불굴','재난대처능력','그룹 사냥 강화【공격】','힘의 해방','투기 활성','속성 공격 증강【SP】','돌파구'])
+    assert.strictEqual(assumed(s,seed('mizu','long-sword')),false,s);
+  assert.strictEqual(assumed('투기 활성',{wt:'long-sword',_abAssume:{sp:true}}),true);
+  assert.strictEqual(assumed('힘의 해방',{wt:'long-sword',_abAssume:{on:['힘의 해방']}}),true);
+  assert.strictEqual(assumed('용맹',{wt:'long-sword',_abAssume:{off:['용맹']}}),false);
+  const levels=get('(l=>new Map(l))')([['귀화 망토',1]]);
+  assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{lv:levels}),true,'자체 상태이상이 있으면 돌파구 ON');
+  assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{fill:true}),true,'자동 보충 후보로는 유지');
   for(const t of ['shield-sword','great-sword','long-sword','hammer','bow'])
     assert.strictEqual(get('bdEffects')(get('bdSkillDesc')('포술',5),'포술',{t}).length,0,'무관한 포술 효과 제외');
   for(const [ammo,distance,artillery,crit] of [['통상탄',true,false,true],['산탄',true,false,true],['관통전격탄',true,false,true],

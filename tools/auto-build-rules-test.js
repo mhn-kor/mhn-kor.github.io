@@ -49,4 +49,28 @@ for(const t of get('BUILD.weaponTypes')) {
 }
 for(const r of rules.styles) for(const st of [].concat(r.style)) if(st)
   assert.ok(get('bdStylesOf')(r.wt).includes(st),`게임 데이터에 없는 스타일: ${r.id}/${st}`);
-console.log(`운용 가이드 ↔ AB_RULES 일치 (${data.length}개 규칙)`);
+// 무기 특성 표 ↔ AB_TRAITS ([기본, 스타일1, 스타일2]의 [있음, 없음]).
+const traits=get('AB_TRAITS'), tableRows=s=>s.split('\n').map(l=>l.split('|').slice(1,-1).map(c=>c.trim())).filter(c=>c.length>3);
+let traitRows=0;
+for(const [name,style,has,no] of tableRows(weapons)) {
+  const t=get('BUILD.weaponTypes').find(x=>x.n===name);
+  if(!t) continue;
+  const i=style==='기본'?0:get('bdStylesOf')(t.k).indexOf(style)+1;
+  assert.ok(i>=0&&traits[t.k]?.[i],`무기 특성 행 없음: ${name}/${style}`);
+  assert.strictEqual(JSON.stringify(traits[t.k][i]),JSON.stringify([has,no]),`무기 특성 불일치: ${name}/${style}`);
+  traitRows++;
+}
+assert.strictEqual(traitRows,Object.values(traits).flat().length,'AB_TRAITS에만 있는 행');
+// 스킬 사전 기본 가정 칸 ↔ AB_ASSUME.
+const assume=get('AB_ASSUME'), skills=tableRows(fs.readFileSync(path.join(root,'docs','SKILLS.md'),'utf8')).filter(c=>c.length>=10&&c[0]!=='스킬'&&!/^-+$/.test(c[0]));
+const pick=(fn)=>skills.filter(fn).map(c=>c[0]).sort();
+const sorted=a=>[...a].sort();
+const same=(a,b,m)=>assert.strictEqual(JSON.stringify(a),JSON.stringify(b),m);
+same(pick(c=>c[4]==='OFF'),sorted(assume.off),'기본 가정 OFF 불일치');
+same(pick(c=>c[4]==='조건부 후보'),sorted([...assume.candidate,...assume.sp]),'조건부 후보 불일치');
+same(pick(c=>c[4]==='ON'&&c[3]==='조건부'),sorted(assume.monster),'몬스터 의존 ON 불일치');
+same(pick(c=>c[4]==='조건부 ON (연계 스킬)'),sorted(assume.linked.skills),'연계 스킬 불일치');
+const actions=skills.filter(c=>c[4]==='조건부 ON (무기 동작)'&&!get('abSP')(c[0]));
+same(actions.map(c=>c[0]).sort(),sorted(Object.keys(assume.actions)),'무기 동작 스킬 불일치');
+for(const c of actions) assert.strictEqual(assume.actions[c[0]],c[5],`액션 조건 불일치: ${c[0]}`);
+console.log(`운용 가이드 ↔ AB_RULES 일치 (${data.length}개 규칙) · 무기 특성 ${traitRows}행 · 기본 가정 일치`);
