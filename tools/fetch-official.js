@@ -138,9 +138,13 @@ async function main() {
   }
   fs.writeFileSync(path.join(OUT, 'kinsect.json'), JSON.stringify(kinsect, null, 1) + '\n');
 
-  // 공식 10-5 스펙·병/포격형·스타일 선택 지원. 수집 범위 밖의 기록은 보존한다.
+  // 공식 10-5 스펙·장비 스킬·병/포격형·스타일 선택 지원. 수집 범위 밖의 기록은 보존한다.
+  // build-builddata.js 는 공식에 있는 값을 mhn.quest 번들보다 우선한다 (번들은 공식 공개 전 신규 장비용).
   const specFile = path.join(OUT, 'weapon-specs.json');
   const specs = fs.existsSync(specFile) ? JSON.parse(fs.readFileSync(specFile, 'utf8')) : {};
+  /* 장비 스킬은 «HEALTH_BOOST» 같은 열거값이고, 소문자가 곧 공식 스킬 페이지 슬러그다. */
+  const skillOfKind = Object.fromEntries(Object.entries(skillUrls).map(([name, url]) => [url.split('/').pop(), name]));
+  const unknownKinds = new Set();
   for (const match of wpage.matchAll(/"id":"([A-Z0-9_]+)","target":/g)) {
     const id = match[1].toLowerCase();
     if (!selected(id)) continue;
@@ -154,14 +158,22 @@ async function main() {
       else if (c === '}' && !--depth) { end = i + 1; break; }
     }
     const weapon = JSON.parse(wpage.slice(start, end));
-    const base = weapon.grades?.find(g => g.grade === 10)?.levels.find(l => l.level === 5);
+    const grade = weapon.grades?.find(g => g.grade === 10), base = grade?.levels.find(l => l.level === 5);
     if (!base) throw new Error('공식 10-5 스펙 없음: ' + id);
+    // 스타일 강화 레벨이 필요한 스킬(requiredCustomEnhancementLevel)은 기본 스킬이 아니다 — build-styles 의 해금 자료가 다룬다.
+    const sk = (grade.skills || []).filter(x => !x.requiredCustomEnhancementLevel)
+      .map(x => ({ s: skillOfKind[x.kind.toLowerCase()], lv: x.level, kind: x.kind }));
+    sk.filter(x => !x.s).forEach(x => unknownKinds.add(x.kind));
     specs[id] = { atk: base.attack, ele: base.elementAttack, crit: base.critical,
+      ...(sk.every(x => x.s) ? { sk: sk.map(({ s, lv }) => ({ s, lv })) } : {}),
       styleSelectable: weapon.customizationSpec?.styleSelectable === true,
       ...(weapon.gunlanceSpec ? { shelling: weapon.gunlanceSpec.shellingType.replace('SHELLING_', '').toLowerCase() } : {}),
-      ...(weapon.chargeBladeSpec ? { phial: weapon.chargeBladeSpec.phialType.replace('PHIAL_', '').toLowerCase() } : {}) };
+      // 공식 속성병은 ELEMENT_<속성>, 번들·wextra 는 power(강속성병) 하나로 쓴다.
+      ...(weapon.chargeBladeSpec ? { phial: weapon.chargeBladeSpec.phialType.replace('PHIAL_', '').toLowerCase().replace(/^element_.*/, 'power') } : {}) };
   }
   fs.writeFileSync(specFile, JSON.stringify(specs, null, 1) + '\n');
+  // 이름을 모르는 스킬이 있는 무기는 장비 스킬만 번들 값을 쓴다. 조용히 넘기지 않고 알린다.
+  if (unknownKinds.size) process.stderr.write(`공식 장비 스킬 이름 없음 (해당 무기는 번들 스킬 사용): ${[...unknownKinds].join(', ')}\n`);
 
   const added = (k) => Object.keys(names[k]).filter(s => !(old[k] || {})[s]);
   process.stderr.write(

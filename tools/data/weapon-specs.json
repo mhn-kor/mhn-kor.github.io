@@ -3,84 +3,168 @@
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_swordshield": {
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "barroth_swordshield": {
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "pukeipukei_greatsword": {
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "barroth_greatsword": {
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "barroth_lightbowgun": {
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_longsword": {
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "pukeipukei_hammer": {
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "barroth_hammer": {
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_bow": {
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "pukeipukei_bow": {
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "pukeipukei_lance": {
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "barroth_lance": {
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_chargeblade": {
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true,
   "phial": "impact"
  },
@@ -88,6 +172,12 @@
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true,
   "shelling": "wide"
  },
@@ -95,6 +185,12 @@
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true,
   "shelling": "normal"
  },
@@ -102,66 +198,132 @@
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_heavybowgun": {
   "atk": 2251,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "pukeipukei_switchaxe": {
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "barroth_switchaxe": {
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_switchaxe": {
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "pukeipukei_huntinghorn": {
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "barroth_huntinghorn": {
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_huntinghorn": {
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "pukeipukei_insectglaive": {
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_insectglaive": {
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "pukeipukei_gunlance": {
   "atk": 1912,
   "ele": 417,
   "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
   "styleSelectable": true,
   "shelling": "wide"
  },
@@ -169,12 +331,24 @@
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "barroth_chargeblade": {
   "atk": 2103,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true,
   "phial": "impact"
  },
@@ -182,12 +356,8948 @@
   "atk": 1817,
   "ele": 516,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
  },
  "rathian_lightbowgun": {
   "atk": 2251,
   "ele": 0,
   "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
   "styleSelectable": true
+ },
+ "ore_swordshield": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatjagras_swordshield": {
+  "atk": 1644,
+  "ele": 754,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_swordshield": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rathalos_swordshield": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "legiana_swordshield": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "greatgirros_swordshield": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_swordshield": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "ore_greatsword": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatjagras_greatsword": {
+  "atk": 1644,
+  "ele": 754,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_greatsword": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rathalos_greatsword": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "legiana_greatsword": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "greatgirros_greatsword": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_greatsword": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "ore_lightbowgun": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatjagras_lightbowgun": {
+  "atk": 1644,
+  "ele": 754,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_lightbowgun": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "legiana_lightbowgun": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rathalos_lightbowgun": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_lightbowgun": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "ore_longsword": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "paolumu_swordshield": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "paolumu_lightbowgun": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "ore_hammer": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kuluyaku_longsword": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "불굴",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_longsword": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "legiana_longsword": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rathalos_longsword": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_longsword": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "kuluyaku_hammer": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "불굴",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_hammer": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_hammer": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_hammer": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "greatgirros_hammer": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "ore_bow": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "jyuratodus_swordshield": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "jyuratodus_greatsword": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "jyuratodus_longsword": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "jyuratodus_hammer": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "jyuratodus_lightbowgun": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rathalos_bow": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_bow": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_bow": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "kuluyaku_bow": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "불굴",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_bow": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "legiana_bow": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "jyuratodus_bow": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "pink_rathian_swordshield": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "pink_rathian_bow": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "azure_rathalos_swordshield": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "azure_rathalos_greatsword": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "azure_rathalos_lightbowgun": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "azure_rathalos_longsword": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "azure_rathalos_bow": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "black_diablos_hammer": {
+  "atk": 2658,
+  "ele": 0,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "black_diablos_bow": {
+  "atk": 2658,
+  "ele": 0,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "pink_rathian_longsword": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ore_dualblades": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ore_lance": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "zinogre_greatsword": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_swordshield": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_dualblades": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_longsword": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_hammer": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_lance": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_bow": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_lightbowgun": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_greatsword": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_swordshield": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_dualblades": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_longsword": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_hammer": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_lance": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_bow": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_lightbowgun": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "banbaro_greatsword": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "몸통 강화",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "banbaro_dualblades": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "몸통 강화",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "banbaro_longsword": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "몸통 강화",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "banbaro_hammer": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "몸통 강화",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "banbaro_bow": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "몸통 강화",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "banbaro_lightbowgun": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "몸통 강화",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "radobaan_greatsword": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "radobaan_swordshield": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "radobaan_hammer": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "kuluyaku_dualblades": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "불굴",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "anjanath_dualblades": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_dualblades": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "jyuratodus_dualblades": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "tobikadachi_dualblades": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "legiana_dualblades": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "kuluyaku_lance": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "불굴",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_lance": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rathalos_lance": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "azure_rathalos_lance": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "jyuratodus_lance": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "legiana_lance": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bone_swordshield": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_greatsword": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_hammer": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_longsword": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_lightbowgun": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_bow": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_dualblades": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_lance": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "black_diablos_dualblades": {
+  "atk": 2658,
+  "ele": 0,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ore_chargeblade": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "ore_heavybowgun": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatjagras_chargeblade": {
+  "atk": 1644,
+  "ele": 754,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "greatgirros_chargeblade": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "impact"
+ },
+ "tobikadachi_chargeblade": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "jyuratodus_chargeblade": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "rathalos_chargeblade": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "diablos_chargeblade": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "impact"
+ },
+ "pink_rathian_chargeblade": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "azure_rathalos_chargeblade": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "zinogre_chargeblade": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "odogaron_chargeblade": {
+  "atk": 2059,
+  "ele": 0,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "특수 게이지 가속【저스트 회피】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "deviljho_chargeblade": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "legiana_chargeblade": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "black_diablos_chargeblade": {
+  "atk": 2658,
+  "ele": 0,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "barioth_chargeblade": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "deviljho_greatsword": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "집중",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "deviljho_swordshield": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "비연",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "tzitziyaku_dualblades": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "odogaron_dualblades": {
+  "atk": 2059,
+  "ele": 0,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "특수 게이지 가속【저스트 회피】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "deviljho_dualblades": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "tzitziyaku_longsword": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "deviljho_longsword": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "속전속결",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "deviljho_hammer": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "KO술",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "odogaron_lance": {
+  "atk": 2059,
+  "ele": 0,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "특수 게이지 가속【저스트 회피】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "deviljho_lance": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "공격적인 방어",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "deviljho_bow": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "odogaron_lightbowgun": {
+  "atk": 2059,
+  "ele": 0,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "특수 게이지 가속【저스트 회피】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "deviljho_lightbowgun": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "coral_pukeipukei_greatsword": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "coral_pukeipukei_swordshield": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "coral_pukeipukei_hammer": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "coral_pukeipukei_lance": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "coral_pukeipukei_bow": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "coral_pukeipukei_lightbowgun": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_chargeblade": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "kushaladaora_greatsword": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_hammer": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_lance": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_lightbowgun": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_bow": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_swordshield": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_longsword": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_dualblades": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_chargeblade": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "ore_gunlance": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "basarios_longsword": {
+  "atk": 1995,
+  "ele": 655,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "basarios_hammer": {
+  "atk": 2245,
+  "ele": 0,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "basarios_lance": {
+  "atk": 2002,
+  "ele": 357,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "basarios_lightbowgun": {
+  "atk": 1995,
+  "ele": 655,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "basarios_chargeblade": {
+  "atk": 2002,
+  "ele": 357,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "khezu_greatsword": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "khezu_swordshield": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "khezu_dualblades": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "khezu_hammer": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "khezu_gunlance": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "khezu_bow": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "khezu_lightbowgun": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_greatsword": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_swordshield": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_dualblades": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_longsword": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_hammer": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_lance": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_gunlance": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "long"
+ },
+ "mizutsune_bow": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_lightbowgun": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_chargeblade": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "impact"
+ },
+ "nightshade_paolumu_greatsword": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nightshade_paolumu_swordshield": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nightshade_paolumu_hammer": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nightshade_paolumu_lance": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nightshade_paolumu_bow": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nightshade_paolumu_lightbowgun": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "anjanath_gunlance": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "normal"
+ },
+ "jyuratodus_gunlance": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "greatgirros_gunlance": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "normal"
+ },
+ "greatjagras_gunlance": {
+  "atk": 1644,
+  "ele": 754,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "tobikadachi_gunlance": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "long"
+ },
+ "pink_rathian_gunlance": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "rathalos_gunlance": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "long"
+ },
+ "azure_rathalos_gunlance": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "long"
+ },
+ "legiana_gunlance": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "normal"
+ },
+ "zinogre_gunlance": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "normal"
+ },
+ "banbaro_gunlance": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "몸통 강화",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "normal"
+ },
+ "barioth_gunlance": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "deviljho_gunlance": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "포술",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "long"
+ },
+ "kushaladaora_gunlance": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "bone_gunlance": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "teostra_greatsword": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_longsword": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_swordshield": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_hammer": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_lance": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_chargeblade": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "teostra_bow": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_lightbowgun": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aknosom_greatsword": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "aknosom_dualblades": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "aknosom_longsword": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "aknosom_lance": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "aknosom_gunlance": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "normal"
+ },
+ "anjanath_heavybowgun": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "deviljho_heavybowgun": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "장전 방어",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "kushaladaora_heavybowgun": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "jyuratodus_heavybowgun": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_heavybowgun": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_heavybowgun": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "tzitziyaku_heavybowgun": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "가드 성능",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "diablos_heavybowgun": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "black_diablos_heavybowgun": {
+  "atk": 2658,
+  "ele": 0,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_heavybowgun": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatjagras_heavybowgun": {
+  "atk": 1644,
+  "ele": 754,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_heavybowgun": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "nergigante_greatsword": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_swordshield": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_dualblades": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_longsword": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_hammer": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_lance": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_gunlance": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "nergigante_chargeblade": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "nergigante_bow": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_heavybowgun": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_lightbowgun": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nightshade_paolumu_heavybowgun": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "basarios_heavybowgun": {
+  "atk": 1995,
+  "ele": 655,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "coral_pukeipukei_heavybowgun": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "barioth_heavybowgun": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_greatsword": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_swordshield": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_dualblades": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_longsword": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_hammer": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_lance": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_gunlance": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "long"
+ },
+ "magnamalo_chargeblade": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "impact"
+ },
+ "magnamalo_bow": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_heavybowgun": {
+  "atk": 2251,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_lightbowgun": {
+  "atk": 2251,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rajang_greatsword": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "앙심",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rajang_swordshield": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "KO술",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rajang_dualblades": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "강화 지속",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rajang_longsword": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "집중",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rajang_hammer": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rajang_lance": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rajang_gunlance": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "장전 방어",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "rajang_chargeblade": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "속전속결",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "rajang_bow": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rajang_heavybowgun": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "공격적인 방어",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rajang_lightbowgun": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "포술",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "radobaan_heavybowgun": {
+  "atk": 2103,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "gold_rathian_swordshield": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "추가 공격【독】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gold_rathian_longsword": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "추가 공격【독】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gold_rathian_gunlance": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "추가 공격【독】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "gold_rathian_chargeblade": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "추가 공격【독】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "gold_rathian_bow": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "추가 공격【독】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gold_rathian_lightbowgun": {
+  "atk": 2388,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "추가 공격【독】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gold_rathian_heavybowgun": {
+  "atk": 2388,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "추가 공격【독】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "silver_rathalos_greatsword": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "silver_rathalos_swordshield": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "silver_rathalos_longsword": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "silver_rathalos_hammer": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "silver_rathalos_lance": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "silver_rathalos_gunlance": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "silver_rathalos_chargeblade": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "power"
+ },
+ "silver_rathalos_bow": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "silver_rathalos_lightbowgun": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "legiana_heavybowgun": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bone_heavybowgun": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "silver_rathalos_dualblades": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   },
+   {
+    "s": "추가 공격【독】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ore_switchaxe": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aknosom_switchaxe": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_switchaxe": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "mizutsune_switchaxe": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "somnacanth_greatsword": {
+  "atk": 1878,
+  "ele": 516,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "somnacanth_dualblades": {
+  "atk": 1878,
+  "ele": 516,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "somnacanth_longsword": {
+  "atk": 1878,
+  "ele": 516,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "somnacanth_hammer": {
+  "atk": 1878,
+  "ele": 516,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "somnacanth_chargeblade": {
+  "atk": 1878,
+  "ele": 516,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "impact"
+ },
+ "deviljho_switchaxe": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "체인지 부스트",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "lagombi_greatsword": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "lagombi_dualblades": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "lagombi_longsword": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "lagombi_gunlance": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "lagombi_switchaxe": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "lagombi_heavybowgun": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "가드 성능",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "kirin_greatsword": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kirin_swordshield": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kirin_dualblades": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kirin_lance": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kirin_switchaxe": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kirin_heavybowgun": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kirin_lightbowgun": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kushaladaora_switchaxe": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "jyuratodus_switchaxe": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "zinogre_switchaxe": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_switchaxe": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "black_diablos_switchaxe": {
+  "atk": 2658,
+  "ele": 0,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_greatsword": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_swordshield": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_dualblades": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_longsword": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_hammer": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_lance": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_gunlance": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "tigrex_switchaxe": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_chargeblade": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "tigrex_bow": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_heavybowgun": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_lightbowgun": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_switchaxe": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatjagras_switchaxe": {
+  "atk": 1644,
+  "ele": 754,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_switchaxe": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "nergigante_switchaxe": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "paolumu_switchaxe": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "nightshade_paolumu_switchaxe": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bazelgeuse_dualblades": {
+  "atk": 2327,
+  "ele": 309,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bazelgeuse_longsword": {
+  "atk": 2327,
+  "ele": 309,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "속전속결",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bazelgeuse_lance": {
+  "atk": 2327,
+  "ele": 309,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "공격적인 방어",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bazelgeuse_gunlance": {
+  "atk": 2327,
+  "ele": 309,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "포술",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "bazelgeuse_switchaxe": {
+  "atk": 2327,
+  "ele": 309,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bazelgeuse_lightbowgun": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "회피 장전",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "banbaro_switchaxe": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "몸통 강화",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "coral_pukeipukei_switchaxe": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "khezu_switchaxe": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_switchaxe": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "magnamalo_switchaxe": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rajang_switchaxe": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "투기 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "volvidon_hammer": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "volvidon_lance": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "volvidon_gunlance": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "volvidon_switchaxe": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "volvidon_chargeblade": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "volvidon_heavybowgun": {
+  "atk": 2251,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gold_rathian_switchaxe": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "추가 공격【독】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rathalos_switchaxe": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "azure_rathalos_switchaxe": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "silver_rathalos_switchaxe": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "legiana_switchaxe": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bone_switchaxe": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rathalos_hammer": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "chatacabra_swordshield": {
+  "atk": 2197,
+  "ele": 0,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "방어 준비",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chatacabra_hammer": {
+  "atk": 2197,
+  "ele": 0,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "방어 준비",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chatacabra_chargeblade": {
+  "atk": 2197,
+  "ele": 0,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "방어 준비",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "chatacabra_heavybowgun": {
+  "atk": 2197,
+  "ele": 0,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "방어 준비",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "arzuros_dualblades": {
+  "atk": 2361,
+  "ele": 0,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "arzuros_longsword": {
+  "atk": 2361,
+  "ele": 0,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "arzuros_hammer": {
+  "atk": 2361,
+  "ele": 0,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "arzuros_switchaxe": {
+  "atk": 2361,
+  "ele": 0,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "arzuros_bow": {
+  "atk": 2361,
+  "ele": 0,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "arzuros_heavybowgun": {
+  "atk": 2361,
+  "ele": 0,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chameleos_greatsword": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chameleos_dualblades": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chameleos_longsword": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chameleos_hammer": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chameleos_gunlance": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "chameleos_switchaxe": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chameleos_chargeblade": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "chameleos_bow": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chameleos_heavybowgun": {
+  "atk": 2446,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chameleos_lightbowgun": {
+  "atk": 2446,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ebony_odogaron_dualblades": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "슈퍼회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ebony_odogaron_lance": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "슈퍼회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ebony_odogaron_chargeblade": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "슈퍼회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "power"
+ },
+ "ebony_odogaron_lightbowgun": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "슈퍼회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "glavenus_greatsword": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_swordshield": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_dualblades": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_longsword": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_hammer": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_lance": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_gunlance": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "glavenus_switchaxe": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_chargeblade": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "phial": "power"
+ },
+ "glavenus_bow": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_heavybowgun": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_lightbowgun": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "ore_huntinghorn": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ore_insectglaive": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "독 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kuluyaku_huntinghorn": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "불굴",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "legiana_huntinghorn": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rathalos_huntinghorn": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_huntinghorn": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_huntinghorn": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "paolumu_huntinghorn": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "pink_rathian_huntinghorn": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "zinogre_huntinghorn": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_huntinghorn": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "radobaan_huntinghorn": {
+  "atk": 1912,
+  "ele": 417,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "방어",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "kushaladaora_huntinghorn": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "deviljho_huntinghorn": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "강화 지속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "coral_pukeipukei_huntinghorn": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "teostra_huntinghorn": {
+  "atk": 2017,
+  "ele": 522,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "재난대처능력",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "mizutsune_huntinghorn": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "khezu_huntinghorn": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "basarios_huntinghorn": {
+  "atk": 1995,
+  "ele": 655,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nightshade_paolumu_huntinghorn": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_huntinghorn": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "magnamalo_huntinghorn": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rajang_huntinghorn": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "전심전력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gold_rathian_huntinghorn": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kirin_huntinghorn": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_huntinghorn": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "somnacanth_huntinghorn": {
+  "atk": 1878,
+  "ele": 516,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bazelgeuse_huntinghorn": {
+  "atk": 2327,
+  "ele": 309,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_huntinghorn": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "chameleos_huntinghorn": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "arzuros_huntinghorn": {
+  "atk": 2361,
+  "ele": 0,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_huntinghorn": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bone_huntinghorn": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_huntinghorn": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_huntinghorn": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "bishaten_swordshield": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "그룹 사냥 강화【공격】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bishaten_hammer": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "그룹 사냥 강화【공격】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bishaten_switchaxe": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "그룹 사냥 강화【공격】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bishaten_bow": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "그룹 사냥 강화【공격】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bishaten_heavybowgun": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "그룹 사냥 강화【공격】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "bishaten_lightbowgun": {
+  "atk": 2113,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "그룹 사냥 강화【공격】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "beotodus_greatsword": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "beotodus_dualblades": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "beotodus_chargeblade": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "power"
+ },
+ "beotodus_lightbowgun": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_greatsword": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_swordshield": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_dualblades": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_longsword": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_hammer": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_lance": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_gunlance": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "nargacuga_switchaxe": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_chargeblade": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "nargacuga_bow": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_heavybowgun": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_lightbowgun": {
+  "atk": 2082,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatwroggi_swordshield": {
+  "atk": 1973,
+  "ele": 319,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatwroggi_dualblades": {
+  "atk": 1973,
+  "ele": 319,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatwroggi_longsword": {
+  "atk": 1973,
+  "ele": 319,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatwroggi_hammer": {
+  "atk": 1973,
+  "ele": 319,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "greatwroggi_bow": {
+  "atk": 1973,
+  "ele": 319,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "집중",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_swordshield": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_longsword": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_lance": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_gunlance": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "namielle_switchaxe": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_chargeblade": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "namielle_lightbowgun": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_heavybowgun": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_bow": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_greatsword": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_swordshield": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_dualblades": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_longsword": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_hammer": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_gunlance": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "fulgur_anjanath_switchaxe": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_bow": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_heavybowgun": {
+  "atk": 1442,
+  "ele": 1588,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_lightbowgun": {
+  "atk": 1442,
+  "ele": 1588,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "jyuratodus_huntinghorn": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "tobikadachi_huntinghorn": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "espinas_greatsword": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_swordshield": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_dualblades": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_longsword": {
+  "atk": 2103,
+  "ele": 294,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_hammer": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_huntinghorn": {
+  "atk": 2103,
+  "ele": 294,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_lance": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_gunlance": {
+  "atk": 2103,
+  "ele": 294,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "espinas_switchaxe": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_chargeblade": {
+  "atk": 2103,
+  "ele": 294,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "espinas_bow": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_heavybowgun": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_lightbowgun": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_greatsword": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_swordshield": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_dualblades": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_longsword": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_hammer": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_huntinghorn": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_lance": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_gunlance": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "garangolm_switchaxe": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_chargeblade": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "garangolm_bow": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_heavybowgun": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_lightbowgun": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_greatsword": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_swordshield": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_dualblades": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_longsword": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_hammer": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_huntinghorn": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_lance": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_gunlance": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "lunagaron_switchaxe": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_chargeblade": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "lunagaron_bow": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_heavybowgun": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_lightbowgun": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_greatsword": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_swordshield": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_dualblades": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_longsword": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_hammer": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_huntinghorn": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_lance": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_gunlance": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "malzeno_switchaxe": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_chargeblade": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "malzeno_bow": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_heavybowgun": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_lightbowgun": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_greatsword": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "방어 준비",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_swordshield": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "저스트 교격",
+    "lv": 5
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_dualblades": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "강화 지속",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_longsword": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "속전속결",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_huntinghorn": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "강화 지속",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_lance": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "매진",
+    "lv": 5
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_gunlance": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "저스트 교격",
+    "lv": 5
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "brute_tigrex_switchaxe": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "방어 준비",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_chargeblade": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "회피 장전",
+    "lv": 5
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "brute_tigrex_bow": {
+  "atk": 2077,
+  "ele": 417,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "탄도 강화",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_heavybowgun": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "장전 방어",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_lightbowgun": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "탄도 강화",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "quematrice_greatsword": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "quematrice_swordshield": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "quematrice_dualblades": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "quematrice_longsword": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "quematrice_lance": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "quematrice_gunlance": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "quematrice_bow": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gossharag_greatsword": {
+  "atk": 1570,
+  "ele": 1492,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gossharag_swordshield": {
+  "atk": 1570,
+  "ele": 1492,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gossharag_hammer": {
+  "atk": 1570,
+  "ele": 1492,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gossharag_lance": {
+  "atk": 1570,
+  "ele": 1492,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gossharag_chargeblade": {
+  "atk": 1570,
+  "ele": 1492,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "gossharag_lightbowgun": {
+  "atk": 1570,
+  "ele": 1492,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_greatsword": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_swordshield": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_dualblades": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_longsword": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_hammer": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_huntinghorn": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_lance": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_gunlance": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "astalos_switchaxe": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_chargeblade": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "astalos_bow": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_heavybowgun": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_lightbowgun": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "diablos_greatsword": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_swordshield": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_lance": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_gunlance": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true,
+  "shelling": "wide"
+ },
+ "bone_insectglaive": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 게이지 가속",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kuluyaku_insectglaive": {
+  "atk": 1912,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "불굴",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tobikadachi_insectglaive": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "legiana_insectglaive": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "정령의 가호",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rathalos_insectglaive": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "diablos_insectglaive": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "재난대처능력",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "anjanath_insectglaive": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "후발 주자",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "jyuratodus_insectglaive": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "배수의 진",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "azure_rathalos_insectglaive": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "특수 스킬 위력 상승",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "black_diablos_insectglaive": {
+  "atk": 2658,
+  "ele": 0,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "zinogre_insectglaive": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "barioth_insectglaive": {
+  "atk": 1426,
+  "ele": 1131,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "kushaladaora_insectglaive": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "풍압 내성",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "deviljho_insectglaive": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "매진",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": true
+ },
+ "coral_pukeipukei_insectglaive": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "odogaron_insectglaive": {
+  "atk": 2059,
+  "ele": 0,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "특수 게이지 가속【저스트 회피】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tzitziyaku_insectglaive": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "mizutsune_insectglaive": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "저스트 회피 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "khezu_insectglaive": {
+  "atk": 1429,
+  "ele": 1134,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "완전 충전",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "nightshade_paolumu_insectglaive": {
+  "atk": 2103,
+  "ele": 312,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "기습",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nergigante_insectglaive": {
+  "atk": 1861,
+  "ele": 1210,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "파괴왕",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "magnamalo_insectglaive": {
+  "atk": 1817,
+  "ele": 516,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "파괴왕",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "rajang_insectglaive": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "비연",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aknosom_insectglaive": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "silver_rathalos_insectglaive": {
+  "atk": 1507,
+  "ele": 1345,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 2
+   },
+   {
+    "s": "추가 공격【독】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "kirin_insectglaive": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "힘의 해방",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "tigrex_insectglaive": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -40,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lagombi_insectglaive": {
+  "atk": 1903,
+  "ele": 785,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "록온",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "somnacanth_insectglaive": {
+  "atk": 1878,
+  "ele": 516,
+  "crit": -15,
+  "sk": [
+   {
+    "s": "회피 거리 UP",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "glavenus_insectglaive": {
+  "atk": 1579,
+  "ele": 1568,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "chameleos_insectglaive": {
+  "atk": 2086,
+  "ele": 526,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "기습【상태 이상】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "ebony_odogaron_insectglaive": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "슈퍼회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "chatacabra_insectglaive": {
+  "atk": 2197,
+  "ele": 0,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "방어 준비",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "beotodus_insectglaive": {
+  "atk": 1549,
+  "ele": 1131,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용맹",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "nargacuga_insectglaive": {
+  "atk": 2186,
+  "ele": 0,
+  "crit": 40,
+  "sk": [
+   {
+    "s": "돌파구",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "fulgur_anjanath_insectglaive": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "회심격【속성】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "namielle_insectglaive": {
+  "atk": 1591,
+  "ele": 1335,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "약점 특효",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "espinas_insectglaive": {
+  "atk": 1434,
+  "ele": 1434,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "파괴왕【특수 스킬】",
+    "lv": 2
+   }
+  ],
+  "styleSelectable": false
+ },
+ "garangolm_insectglaive": {
+  "atk": 2371,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "과감",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "lunagaron_insectglaive": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "하이 차지【얼음】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "malzeno_insectglaive": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "하이 차지【용】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brute_tigrex_insectglaive": {
+  "atk": 2633,
+  "ele": 0,
+  "crit": -10,
+  "sk": [
+   {
+    "s": "강화 지속",
+    "lv": 3
+   }
+  ],
+  "styleSelectable": false
+ },
+ "astalos_insectglaive": {
+  "atk": 1363,
+  "ele": 1436,
+  "crit": 20,
+  "sk": [
+   {
+    "s": "번개속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "gossharag_insectglaive": {
+  "atk": 1570,
+  "ele": 1492,
+  "crit": -30,
+  "sk": [
+   {
+    "s": "흉회심",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "rathalos_dualblades": {
+  "atk": 1463,
+  "ele": 1420,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "체력 증강",
+    "lv": 1
+   },
+   {
+    "s": "귀마개",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": true
+ },
+ "almudron_dualblades": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "물속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "almudron_longsword": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "물속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "almudron_hammer": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "물속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "almudron_gunlance": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "물속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "wide"
+ },
+ "almudron_switchaxe": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "물속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "almudron_bow": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "물속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "almudron_lightbowgun": {
+  "atk": 1222,
+  "ele": 1458,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "물속성 공격 강화",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_greatsword": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_swordshield": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_dualblades": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_longsword": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_hammer": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_huntinghorn": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_lance": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_gunlance": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "seregios_switchaxe": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_chargeblade": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "seregios_insectglaive": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_bow": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_heavybowgun": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "seregios_lightbowgun": {
+  "atk": 2335,
+  "ele": 0,
+  "crit": 30,
+  "sk": [
+   {
+    "s": "공격 활성",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "viper_tobikadachi_dualblades": {
+  "atk": 2127,
+  "ele": 364,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 1
+   },
+   {
+    "s": "연격·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "viper_tobikadachi_longsword": {
+  "atk": 2127,
+  "ele": 364,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 1
+   },
+   {
+    "s": "연격·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "viper_tobikadachi_gunlance": {
+  "atk": 2127,
+  "ele": 364,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 1
+   },
+   {
+    "s": "연격·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "viper_tobikadachi_chargeblade": {
+  "atk": 2127,
+  "ele": 364,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 1
+   },
+   {
+    "s": "연격·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "viper_tobikadachi_insectglaive": {
+  "atk": 2127,
+  "ele": 364,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 1
+   },
+   {
+    "s": "연격·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "viper_tobikadachi_bow": {
+  "atk": 2127,
+  "ele": 364,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 1
+   },
+   {
+    "s": "연격·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "viper_tobikadachi_heavybowgun": {
+  "atk": 2448,
+  "ele": 0,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "연격",
+    "lv": 1
+   },
+   {
+    "s": "연격·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "shogunceanataur_greatsword": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "추격",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "shogunceanataur_dualblades": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "추격",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "shogunceanataur_longsword": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "추격",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "shogunceanataur_hammer": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "추격",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "shogunceanataur_lance": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "추격",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "shogunceanataur_chargeblade": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "추격",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "shogunceanataur_bow": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "추격",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "shogunceanataur_heavybowgun": {
+  "atk": 2015,
+  "ele": 752,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "추격",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_greatsword": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_swordshield": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_dualblades": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_longsword": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_hammer": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_huntinghorn": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_lance": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_gunlance": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "stygian_zinogre_switchaxe": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_chargeblade": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "stygian_zinogre_insectglaive": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_bow": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_heavybowgun": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "stygian_zinogre_lightbowgun": {
+  "atk": 1506,
+  "ele": 1506,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "용속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "용속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_greatsword": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_swordshield": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_dualblades": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_longsword": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_hammer": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_huntinghorn": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_lance": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_gunlance": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "velkhana_switchaxe": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_chargeblade": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "power"
+ },
+ "velkhana_insectglaive": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_bow": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_heavybowgun": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "velkhana_lightbowgun": {
+  "atk": 1444,
+  "ele": 1622,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화",
+    "lv": 1
+   },
+   {
+    "s": "얼음속성 공격 강화·경지",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_greatsword": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_swordshield": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_dualblades": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_longsword": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_hammer": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_huntinghorn": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_lance": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_gunlance": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "normal"
+ },
+ "brachydios_switchaxe": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_chargeblade": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "brachydios_insectglaive": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_bow": {
+  "atk": 2007,
+  "ele": 416,
+  "crit": 10,
+  "sk": [
+   {
+    "s": "추가 공격【폭파】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_heavybowgun": {
+  "atk": 2510,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "포술",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "brachydios_lightbowgun": {
+  "atk": 2510,
+  "ele": 0,
+  "crit": 0,
+  "sk": [
+   {
+    "s": "포술",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aurora_somnacanth_greatsword": {
+  "atk": 1450,
+  "ele": 1614,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "속성 공격 증강【SP】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aurora_somnacanth_dualblades": {
+  "atk": 1450,
+  "ele": 1614,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "속성 공격 증강【SP】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aurora_somnacanth_longsword": {
+  "atk": 1450,
+  "ele": 1614,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "속성 공격 증강【SP】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aurora_somnacanth_hammer": {
+  "atk": 1450,
+  "ele": 1614,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "속성 공격 증강【SP】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aurora_somnacanth_huntinghorn": {
+  "atk": 1450,
+  "ele": 1614,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "속성 공격 증강【SP】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "aurora_somnacanth_chargeblade": {
+  "atk": 1450,
+  "ele": 1614,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "속성 공격 증강【SP】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "power"
+ },
+ "aurora_somnacanth_insectglaive": {
+  "atk": 1450,
+  "ele": 1614,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "속성 공격 증강【SP】",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
  }
 }

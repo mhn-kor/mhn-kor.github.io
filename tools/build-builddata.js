@@ -9,6 +9,8 @@
  *
  * 스킬·표류슬롯·공격력 곡선은 mhn.quest 번들에서, 장비 이름은 monsterhunternow.com
  * 공식 목록에서 가져온다. 두 곳의 키가 달라 영문 몬스터명을 다리로 매핑한다.
+ * 무기의 공격력·속성·회심·장비 스킬은 공식(weapon-specs.json)에 있으면 공식을 우선한다.
+ * 번들은 공식 공개 전의 신규 장비(마이닝 자료)를 먼저 쓰게 하는 용도다.
  *
  * 장비 등급은 항상 최대(10 Lv5) 기준이다. 실전에서 강화를 끝낸 상태로 비교하므로
  * 등급별 해금 과정은 담지 않는다 — 곡선의 마지막 값과 최고 스킬 레벨만 쓴다.
@@ -442,12 +444,28 @@ async function main() {
         atk: spec?.atk ?? atk, ele: spec ? (spec.ele || null) : ele, crit: spec?.crit ?? crit,
         ...(spec ? { officialId, styleSelectable: spec.styleSelectable } : {}),
         x: weaponExtra(wkey, wmon, X),
-        /* 종류 전용 스킬이 있을 때만 담는다. 없으면 세트의 weaponSkills 를 쓴다. */
-        ...(raw[wkey] ? { sk: wsk(raw[wkey]) } : {}),
+        /* 종류 전용 스킬이 있을 때만 담는다. 없으면 세트의 weaponSkills 를 쓴다.
+           공식에 장비 스킬이 있으면 번들보다 우선한다(아래에서 세트 공통과 비교해 정리). */
+        ...(spec?.sk ? { sk: spec.sk.map(x => ({ s: normName(x.s), lv: x.lv })), officialSk: true }
+          : raw[wkey] ? { sk: wsk(raw[wkey]) } : {}),
       });
     }
 
     if (!Object.keys(pieces).length && !weapons.length) continue;
+    /* 세트 공통 무기 스킬: 공식 스킬이 있는 무기가 모두 같은 스킬이면 그것을 공통으로 쓴다
+       (번들이 공식 공개 전 데이터를 담고 있어도 공식이 이긴다). 공통과 같은 무기별 스킬은 지운다. */
+    const bundleSkills = wsk(raw.weapon);
+    let weaponSkills = bundleSkills;
+    const officialSks = [...new Set(weapons.filter(w => w.officialSk).map(w => JSON.stringify(w.sk)))];
+    if (officialSks.length === 1) {
+      weaponSkills = JSON.parse(officialSks[0]);
+      // 공식에 없는 무기(공개 전)는 번들 공통 스킬을 그대로 쓴다.
+      for (const w of weapons) if (!w.officialSk && !w.sk) w.sk = bundleSkills;
+    }
+    for (const w of weapons) {
+      if (w.sk && JSON.stringify(w.sk) === JSON.stringify(weaponSkills)) delete w.sk;
+      delete w.officialSk;
+    }
     sets.push({
       key,
       name: monKo[key] || key,
@@ -459,7 +477,7 @@ async function main() {
       /* 공식 방어구 페이지 순서. 목록에 없으면(이벤트 장비) 뒤로 보냅니다. */
       o: (i => (i < 0 ? 999 : i))(armorOrder.indexOf(slug)),
       pieces,
-      weaponSkills: wsk(raw.weapon),
+      weaponSkills,
       weapons,
     });
   }

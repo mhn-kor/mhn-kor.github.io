@@ -804,6 +804,7 @@ node tools/update.js          # 이거 하나면 됩니다
 | 자료 | 출처 | 만드는 것 |
 |---|---|---|
 | 장비 스킬·표류석 칸·공격력 곡선 | mhn.quest 번들 | `build-data.js` |
+| 무기 공격력·속성·회심·장비 스킬(10-5), 병·포격 유형, 스타일 선택 지원 | monsterhunternow.com 무기 목록 내장 데이터 (**번들보다 우선**) | `tools/data/weapon-specs.json` |
 | 장비 한국어 이름, 방어구 나열 순서 | monsterhunternow.com | `tools/data/official-names.json` |
 | 조충곤 사냥벌레(타입·공격 계통·성능·보너스) | monsterhunternow.com | `tools/data/kinsect.json` |
 | 스킬 레벨별 설명(=점수 계산의 근거) | monsterhunternow.com | `skill-desc.js` |
@@ -820,6 +821,12 @@ node tools/update.js          # 이거 하나면 됩니다
 무기 스킬은 대개 소재 공통이라 세트의 `weaponSkills` 에 한 벌만 둡니다. 다만
 바젤기우스·이블조처럼 **종류마다 스킬이 다른 소재**가 있어, 그런 무기는 자기 스킬을
 `weapons[].sk` 로 따로 들고 옵니다(공통에 더하는 게 아니라 통째로 갈음합니다).
+
+**공식 우선:** 공식 사이트에 있는 무기는 공격력·속성·회심·장비 스킬을 공식 값으로 씁니다.
+mhn.quest 번들은 마이닝 자료로 공식보다 먼저 갱신되므로, 공식에 아직 없는 신규 무기에만 번들 값이 쓰입니다.
+세트의 공식 무기들이 모두 같은 스킬이면 그것이 `weaponSkills`가 되고, 다른 무기만 `sk`를 갖습니다.
+스타일 강화 레벨이 필요한 스킬(공식의 `requiredCustomEnhancementLevel`)은 기본 스킬에서 빼고 스타일 해금 자료가 다룹니다.
+Node 22 에서 프록시를 거쳐야 하면 `NODE_USE_ENV_PROXY=1 node tools/update.js` 로 실행합니다.
 화면에서는 `build.js` 의 `bdWSkills()` 가 둘을 가려 씁니다.
 
 ### 단계별로 돌리고 싶다면
