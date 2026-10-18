@@ -7,7 +7,8 @@ const AB_SOURCES = [
   ['슈퍼회심', 'https://monsterhunternow.com/ko/skills/critical_boost'],
 ];
 const abMax = s => BUILD.maxLv[s] || bdSkillLevels(s)?.at(-1)?.[0] || 1;
-const abSP = s => /특수.*위력|위력.*특수|속성 공격 증강.*SP/.test(s);
+// SP 전용 공격(특수 스킬 위력). SP 연계 버프(속성 공격 증강【SP】·투기 활성)는 AB_ASSUME.sp 조건부 후보로 따로 다룬다.
+const abSP = s => /특수.*위력|위력.*특수/.test(s);
 const abStonePool = () => {
   const pool = new Map();
   for (const g of bdStones()) for (const s of g.skills) if (!pool.has(s.name)) pool.set(s.name, g.group);
@@ -94,7 +95,7 @@ function abSearchTargets(config) {
 }
 let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction: '', edited: false,
   targets: abTargets(['물속성 공격 강화', '회심격【속성】', '슈퍼회심']), drift: true, lockon: true,
-  gun:{mode:'cycle'}, styleOff: [], exclude: [], chip: null, adding: null, stale: false, variant: {},
+  gun:{mode:'cycle'}, styleOff: [], exclude: [], assumeOn: [], assumeOff: [], chip: null, adding: null, stale: false, variant: {},
   pool: [], stats: null, busy: false, run: 0, notice: '', scroll: 0, active: false };
 
 /* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
@@ -114,10 +115,10 @@ const AB_RULES = {
       required:[abT('가드 성능',5),abT('반사',1,5),abT('불퇴전',4,5)], recommended:[], avoid:[],
       desc:'가드 성능 5 · 반사 1 이상 · 불퇴전 4~5. 돌진 중 가드를 활용합니다.',
       note:'반사 효과는 임의 피해 점수로 더하지 않습니다. 불퇴전이 발동한 점수에서는 매진을 끄고, 이동 후 보완 효과는 별도로 남깁니다.' },
-    { id:'sns-base', wt:'shield-sword', style:'', name:'기본 · 가드/방패 연계', required:[abT('가드 성능',5)], recommended:[], avoid:[],
+    { id:'sns-base', wt:'shield-sword', style:'', name:'기본 · 가드/방패 연계', required:[abT('가드 성능',5)], recommended:[], avoid:['비연'],
       desc:'가드 성능5 확보 후 밀림 없는 가드에서 방패 공격으로 연결합니다.' },
     { id:'sns-fallbash', wt:'shield-sword', style:'', mode:'fallbash', label:'폴배시', coreSlot:2, name:'기본 · 폴배시',
-      required:[], recommended:[abT('저스트 교격',0,5)], avoid:['가드 성능'],
+      required:[], recommended:[abT('저스트 교격',0,5)], avoid:['가드 성능','과감'],
       desc:'가드 성능보다 공격 투자. 저스트 회피 후 폴배시 공격을 가정할 때만 저스트 교격을 조건부 점수에 반영합니다.' },
     { id:'sns-dive', wt:'shield-sword', style:'파고들어베기', name:'파고들어베기 · 절단/다타수', required:[], recommended:[], avoid:[],
       desc:'방패 대신 칼 공격의 다타수로 절단·상태이상 활용을 비교합니다. 임의 타수 배율은 더하지 않습니다.' },
@@ -131,8 +132,12 @@ const AB_RULES = {
       desc:'모으기 연계에 저스트 모으기 해방·차지 스톡을 우선 검토하고 남은 장비는 공격에 투자합니다. 태클을 무피해로 가정하지 않습니다.' },
     { id:'gs-stream', wt:'great-sword', style:'수류베기', name:'수류베기 · 대검 운용', required:[], recommended:[], avoid:[],
       desc:'차지 없는 연속 공격 후 강/참모아베기. 상태이상 방향도 검토하며 별도 필수 스킬은 강제하지 않습니다.' },
-    { id:'bow-focus', wt:'bow', style:['','회피 근접공격','강연사'], name:'활 · 집중', required:[], recommended:[abT('집중',0,5)], avoid:[],
-      desc:'집중은 권장 투자로 비교하며, 자동추천 점수에 임의 딜사이클 배율을 더하지 않습니다.' },
+    { id:'bow-base', wt:'bow', style:'', coreSlot:1, name:'기본 · 집중', required:[abT('집중',5)], recommended:[abT('저스트 모으기 해방',0,5)], avoid:[],
+      desc:'집중5와 저스트 모으기 해방을 함께 추천합니다. 집중을 4로 낮추는 운용은 직접 조정합니다. 점수에 임의 딜사이클 배율을 더하지 않습니다.' },
+    { id:'bow-evade', wt:'bow', style:'회피 근접공격', name:'회피 근접공격', required:[], recommended:[], avoid:['집중'],
+      desc:'모으는 차지 단계가 없어 집중과 모으기 계열 효과를 쓰지 않습니다.' },
+    { id:'bow-rapid', wt:'bow', style:'강연사', name:'강연사 · 집중', required:[abT('집중',5)], recommended:[], avoid:[],
+      desc:'단계당 모으기 시간이 길어 집중5를 확보합니다. 점수에 임의 딜사이클 배율을 더하지 않습니다.' },
     { id:'light-step', wt:'light-gun', style:'스텝 샷', modes:['repeat'], name:'스텝샷 · 반동 대체', required:[], recommended:[], avoid:['반동 경감'],
       desc:'스텝샷 중심 사격은 반동 경감을 자동 보충하지 않습니다. 탄 순환 시 장전 속도는 별도로 필요합니다. 일반 탭 사격의 반동까지 대체하지 않습니다.' },
     { id:'light-slide', wt:'light-gun', style:'슬라이딩 리로드', name:'슬라이딩 리로드 · 장전 대체', required:[], recommended:[], avoid:['장전 속도'],
@@ -159,16 +164,63 @@ const AB_RULES = {
     { when:c => c.style !== '블래스트 대시', skills:['기습 상태 이상'] },
     { when:c => !c.critAllowed, skills:['간파','약점 특효','슈퍼회심','회심격【속성】','흉회심'] },
   ],
-  // 효과 적용 범위 (A3). 위에서부터 처음 일치한 항목으로 판정. rules=해당 운용 규칙에서만.
-  scopes: [
-    { scope:/공중/, rules:['sns-fallbash'] },
-    { scope:/모으기/, wt:['great-sword','hammer','bow'] },
-    { scope:/탄·화살/, wt:['light-gun','heavy-gun','bow'] },
-    { skill:'공격적인 방어', wt:['shield-sword','lance','gunlance','charge-blade','heavy-gun'], styles:['격앙참'] },
-  ],
   // 점수 밖 운용 스킬 (A0 운용 수준). 강화 지속은 스킬 설명의 무기군으로 판정한다.
   operation: ['반사','가드 성능','집중','회피 장전','절대 회피【SP】','특수 게이지 가속','특수 게이지 가속【저스트 회피】'],
 };
+/* 무기 특성: docs/WEAPONS.md 표와 1:1 (tools/auto-build-rules-test.js가 대조). [기본, 스타일1, 스타일2]마다 [있음, 없음]. */
+const AB_TRAITS = {
+  'shield-sword': [['가드 · 공중 · 저스트 회피','—'],['—','—'],['가드','—']],
+  'great-sword': [['모으기 · 태클','—'],['모으기','가드 · 태클'],['모으기 · 가드','—']],
+  'long-sword': [['강화 상태','—'],['강화 상태','—'],['강화 상태','—']],
+  'dual-blades': [['강화 상태','—'],['강화 상태','—'],['강화 상태','—']],
+  hammer: [['모으기','—'],['모으기','—'],['모으기','—']],
+  'hunting-horn': [['강화 상태','—'],['강화 상태','—'],['강화 상태','—']],
+  lance: [['가드 · 카운터 · 강화 상태','—'],['가드 · 강화 상태','—'],['가드 · 강화 상태','—']],
+  gunlance: [['포격·병 · 강화 상태','—'],['포격·병 · 강화 상태','—'],['포격·병 · 강화 상태','—']],
+  'switch-axe': [['변형 · 강화 상태','—'],['변형 · 강화 상태','—'],['카운터 · 강화 상태','변형']],
+  'charge-blade': [['포격·병 · 강화 상태','변형'],['변형 · 공중 · 포격·병 · 강화 상태','—'],['포격·병 · 강화 상태','변형']],
+  'insect-glaive': [['강화 상태','—'],['강화 상태','—'],['강화 상태','—']],
+  'light-gun': [['탄·화살','—'],['탄·화살','—'],['탄·화살','—']],
+  'heavy-gun': [['탄·화살','—'],['탄·화살 · 가드','—'],['탄·화살','—']],
+  bow: [['모으기 · 탄·화살','—'],['탄·화살 · 회피','모으기'],['모으기 · 탄·화살','—']],
+};
+/* 조건부 스킬의 기본 가정: docs/SKILLS.md 기본 가정 칸과 1:1 (테스트 대조).
+   monster=ON(사용자가 칩으로 끔) · off=OFF · candidate·sp=직접 넣거나 칩으로 켤 때만 (sp는 SP 게이지·특수 스킬이 트리거인 버프) ·
+   actions=무기 특성에 그 동작이 있을 때만 ON (미확인·없음은 OFF, 운용 규칙에 적힌 스킬은 ON) · linked=연계 스킬이 빌드에 있을 때만 ON ·
+   exclusive=앞 스킬이 발동하면 뒤 스킬 OFF. */
+const AB_ASSUME = {
+  monster: ['완전 충전','용맹','연격','기습','매진','무심','불퇴전','추격','약점 특효'],
+  off: ['그룹 사냥 강화【공격】','불굴','재난대처능력'],
+  candidate: ['앙심','힘의 해방'],
+  sp: ['속성 공격 증강【SP】','투기 활성'],
+  actions: { '공격적인 방어':'가드', '저스트 모으기 해방':'모으기', '차지 마스터':'모으기', '변형 공격 강화':'변형', '비연':'공중',
+    '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기' },
+  linked: { skills:['돌파구','전화위복'], by:['거품의 춤','견인불발','겁혈 망토','귀화 망토'] },
+  exclusive: [['과감','저스트 교격'],['과감','저스트 교격【지속】'],['멸진룡의 갈망','투기 활성'],['멸진룡의 갈망','속성 공격 증강【SP】']],
+};
+const abTraitList = cell => cell === '—' ? [] : cell.split(' · ');
+function abTrait(b, code) {
+  const [has, no] = AB_TRAITS[b.wt]?.[b.st || 0] || ['—','—'];
+  return abTraitList(has).includes(code) ? 'yes' : abTraitList(no).includes(code) ? 'no' : null;
+}
+// 앙심 자동 후보: 대검 기본·격앙참의 태클·가드태클 칩 대미지, 무속성 무기 (SKILLS.md 앙심 메모).
+const abAutoCandidate = (s, b) => s === '앙심' && b.wt === 'great-sword' && b.st !== 1 && !abElementSkill(b);
+/* 이 빌드에서 조건부 스킬을 켠 것으로 볼지. fill=자동 보충 후보 판정(연계 스킬은 빌드가 정해지기 전이라 허용). */
+function abAssumed(s, b, { fill = false, lv = null, row = abStyleRow(b) } = {}) {
+  const a = b._abAssume || {}, ruled = [...(row?.required || []), ...(row?.recommended || [])].some(t => t.s === s);
+  if (abSP(s) || a.off?.includes(s)) return false;
+  if (a.on?.includes(s)) return true;
+  if (AB_ASSUME.off.includes(s) || row?.avoid.includes(s)) return false;
+  if (AB_ASSUME.sp.includes(s)) return false;
+  if (AB_ASSUME.candidate.includes(s)) return abAutoCandidate(s, b);
+  if (AB_ASSUME.linked.skills.includes(s)) {
+    if (fill) return true;
+    const levels = lv || new Map(bdTotals(b));
+    return AB_ASSUME.linked.by.some(x => levels.get(x) > 0);
+  }
+  const code = AB_ASSUME.actions[s];
+  return !code || ruled || abTrait(b, code) === 'yes';
+}
 function abStyleRow(b) {
   const style = bdStylesOf(b.wt)[b.st - 1] || '', elemental = () => !!(abElementSkill(b) || bdBuildupApplies(bdWeaponOf(b)));
   const rows = AB_RULES.styles.filter(r => r.wt === b.wt && [].concat(r.style).includes(style)
@@ -190,19 +242,13 @@ function abBuffTier(effects) {
   return types.length && types.every(t=>t===types[0]) ? types[0] : 9;
 }
 const abEquipmentSkills = () => [...new Set(bdOrderedSets().flatMap(s => Object.values(s.pieces).flatMap(p => p.skills.map(x => x.s))))];
-function abScopeApplies(e,b) {
-  const x=AB_RULES.scopes.find(x=>x.scope ? x.scope.test(e.scope || '') : x.skill===e.sk);
-  if(!x) return true;
-  return !!x.wt?.includes(b.wt) || !!x.styles?.includes(bdStylesOf(b.wt)[b.st-1]) || !!x.rules?.includes(abStyleRow(b)?.id);
-}
 function abSupportSkills(b, setting) {
-  const c = abContext(b,setting);
+  const c = abContext(b,setting), row = abStyleRow(b);
   // 수치는 후보 선별용 상대 효율일 뿐 최종 피해 점수에 가산하지 않는다.
-  return abEquipmentSkills().filter(s => !abSP(s)
+  return abEquipmentSkills().filter(s => abAssumed(s, b, { fill:true, row })
     && (s !== '상태 이상 축적 시 위력 UP' || bdBuildupApplies(c.w))).map(s => {
     const weapon = abGunWeapon(b,setting), effects = bdEffects(bdSkillDesc(s, abMax(s)) || '', s, weapon);
     const value = effects.reduce((n, e) => {
-      if (!abScopeApplies({...e,sk:s},b)) return n;
       if (e.el && e.el !== c.w?.e) return n;
       if (e.k === 'ele' && !c.element) return n;
       if (abGun(b) && !['통상','산탄','관통','참렬'].includes(bdAmmoFamily(weapon.x?.[0]))
@@ -230,12 +276,14 @@ function abInvestmentDirections(b, setting) {
   const make = (id, name, skills, desc, extra = {}) => ({ id, name,
     targets: abTargets(skills).map((t, i) => ({ ...t, min: abOperationRule(b,setting)?.required.length && i > 0 ? 0 : t.min })), desc, ...extra });
   if (c.critAllowed && c.nativeNegative && c.base.crit < 0 && !c.tripleCrit) {
-    const low = make('brutal-low', '흉회심 · 저투자', ['흉회심', c.status || c.element || '연격', '돌파구'],
+    // 돌파구는 자체 상태이상 스킬이 있을 때만 쓰므로 방향 핵심에 두지 않는다 (SKILLS.md 돌파구).
+    const third = c.status || c.element ? '연격' : '용맹';
+    const low = make('brutal-low', '흉회심 · 저투자', ['흉회심', c.status || c.element || '연격', third],
       '흉회심 1의 손실 보완과 미채용 대안을 비교하고 다른 피해 스킬에 투자합니다. 전심전력은 필수로 묶지 않습니다.');
     low.targets[0] = { s: '흉회심', min: 0, max: 1 };
     const high = [3, 5].map(lv => {
       const d = make('brutal-' + lv, `흉회심 · Lv${lv}${lv === 5 ? ' 고점' : ' 균형'}`,
-        ['흉회심', c.status || c.element || '연격', '돌파구'],
+        ['흉회심', c.status || c.element || '연격', third],
         `흉회심을 미채용부터 ${lv}까지 비교합니다. ${b.wt === 'great-sword' ? '대검의 한방 고점 선호를 반영하되 평균 점수에 보너스를 더하지 않습니다.' : '다른 피해 스킬과 평균 기대값을 비교합니다.'}`);
       d.targets[0] = { s: '흉회심', min: 0, max: lv }; return d;
     });
@@ -255,11 +303,11 @@ function abInvestmentDirections(b, setting) {
   const mastery = c.element && abEquipmentSkills().find(s => s === c.element + '·경지');
   const elder = c.element && [...BD_ELE_MUL].find(s => bdEffects(bdSkillDesc(s, 1) || '', s, c.w).some(e => e.el === c.w.e && e.k === 'ele'));
   const plain = make('water', c.element ? `${c.w.e}속성${mastery ? ' · 경지' : ''} 중심` : '물리 · 피해 효율',
-    [offense, mastery || (c.element ? elder || '연격' : '돌파구'), mastery ? elder || '연격' : '용맹'],
+    [offense, mastery || (c.element ? elder || '연격' : '용맹'), mastery ? elder || '연격' : c.element ? '용맹' : null].filter(Boolean),
     c.nativeNegative && c.tripleCrit ? '회심 파라미터 3개의 역회심 보정 의도를 반영해 흉회심 방향을 제외합니다.' : '회심 확보 비용을 강제하지 않고 속성·피해 스킬의 투자 효율을 비교합니다.');
   if (c.critAllowed && c.base.crit > 0) {
     directions.push(make('critical', c.element ? '회심격 · 자체 회심 활용' : '자체 회심 · 투자 비교',
-      [c.element ? '회심격【속성】' : offense, '간파', offense === '연격' ? '돌파구' : offense],
+      [c.element ? '회심격【속성】' : offense, '간파', offense === '연격' ? '용맹' : offense],
       '파라미터 포함 무기 자체 회심을 활용할 투자안을 비교합니다. 특정 회심률을 강제하지 않으며 슈퍼회심도 필수가 아닙니다.'));
     if (c.tripleCrit) directions.push(make('crit-attack', '무기 회심 · 공격 증강',
       ['공격 증강【회심】', offense, '연격'].filter((s, i, a) => a.indexOf(s) === i).concat(c.element ? [] : ['용맹']),
@@ -297,7 +345,8 @@ function abDirections(b, setting) {
   return dirs.map(d=>{
     const out={...d,targets:d.targets.map(t=>({...t})),desc:d.desc+(rule ? ' '+rule.desc : '')};
     if (row?.label) out.name=row.label+' · '+d.name;
-    if (core && !out.targets.some(t=>t.s===core.s)) out.targets[row.coreSlot]={...core};
+    // 핵심이 세 칸보다 적으면 끼워 넣고, 다 찼으면 그 칸을 바꾼다.
+    if (core && !out.targets.some(t=>t.s===core.s)) out.targets.splice(row.coreSlot,out.targets.length<3?0:1,{...core});
     return out;
   });
 }
@@ -328,10 +377,12 @@ function abApplyDirection(id) {
 }
 
 function abScoreBuild(b) {
-  const conds = bdStats(b).conds;
-  b.cond = Object.fromEntries(conds.map(c => [c.sk, !abSP(c.sk)&&c.list.some(e=>abScopeApplies({...e,sk:c.sk},b))]));
+  const conds = bdStats(b).conds, lv = new Map(bdTotals(b)), row = abStyleRow(b);
+  b.cond = Object.fromEntries(conds.map(c => [c.sk, abAssumed(c.sk, b, { lv, row })]));
   for (const s of Object.keys(BD_AMMO_BOOST)) if (s in b.cond && !bdAmmoBoostApplies(s,abGunWeapon(b))) b.cond[s] = false;
-  for (const [on, off] of AB_RULES.weapons[b.wt]?.exclusive || []) if (b.cond[on]) b.cond[off] = false;
+  // 앞 스킬이 발동 중이면(조건부는 켠 것, 상시는 장착) 뒤 스킬은 끈다.
+  for (const [on, off] of [...(AB_RULES.weapons[b.wt]?.exclusive || []), ...AB_ASSUME.exclusive])
+    if (off in b.cond && (on in b.cond ? b.cond[on] : lv.get(on) > 0)) b.cond[off] = false;
   b.bowEfficiency = false; // 집중 주기 보정은 추천 시 사용자가 지정하지 않은 가정이다.
   return bdStats(b).score;
 }
@@ -342,17 +393,20 @@ function abPolicy(b, direction, targets, styleGuide = true, setting) {
   const explicit = new Set(targets.map(t => t.s));
   const skip = new Set(style?.avoid || []);
   for (const x of AB_RULES.avoid) if (x.when(c)) x.skills.forEach(s => skip.add(s));
+  // 슈퍼회심은 회심이 높게 보장될 때만 자동 보충한다 (CONCEPTS W1: 변형 회심 방향, 힘의 해방).
+  if (direction !== 'morph-critical' && !explicit.has('힘의 해방') && !b._abAssume?.on?.includes('힘의 해방')) skip.add('슈퍼회심');
   // 사용자가 직접 선택한 스킬은 우선한다. 비권장은 장비 자체의 금지가 아니다. 사용자 제외는 항상 제외.
   explicit.forEach(s => skip.delete(s));
   excluded.forEach(s => skip.add(s));
   const investmentSkills = c.element ? [c.element,c.element+'·경지',...BD_ELE_MUL].filter(s=>
     bdEffects(bdSkillDesc(s,abMax(s)) || '',s,c.w).some(e=>e.k==='ele'&&(!e.el||e.el===c.w.e))) : [];
   const contextSkills = [c.status, c.element, ...(c.base.crit > 0 ? ['공격 증강【회심】'] : []),
-    ...(['critical','morph-critical'].includes(direction) ? ['간파','약점 특효','힘의 해방'] : [])].filter(Boolean);
+    ...(['critical','morph-critical'].includes(direction) ? ['간파','약점 특효'] : []),
+    ...[...AB_ASSUME.candidate, ...AB_ASSUME.sp].filter(s => abAssumed(s, b, { fill:true }))].filter(Boolean);
   const support = abSupportSkills(b,setting).filter(s => !skip.has(s));
   const styleTargets = [...(style?.required || []), ...(style?.recommended || [])].filter(t => !excluded.includes(t.s));
   const fillers = [...new Set([...explicit, ...styleTargets.map(t => t.s), ...contextSkills, ...investmentSkills, ...support.slice(0, 12), '전심전력'])]
-    .filter(s => !skip.has(s) && !abSP(s)
+    .filter(s => !skip.has(s) && !abSP(s) && (explicit.has(s) || abAssumed(s, b, { fill:true }))
       && (!BD_STATUS_BOOST[s] || bdStatusBoostApplies(s, c.w))
       && (!BD_SKILL_WEAPONS[s] || BD_SKILL_WEAPONS[s].includes(b.wt))
       && (!BD_AMMO_BOOST[s] || bdAmmoBoostApplies(s, abGunWeapon(b,setting))));
@@ -667,6 +721,10 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
   const exclude = config.exclude || [], banned = new Set(exclude.filter(x => !x.shared).map(x => x.s));
   if (exclude.length) seed._abExclude = exclude.map(x => ({...x}));
   if (exclude.some(x => x.shared)) seed.ignore = exclude.filter(x => x.shared).map(x => x.s);
+  // 발동 가정: 사용자가 직접 넣은 스킬·운용 규칙 스킬은 켜고, 칩으로 끈 가정은 끈다.
+  const rule = abOperationRule(seed, config.gun, config.styleGuide ?? true);
+  seed._abAssume = { off:[...(config.assumeOff || [])],
+    on:[...(config.assumeOn || []), ...userTargets.map(t => t.s), ...[...(rule?.required || []), ...(rule?.recommended || [])].map(t => t.s)] };
   const targets = abSearchTargets(config).map(t=>({...t,user:userTargets.some(x=>x.s===t.s)})), requireLock = !!config.lockon && abMelee(seed.wt);
   const policy = abResolvePolicy(seed,targets,abPolicy(seed, config.direction, userTargets, config.styleGuide ?? true)), stones = abStonePool(), fillers = policy.fillers;
   const optional = policy.styleTargets.filter(t => !targets.some(x => x.s === t.s));
@@ -847,6 +905,23 @@ function abModeUI(b) {
   if (!rows.some(r => r.mode)) return '';
   return `<div class="ab-box ab-form-settings"><label>운용 성향<select data-ab="mode">${abOptions(rows.map(r => [r.mode || '', r.name]), abStyleRow(b)?.mode || '')}</select></label></div>`;
 }
+/* 발동 가정: 몬스터·전투에 따라 갈리는 조건은 켠 채로, 조건부 후보는 끈 채로 시작한다. 칩으로 바꾼다. */
+function abAssumeUI(b) {
+  const s = abState, chip = (n, on, title) => `<button type="button" class="ab-chip${on ? ' rule' : ' rule off'}" data-ab-assume="${esc(n)}" title="${title}">${esc(n)}</button>`;
+  const monster = AB_ASSUME.monster.map(n => chip(n, !s.assumeOff.includes(n), '몬스터·전투에 따라 갈림 · 눌러서 끄기/켜기'));
+  const candidate = [...AB_ASSUME.candidate, ...AB_ASSUME.sp].map(n => chip(n, s.assumeOn.includes(n) || (!s.assumeOff.includes(n) && abAutoCandidate(n, b)), '조건부 후보 · 눌러서 켜기/끄기'));
+  return `<div class="ab-box ab-form-settings"><h3>발동 가정 <small>켠 것만 점수에 들어갑니다</small></h3>
+    <div class="ab-chips">${monster.join('')}</div>
+    <p class="ab-muted">조건부 후보 · 이번 세팅에 포함할 스킬만 켜기</p><div class="ab-chips">${candidate.join('')}</div>
+    <p class="ab-muted">불굴·재난대처능력·그룹 사냥 강화는 끈 채로 계산합니다. 무기 동작이 필요한 스킬은 무기 특성에 그 동작이 있는 스타일에서만 켭니다. 돌파구·전화위복은 자체 상태이상 스킬이 있을 때만 켭니다. 직접 넣은 스킬은 켭니다.</p></div>`;
+}
+/* 결과 빌드에 붙어 있지만 포함하지 않은 조건부 후보: 포함했을 때 늘어나는 점수. */
+function abCandidateGains(r) {
+  return bdTotals(r.b).filter(([s, lv]) => lv && [...AB_ASSUME.candidate, ...AB_ASSUME.sp].includes(s) && r.b.cond[s] === false).map(([s]) => {
+    const b = structuredClone(r.b); b._abAssume = { ...(b._abAssume || {}), on:[...(b._abAssume?.on || []), s], off:(b._abAssume?.off || []).filter(x => x !== s) };
+    return [s, abScoreBuild(b) - r.score];
+  }).filter(([, n]) => n > 0);
+}
 const abLevelText = t => t.min > 0 ? (t.max > t.min ? `${t.min}→${t.max}` : `${t.min}`) : `→${t.max}`;
 /* 펼친 제안 카드: 필수(최소1 이상) / 투자(최소0) / 제외. 칩에서 바로 조정한다. */
 function abCardUI(d) {
@@ -900,11 +975,11 @@ function abRender() {
       <label class="ab-check"><input type="checkbox" data-ab="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
     </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-ab-param="${i}"${info.active ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
     <p class="ab-base">${esc(w.name)} · 공격력 <b>${base.atk}</b>${w.e ? ` · ${esc(w.e)} <b>${base.ele}</b>` : ''} · 회심 <b>${base.crit}%</b></p></div>
-    ${abGunUI(b)}${abModeUI(b)}
+    ${abGunUI(b)}${abModeUI(b)}${abAssumeUI(b)}
     <div class="ab-box"><h3>② 세팅 제안 <small>무기 특성 × 파라미터 × 운용 지침</small></h3><div class="ab-directions" role="group" aria-label="세팅 제안">
       ${dirs.map(d => d.id === s.direction ? abCardUI(d) : `<button class="ab-card" data-ab-dir="${d.id}" aria-pressed="false"><b>${esc(d.name)}${d.recommended ? ' · 추천' : ''}</b>
         <span>${esc(d.desc.split('. ')[0])}</span>${d.targets.length ? `<span class="ab-card-skills">${d.targets.slice(0, 3).map(t => esc(t.s)).join(' · ')}</span>` : ''}</button>`).join('')}</div>
-      <details class="ab-basis"><summary>추천 기준과 출처</summary><p>기존 빌드 점수로 평가합니다. 조건부 효과는 발동한 상태로 가정하며 특수 위력·SP 전용 효과는 제외합니다. 동시 발동 가능성·유지율은 보정하지 않아 실제 DPS가 아닙니다. 특수 게이지 가속은 선택 가능한 스킬로 유지하며 임의 대미지 점수는 부여하지 않습니다.</p>
+      <details class="ab-basis"><summary>추천 기준과 출처</summary><p>기존 빌드 점수로 평가합니다. 조건부 효과는 '발동 가정'에서 켠 것만 점수에 넣으며 특수 위력·SP 전용 효과는 제외합니다. 동시 발동 가능성·유지율은 보정하지 않아 실제 DPS가 아닙니다. 특수 게이지 가속은 선택 가능한 스킬로 유지하며 임의 대미지 점수는 부여하지 않습니다.</p>
       <p>스타일 골격과 무기의 투자 방향을 함께 적용합니다. 같은 제안이라도 몬스터·스타일·파라미터에 따라 보조 스킬과 연성이 달라질 수 있습니다. 회심 방향은 무기 자체 회심의 투자 효율을 비교하며 특정 회심률을 강제하지 않습니다. 사용자 수정 스킬과 레벨은 설정 변경으로 덮어쓰지 않습니다.</p>
       <p>근접무기는 록온 Lv1을 기본 필수로 확보하며 칩에서 끌 수 있습니다. 록온이 없는 후보는 점수와 관계없이 제외합니다. 원거리 3종은 사용하지 않습니다.</p>
       <p>방어구 전 부위를 제한 폭으로 탐색하고 연성은 필수 스킬 보충 후 소수의 공격 관련 후보로 채웁니다. 최대 ${AB_LIMIT.ms / 1000}초, 탐색 폭 ${AB_LIMIT.beam}. 최적해 보장은 아닙니다. 장비·연성의 보유 여부와 획득 난도는 고려하지 않습니다.</p>
@@ -972,7 +1047,7 @@ function abRenderResults() {
       return `<article class="bd-card ab-result"><div class="ab-heading"><h3>${i + 1}위</h3><b class="ab-score">${r.score.toLocaleString()}점</b></div>
       ${g.badges.length ? `<p class="ab-badges">${[...new Set(g.badges)].map(n => `<span class="ab-badge">🏅 ${esc(n)}</span>`).join('')}</p>` : ''}
       ${g.variants.length > 1 ? `<div class="ab-tabs" role="tablist" aria-label="연성 안">${g.variants.map((x, j) => `<button type="button" role="tab" aria-selected="${j === v}" data-ab-variant="${i}:${j}">${'ABC'[j]} ${esc(x.role)}</button>`).join('')}</div>` : ''}
-      <p class="ab-muted" style="padding:0 12px">조건 ON ${r.score.toLocaleString()} · 조건 OFF ${r.baseScore.toLocaleString()} · 연성 ${r.drifts}칸</p>
+      <p class="ab-muted" style="padding:0 12px">조건 ON ${r.score.toLocaleString()} · 조건 OFF ${r.baseScore.toLocaleString()} · 연성 ${r.drifts}칸${abCandidateGains(r).map(([n, d]) => ` · ${esc(n)} 포함 시 +${d.toLocaleString()}점`).join('')}</p>
       ${v ? `<p class="ab-diff">${abVariantDiff(g.variants[0], r)}</p>` : ''}
       <div class="ab-levels">${keys.map(t => `<span>${esc(t.s)} <b>Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)}</b> / 목표 ${t.max}</span>`).join('')}</div>
       <p class="ab-muted" style="padding:0 12px">보조 투자: ${(r.support || []).slice(0, 3).map(([n, l]) => `${esc(n)} ${l}`).join(' · ') || '핵심 스킬 중심'}${r.support?.length > 3 ? ` 외 ${r.support.length - 3}개` : ''}</p>
@@ -986,7 +1061,7 @@ function abRenderResults() {
       <h4>적용한 운용 지침</h4>${abGuideUI(r.b, s.direction, s.targets)}
       <h4>연성 배치</h4><p>${r.drifts}개 사용 · 같은 스킬이 기본으로 붙은 부위의 빈 슬롯부터 배치합니다.</p>
       <h4>점수 계산 가정</h4><p>발동 가정: ${Object.entries(r.b.cond).filter(([, on]) => on).map(([n]) => esc(n)).join(' · ') || '없음'}</p>
-      <p>특수 위력·SP 전용 효과와 집중 보정은 제외합니다. 실제 전투 DPS가 아닌 비교 점수입니다.</p>
+      <p>특수 위력·SP 전용 효과와 집중 보정은 제외합니다.${r.b.wt === 'switch-axe' || r.b.wt === 'charge-blade' ? ' 변형 공격 강화는 모든 공격에 적용한 값이라 실제보다 높습니다.' : ''} 실제 전투 DPS가 아닌 비교 점수입니다.</p>
       <h4>기대 점수</h4>${abCalculationUI(r.b)}<p class="ab-muted">일반·회심 공격을 회심률로 평균합니다. 표시와 최종 점수만 반올림합니다.</p></div></details>
       <footer><button class="btn primary" data-ab-import="${i}">내 빌드로 가져오기${g.variants.length > 1 ? ` (${'ABC'[v]}안)` : ''}</button></footer></article>`; }).join('') + '</div>'
     : `<p class="ab-box">설정한 최소 레벨을 만족하는 후보를 찾지 못했습니다. ${s.exclude.some(x => !x.shared) ? '완전 제외한 스킬 때문에 후보 방어구가 줄었을 수 있습니다. ' : ''}연성을 켜거나 최소 레벨을 낮춰 보세요. 제한 탐색이므로 불가능한 조합이라는 뜻은 아닙니다.</p>`}`;
@@ -1069,6 +1144,13 @@ $('#ab-screen').addEventListener('click', async e => {
   if (el.hasAttribute('data-ab-variant')) { const [i, v] = el.dataset.abVariant.split(':').map(Number); s.variant[i] = v; return abRenderResults(); }
   if (el.hasAttribute('data-ab-dir')) { abInvalidate(); abApplyDirection(el.dataset.abDir); abRender(); return; }
   if (el.hasAttribute('data-ab-reset')) { abInvalidate(); abApplyDirection(s.stale ? abDirections(s.b,s.gun)[0]?.id : s.direction); abRender(); return; }
+  if (el.hasAttribute('data-ab-assume')) { // 사용자 설정이며 제안 수정으로 보지 않는다
+    const n = el.dataset.abAssume, candidate = [...AB_ASSUME.candidate, ...AB_ASSUME.sp].includes(n);
+    const on = candidate ? s.assumeOn.includes(n) || (!s.assumeOff.includes(n) && abAutoCandidate(n, s.b)) : !s.assumeOff.includes(n);
+    s.assumeOn = s.assumeOn.filter(x => x !== n); s.assumeOff = s.assumeOff.filter(x => x !== n);
+    if (on) s.assumeOff.push(n); else if (candidate) s.assumeOn.push(n);
+    abInvalidate(); abRender(); return;
+  }
   if (el.hasAttribute('data-ab-plus')) { s.adding = el.dataset.abPlus; s.chip = null; abRender(); $(`[data-ab-add="${s.adding}"]`)?.focus(); return; }
   if (el.hasAttribute('data-ab-chip')) {
     const key = el.dataset.abChip;
@@ -1081,7 +1163,7 @@ $('#ab-screen').addEventListener('click', async e => {
     const i = +el.dataset.abImport, g = s.results[i], r = g?.variants[Math.min(s.variant[i] || 0, g.variants.length - 1)];
     if (!r) return;
     const b = structuredClone(r.b), direction = abDirections(b).find(d => d.id === s.direction)?.name || '직접 구성', gun = abGunInfo(b);
-    delete b._abGun; delete b._abExclude; delete b.ignore; // 자동추천 메타데이터는 저장 빌드 형식에 추가하지 않는다.
+    delete b._abGun; delete b._abExclude; delete b._abAssume; delete b.ignore; // 자동추천 메타데이터는 저장 빌드 형식에 추가하지 않는다.
     b.n = `${bdSet(b.w).name} · ${direction}${gun ? ' · '+gun.name+(gun.mode !== 'cycle' ? ' · '+gun.ammo[0]?.name : '') : ''}`;
     if (bdAdopt(bdShareParam(b), b.n)) {
       s.scroll = 0; location.hash = 'build';
@@ -1097,7 +1179,7 @@ $('#ab-screen').addEventListener('click', async e => {
   s.busy = true; s.notice = '후보를 탐색하고 있습니다…'; s.variant = {}; abRender();
   try {
     const result = await abSearch(structuredClone({ b:s.b, gun:s.gun, direction:s.direction, targets:s.targets, drift:s.drift,
-      lockon:s.lockon, styleGuide:s.styleOff, exclude:s.exclude }),
+      lockon:s.lockon, styleGuide:s.styleOff, exclude:s.exclude, assumeOn:s.assumeOn, assumeOff:s.assumeOff }),
       p => { $('#ab-status').textContent = `${p.phase||'초기 구성'} · ${p.stage}/5부위 · ${p.expanded.toLocaleString()}개 조합 탐색 · ${p.evaluated}개 연성 구성 검토`; },
       () => run !== abState.run);
     if (!result || run !== abState.run) return;
