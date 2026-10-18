@@ -83,6 +83,10 @@ function rules() {
   assert.ok(core('lance',0,raw).includes('공격적인 방어')&&!core('lance',0,raw).includes('연격'),'가드 무기는 공격적인 방어');
   const hraw=get('abMonsters("hammer").find(s=>!s.weapons.find(w=>w.t==="hammer").e)').key;
   assert.ok(core('hammer',0,hraw).includes('공격 활성')&&!core('hammer',0,hraw).includes('연격'),'비가드 무기는 공격 활성·용맹');
+  // 기습: 솔로에서 후방을 잡기 쉬운 무기(무기 특성 후방)에서만 ON.
+  for(const [wt,st,on] of [['dual-blades',0,true],['long-sword',1,true],['gunlance',1,true],['gunlance',0,false],['great-sword',0,false],['bow',0,false]])
+    assert.strictEqual(assumed('기습',seed('mizu',wt,st)),on,`기습 ${wt}/${st}`);
+  assert.strictEqual(assumed('기습',{...seed('mizu','great-sword'),_abAssume:{on:['기습']}}),true,'직접 넣은 기습은 켬');
   const levels=get('(l=>new Map(l))')([['귀화 망토',1]]);
   assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{lv:levels}),true,'자체 상태이상이 있으면 돌파구 ON');
   assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{fill:true}),true,'자동 보충 후보로는 유지');
