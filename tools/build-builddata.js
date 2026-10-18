@@ -515,10 +515,13 @@ async function main() {
 
   /* 아이콘 받는 도구가 쓸 영문 이름표. 참조 사이트가 «great_jagras» 처럼 영문
      스네이크로 파일을 두어서, 짧은 키(g-jagr)만으로는 주소를 만들 수 없습니다. */
-  const oldEn = onlySets ? JSON.parse(fs.readFileSync(path.join(DATA, 'monster-en.json'), 'utf8')) : {};
-  fs.writeFileSync(path.join(DATA, 'monster-en.json'),
-    JSON.stringify(Object.fromEntries(sets.map(s => [s.key,
-      (onlySets && !onlySets.includes(s.key) ? oldEn[s.key] : monEn[s.key]) || s.en || s.key])), null, 1) + '\n');
+  /* 수동 세트는 번들 이름 대신 손으로 둔 값(en, 없으면 기존 항목)을 지킨다. */
+  const enFile = path.join(DATA, 'monster-en.json');
+  const oldEn = fs.existsSync(enFile) ? JSON.parse(fs.readFileSync(enFile, 'utf8')) : {};
+  const enOf = s => HAND_SETS.some(h => h.key === s.key) ? s.en || oldEn[s.key]
+    : onlySets && !onlySets.includes(s.key) ? oldEn[s.key] : monEn[s.key];
+  fs.writeFileSync(enFile,
+    JSON.stringify(Object.fromEntries(sets.map(s => [s.key, enOf(s) || s.en || s.key])), null, 1) + '\n');
 
   const output = '/* 자동 생성 파일 — tools/build-builddata.js 로 다시 만듭니다. 직접 수정하지 마세요. */\n'
     + 'const BUILD = ' + JSON.stringify(out) + ';\n';
