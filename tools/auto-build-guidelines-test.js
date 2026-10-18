@@ -74,6 +74,15 @@ function rules() {
     if(crit<20) assert.ok(weak&&[20,25,30,40,50][weak.max-1]>=100-80-crit,`${wt}/${st} 약점 특효 레벨`); else assert.ok(!weak);
   }
   assert.ok(!dirs(seed(water,'switch-axe',2)).includes('morph-critical'),'속성충전 카운터는 변형 없음');
+  // 연격: 무기 특성 연속 타격이 있을 때만 ON·핵심. 없으면 가드 무기는 공격적인 방어, 그 외 공격 활성·용맹.
+  for(const [wt,st,on] of [['dual-blades',0,true],['bow',1,true],['bow',0,false],['lance',0,false],['switch-axe',0,false],['hammer',1,false]])
+    assert.strictEqual(assumed('연격',seed('mizu',wt,st)),on,`연격 ${wt}/${st}`);
+  assert.strictEqual(assumed('연격',{...seed('mizu','lance'),_abAssume:{on:['연격']}}),true,'직접 넣은 연격은 켬');
+  const core=(wt,st,w='mizu')=>Array.from(get('abDirections')(seed(w,wt,st)),d=>Array.from(d.targets,t=>t.s)).flat();
+  const raw=get('abMonsters("lance").find(s=>!s.weapons.find(w=>w.t==="lance").e)').key;
+  assert.ok(core('lance',0,raw).includes('공격적인 방어')&&!core('lance',0,raw).includes('연격'),'가드 무기는 공격적인 방어');
+  const hraw=get('abMonsters("hammer").find(s=>!s.weapons.find(w=>w.t==="hammer").e)').key;
+  assert.ok(core('hammer',0,hraw).includes('공격 활성')&&!core('hammer',0,hraw).includes('연격'),'비가드 무기는 공격 활성·용맹');
   const levels=get('(l=>new Map(l))')([['귀화 망토',1]]);
   assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{lv:levels}),true,'자체 상태이상이 있으면 돌파구 ON');
   assert.strictEqual(get('abAssumed')('돌파구',{wt:'long-sword'},{fill:true}),true,'자동 보충 후보로는 유지');

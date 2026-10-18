@@ -189,12 +189,12 @@ const AB_TRAITS = {
    actions=무기 특성에 그 동작이 있을 때만 ON (미확인·없음은 OFF, 운용 규칙에 적힌 스킬은 ON) · linked=연계 스킬이 빌드에 있을 때만 ON ·
    exclusive=앞 스킬이 발동하면 뒤 스킬 OFF. */
 const AB_ASSUME = {
-  monster: ['완전 충전','용맹','연격','기습','매진','무심','불퇴전','추격','약점 특효'],
+  monster: ['완전 충전','용맹','기습','매진','무심','불퇴전','추격','약점 특효'],
   off: ['그룹 사냥 강화【공격】','불굴','재난대처능력'],
   candidate: ['앙심','힘의 해방'],
   sp: ['속성 공격 증강【SP】','투기 활성'],
   actions: { '공격적인 방어':'가드', '저스트 모으기 해방':'모으기', '차지 마스터':'모으기', '변형 공격 강화':'변형', '비연':'공중',
-    '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기' },
+    '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기', '연격':'연속 타격' },
   linked: { skills:['돌파구','전화위복'], by:['거품의 춤','견인불발','겁혈 망토','귀화 망토'] },
   exclusive: [['과감','저스트 교격'],['과감','저스트 교격【지속】'],['멸진룡의 갈망','투기 활성'],['멸진룡의 갈망','속성 공격 증강【SP】']],
 };
@@ -205,6 +205,10 @@ function abTrait(b, code) {
   const [has, no] = AB_TRAITS[b.wt]?.[b.st || 0] || ['—','—'];
   return abTraitList(has).includes(code) ? 'yes' : abTraitList(no).includes(code) ? 'no' : null;
 }
+/* 방향 핵심의 공격력 버프 순서. 연격은 무기 특성 '연속 타격'이 있을 때만 쓰고, 없으면 가드 무기는 공격적인 방어,
+   그 외는 공격 활성·용맹을 쓴다 (SKILLS.md 연격·공격 활성·용맹, 2026-10-18 사용자). */
+const abAttackBuffs = b => abTrait(b, '연속 타격') === 'yes' ? ['연격','용맹','공격 활성']
+  : [...(abAssumed('공격적인 방어', b) ? ['공격적인 방어'] : []), '공격 활성', '용맹'];
 // 앙심 자동 후보: 대검 기본·격앙참의 태클·가드태클 칩 대미지, 무속성 무기 (SKILLS.md 앙심 메모).
 const abAutoCandidate = (s, b) => s === '앙심' && b.wt === 'great-sword' && b.st !== 1 && !abElementSkill(b);
 /* 이 빌드에서 조건부 스킬을 켠 것으로 볼지. fill=자동 보충 후보 판정(연계 스킬은 빌드가 정해지기 전이라 허용). */
@@ -277,18 +281,19 @@ function abContext(b, setting) {
     status: Object.keys(BD_STATUS_BOOST).find(s => bdStatusBoostApplies(s, w)) };
 }
 function abInvestmentDirections(b, setting) {
-  const c = abContext(b,setting), directions = [];
+  const c = abContext(b,setting), directions = [], atk = abAttackBuffs(b);
+  const pick = (...used) => atk.find(s => !used.includes(s));
   const make = (id, name, skills, desc, extra = {}) => ({ id, name,
     targets: abTargets(skills).map((t, i) => ({ ...t, min: abOperationRule(b,setting)?.required.length && i > 0 ? 0 : t.min })), desc, ...extra });
   if (c.critAllowed && c.nativeNegative && c.base.crit < 0 && !c.tripleCrit) {
     // 돌파구는 자체 상태이상 스킬이 있을 때만 쓰므로 방향 핵심에 두지 않는다 (SKILLS.md 돌파구).
-    const third = c.status || c.element ? '연격' : '용맹';
-    const low = make('brutal-low', '흉회심 · 저투자', ['흉회심', c.status || c.element || '연격', third],
+    const second = c.status || c.element || atk[0], third = pick(second);
+    const low = make('brutal-low', '흉회심 · 저투자', ['흉회심', second, third],
       '흉회심 1의 손실 보완과 미채용 대안을 비교하고 다른 피해 스킬에 투자합니다. 전심전력은 필수로 묶지 않습니다.');
     low.targets[0] = { s: '흉회심', min: 0, max: 1 };
     const high = [3, 5].map(lv => {
       const d = make('brutal-' + lv, `흉회심 · Lv${lv}${lv === 5 ? ' 고점' : ' 균형'}`,
-        ['흉회심', c.status || c.element || '연격', third],
+        ['흉회심', second, third],
         `흉회심을 미채용부터 ${lv}까지 비교합니다. ${b.wt === 'great-sword' ? '대검의 한방 고점 선호를 반영하되 평균 점수에 보너스를 더하지 않습니다.' : '다른 피해 스킬과 평균 기대값을 비교합니다.'}`);
       d.targets[0] = { s: '흉회심', min: 0, max: lv }; return d;
     });
@@ -296,7 +301,7 @@ function abInvestmentDirections(b, setting) {
   }
   if (c.status) {
     const status = BD_STATUS_BOOST[c.status], elder = { 독: '하룡의 독 안개', 폭파: '염왕룡의 폭발가루' }[status];
-    const skills = [c.status, elder || '상태 이상 축적 시 위력 UP', elder ? '상태 이상 축적 시 위력 UP' : '연격'];
+    const skills = [c.status, elder || '상태 이상 축적 시 위력 UP', elder ? '상태 이상 축적 시 위력 UP' : atk[0]];
     const main = make('status', `${status} · 추가 공격 중심`, skills,
       '추가 공격 Lv5를 목표로 축적 확률·피해 스킬을 조합합니다. 내성·발동 횟수·유지율은 아직 점수에 모델링하지 않습니다.');
     directions.push(main);
@@ -304,18 +309,18 @@ function abInvestmentDirections(b, setting) {
       [c.status, '기습 상태 이상', '상태 이상 축적 시 위력 UP'], '블래스트 대시로 후방을 잡는 운용을 가정합니다. 후방 유지율은 미확정입니다.'));
     return directions;
   }
-  const offense = c.element || '연격';
+  const offense = c.element || atk[0];
   const mastery = c.element && abEquipmentSkills().find(s => s === c.element + '·경지');
   const elder = c.element && [...BD_ELE_MUL].find(s => bdEffects(bdSkillDesc(s, 1) || '', s, c.w).some(e => e.el === c.w.e && e.k === 'ele'));
   const plain = make('water', c.element ? `${c.w.e}속성${mastery ? ' · 경지' : ''} 중심` : '물리 · 피해 효율',
-    [offense, mastery || (c.element ? elder || '연격' : '용맹'), mastery ? elder || '연격' : c.element ? '용맹' : null].filter(Boolean),
+    [offense, mastery || (c.element ? elder || atk[0] : pick(offense)), mastery ? elder || atk[0] : c.element ? pick(atk[0]) : null].filter(Boolean),
     c.nativeNegative && c.tripleCrit ? '회심 파라미터 3개의 역회심 보정 의도를 반영해 흉회심 방향을 제외합니다.' : '회심 확보 비용을 강제하지 않고 속성·피해 스킬의 투자 효율을 비교합니다.');
   if (c.critAllowed && c.critIntent) {
     directions.push(make('critical', c.element ? '회심격 · 자체 회심 활용' : '자체 회심 · 투자 비교',
-      [c.element ? '회심격【속성】' : offense, '간파', offense === '연격' ? '용맹' : offense],
+      [c.element ? '회심격【속성】' : offense, '간파', c.element ? offense : pick(offense)],
       '파라미터 포함 무기 자체 회심을 활용할 투자안을 비교합니다. 특정 회심률을 강제하지 않으며 슈퍼회심도 필수가 아닙니다.'));
     if (c.tripleCrit) directions.push(make('crit-attack', '무기 회심 · 공격 증강',
-      ['공격 증강【회심】', offense, '연격'].filter((s, i, a) => a.indexOf(s) === i).concat(c.element ? [] : ['용맹']),
+      ['공격 증강【회심】', offense, atk[0]].filter((s, i, a) => a.indexOf(s) === i).concat(c.element ? [] : [pick(offense)]),
       `무기 자체 회심 ${c.base.crit}%에 대한 공격 증가를 비교합니다. 장비 강제 착용이나 추가 점수 보너스는 없습니다.`, { prefer: ['공격 증강【회심】'] }));
   }
   if (c.tripleCrit && !c.nativeNegative) directions.push(plain); else directions.unshift(plain);
@@ -345,7 +350,7 @@ function abDirections(b, setting) {
       const flat = bdEffects(bdSkillDesc(c.element,abMax(c.element)) || '',c.element,c.w).find(e=>e.k==='ele'&&!e.pct)?.v || 0;
       const pct = bdEffects(bdSkillDesc(elder,abMax(elder)) || '',elder,c.w).find(e=>e.k==='ele'&&e.pct&&e.el===c.w.e)?.v || 0;
       const high = c.base.ele*pct/100/abMax(elder) > flat/abMax(c.element);
-      const d = {id:'elder',name:c.w.e+'속성 · 고룡/혼합 투자',targets:abTargets([elder,c.element,'연격']),
+      const d = {id:'elder',name:c.w.e+'속성 · 고룡/혼합 투자',targets:abTargets([elder,c.element,abAttackBuffs(b)[0]]),
         desc:'고룡 속성%와 고정 속성·경지의 추가 장비/연성 비용을 함께 비교합니다. 고룡3·속성5를 강제하지 않습니다.'};
       d.targets[1].min=0; d.targets[2].min=0;
       if (dirs.length < 3) dirs.splice(high ? dirs.indexOf(fixed) : dirs.indexOf(fixed)+1,0,d);
@@ -412,7 +417,7 @@ function abPolicy(b, direction, targets, styleGuide = true, setting) {
   const investmentSkills = c.element ? [c.element,c.element+'·경지',...BD_ELE_MUL].filter(s=>
     bdEffects(bdSkillDesc(s,abMax(s)) || '',s,c.w).some(e=>e.k==='ele'&&(!e.el||e.el===c.w.e))) : [];
   const contextSkills = [c.status, c.element, ...(c.base.crit > 0 ? ['공격 증강【회심】'] : []),
-    ...(['critical','morph-critical'].includes(direction) ? ['간파','약점 특효'] : []),
+    ...(['critical','morph-critical'].includes(direction) ? ['간파','약점 특효'] : []), '진가 발휘', ...abAttackBuffs(b),
     ...[...AB_ASSUME.candidate, ...AB_ASSUME.sp].filter(s => abAssumed(s, b, { fill:true }))].filter(Boolean);
   const support = abSupportSkills(b,setting).filter(s => !skip.has(s));
   const styleTargets = [...(style?.required || []), ...(style?.recommended || [])].filter(t => !excluded.includes(t.s));
