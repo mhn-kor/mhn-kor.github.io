@@ -255,7 +255,8 @@ const abEquipmentSkills = () => [...new Set(bdOrderedSets().flatMap(s => Object.
 function abSupportSkills(b, setting) {
   const c = abContext(b,setting), row = abStyleRow(b);
   // 수치는 후보 선별용 상대 효율일 뿐 최종 피해 점수에 가산하지 않는다.
-  return abEquipmentSkills().filter(s => abAssumed(s, b, { fill:true, row })
+  // 방어구 스킬과 연성 전용 스킬(불퇴전 등)을 같은 기준으로 비교한다. 레벨은 강제하지 않고 칸마다 점수로 채운다.
+  return [...new Set([...abEquipmentSkills(), ...abStonePool().keys()])].filter(s => abAssumed(s, b, { fill:true, row })
     && (s !== '상태 이상 축적 시 위력 UP' || bdBuildupApplies(c.w))).map(s => {
     const weapon = abGunWeapon(b,setting), effects = bdEffects(bdSkillDesc(s, abMax(s)) || '', s, weapon);
     const value = effects.reduce((n, e) => {
