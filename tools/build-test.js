@@ -168,24 +168,21 @@ check('회심격은 일반 속성 C에 합산하고 고룡 E만 고정 증가분
   assert.strictEqual(charged.now.ele, Math.round((1532 * 1.45 + 700) * 1.15));
 });
 
-check('추가 공격 독·마비는 몬스터 상태 조건 체크 시에만 대미지를 높인다', () => {
-  for (const [name, values, status] of [
-    ['추가 공격【독】', [30, 45, 60, 80, 100], '독'],
-    ['추가 공격【마비】', [50, 75, 100, 130, 160], '마비'],
+check('추가 공격 독·마비는 나우칼 유지율(27·20%)을 곱한 기대값을 상태 이상 보정에 따로 곱한다', () => {
+  for (const [name, values, status, rate] of [
+    ['추가 공격【독】', [30, 45, 60, 80, 100], '독', 27],
+    ['추가 공격【마비】', [50, 75, 100, 130, 160], '마비', 20],
   ]) for (let lv = 1; lv <= 5; lv++) for (const element of [null, '불', '독', '마비']) {
     const weapon = { e: element, ele: element ? 500 : 0 };
     const off = calcSkills([[name, lv]], weapon);
     const on = calcSkills([[name, lv]], weapon, { [name]: true });
-    assert.strictEqual(off.stats.co.F, 1);
     const valid = element === status;
-    assert.strictEqual(on.stats.co.F, valid ? 1 + values[lv - 1] / 100 : 1);
-    assert.strictEqual(off.stats.now.atk, on.stats.now.atk);
-    assert.strictEqual(off.stats.now.ele, on.stats.now.ele);
-    assert.strictEqual(on.stats.score, Math.round((1000 + (['독','마비'].includes(element) ? 0 : weapon.ele)) * on.stats.co.F));
-    assert.strictEqual(off.stats.conds.some(c => c.sk === name), valid);
-    assert.strictEqual(off.html.includes(`몬스터 ${status} 상태`), valid);
-    assert.ok(!off.html.includes(' checked'));
-    assert.strictEqual(on.html.includes(' checked'), valid);
+    assert.strictEqual(off.stats.co.F, 1);
+    assert.strictEqual(off.stats.co.S, valid ? 1 + values[lv - 1] / 100 * rate / 100 : 1);
+    assert.strictEqual(on.stats.score, off.stats.score);
+    assert.strictEqual(off.stats.score, Math.round((1000 + (['독','마비'].includes(element) ? 0 : weapon.ele)) * off.stats.co.S));
+    assert.ok(!off.stats.conds.some(c => c.sk === name));
+    assert.strictEqual(off.html.includes(`${name} +${values[lv - 1]}% × 발동률 ${rate}%`), valid);
   }
 });
 
@@ -233,10 +230,10 @@ check('추가 공격 3종은 상태이상 일치 또는 슬래시액스의 해�
         const weapon = { t: type, e: element, ele: element ? 500 : 0, x: phial ? [phial] : null };
         const valid = element === status || (type === 'switch-axe' && phial === status + '병');
         const off = calcSkills([[name, lv]], weapon), on = calcSkills([[name, lv]], weapon, { [name]: true });
-        assert.strictEqual(on.stats.conds.some(c => c.sk === name), valid, `${name}/${type}/${element}/${phial}`);
-        assert.strictEqual(off.stats.score, calcSkills([], weapon).stats.score);
-        if (valid) assert.ok(on.stats.score > off.stats.score);
-        else assert.strictEqual(on.stats.score, off.stats.score);
+        assert.ok(!on.stats.conds.some(c => c.sk === name), `${name}/${type}/${element}/${phial}`);
+        assert.strictEqual(on.stats.score, off.stats.score);
+        if (valid) assert.ok(off.stats.score > calcSkills([], weapon).stats.score, `${name}/${type}/${element}/${phial}`);
+        else assert.strictEqual(off.stats.score, calcSkills([], weapon).stats.score);
       }
     }
   }
@@ -250,10 +247,31 @@ check('축적 시 위력은 상태이상 무기·슬래시액스 상태이상 �
       const valid = ['독', '마비', '수면', '폭파'].includes(e)
         || (t === 'switch-axe' && ['독병', '마비병', '수면병'].includes(phial));
       const off = calcSkills([[name, lv]], weapon), on = calcSkills([[name, lv]], weapon, { [name]: true });
-      assert.strictEqual(on.stats.conds.some(c => c.sk === name), valid);
-      assert.strictEqual(off.stats.score, calcSkills([], weapon).stats.score);
-      assert.strictEqual(on.stats.co.F, valid ? 1 + lv / 10 : 1);
+      assert.ok(!on.stats.conds.some(c => c.sk === name));
+      assert.strictEqual(on.stats.score, off.stats.score);
+      assert.strictEqual(off.stats.co.F, 1);
+      assert.strictEqual(off.stats.co.S, valid ? 1 + lv * 10 / 100 * (100 / 3) / 100 : 1);
     }
+});
+
+check('축적 확률은 (100 + 가산) ÷ 3, 일치하는 상태이상의 하룡·염왕룡·추가 공격【폭파】만 가산한다', () => {
+  const name = '상태 이상 축적 시 위력 UP', S = chance => 1 + 50 / 100 * chance / 100;
+  for (const [skills, e, chance] of [
+    [[['하룡의 독 안개', 3]], '독', 200 / 3],
+    [[['하룡의 독 안개', 1]], '독', 135 / 3],
+    [[['하룡의 독 안개', 3]], '마비', 100 / 3],
+    [[['염왕룡의 폭발가루', 2]], '폭파', 170 / 3],
+    [[['염왕룡의 폭발가루', 3], ['추가 공격【폭파】', 5]], '폭파', 100],
+    [[['기습【상태 이상】', 5]], '독', 100 / 3],
+  ]) {
+    const { stats } = calcSkills([[name, 5], ...skills], { e });
+    assert.strictEqual(stats.buildup, chance, `${skills}/${e}`);
+    const blast = skills.find(([s]) => s === '추가 공격【폭파】');
+    assert.strictEqual(stats.co.S, S(chance));
+    assert.strictEqual(stats.co.A, blast ? 15 : 0);
+  }
+  const html = calcSkills([[name, 5], ['하룡의 독 안개', 3]], { e: '독' }).html;
+  assert.ok(html.includes('상태 이상 보정') && html.includes('축적 확률 66.667%'));
 });
 
 check('저스트 교격과 지속형은 저장된 체크 상태와 무관하게 점수에서 제외한다', () => {

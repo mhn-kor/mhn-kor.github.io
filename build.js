@@ -143,8 +143,16 @@ const BD_AMMO_BOOST = {
 /* 동작 전용 스킬의 무기 제한. 장비 스킬 목록은 유지하고 계산 효과만 제한한다. */
 const BD_SKILL_WEAPONS = { '변형 공격 강화': ['switch-axe', 'charge-blade'], '체인지 부스트': ['dual-blades', 'switch-axe', 'charge-blade'] };
 const BD_STATUS_BOOST = { '추가 공격【독】': '독', '추가 공격【마비】': '마비', '추가 공격【폭파】': '폭파' };
-const bdStatusBoostApplies = (name, w) => w?.e === BD_STATUS_BOOST[name]
-  || (w?.t === 'switch-axe' && (w.x || []).includes(BD_STATUS_BOOST[name] + '병'));
+const bdHasStatus = (w, status) => w?.e === status || (w?.t === 'switch-axe' && (w.x || []).includes(status + '병'));
+const bdStatusBoostApplies = (name, w) => bdHasStatus(w, BD_STATUS_BOOST[name]);
+/* 나우칼 빌드 편집기 기본 발동률(%): 추가 공격 독·마비는 상태 유지율, 폭파는 발동 1회당 10% (2026-10-19 사용자 확정, 독 지속 피해는 미반영). */
+const BD_STATUS_RATE = { '추가 공격【독】': 27, '추가 공격【마비】': 20, '추가 공격【폭파】': 10 };
+/* 축적 확률 = (100 + 가산) ÷ 3, 최대 100% (나우칼 '상태 이상 발동률', 정면 기준). 기습【상태 이상】은 후방 조건이라 넣지 않는다. */
+const BD_BUILDUP_BONUS = { '하룡의 독 안개': ['독', [35, 70, 100]], '염왕룡의 폭발가루': ['폭파', [35, 70, 100]], '추가 공격【폭파】': ['폭파', [20, 40, 60, 80, 100]] };
+const bdBuildupChance = (lvOf, w) => Math.min(100, (100 + [...lvOf].reduce((n, [s, lv]) => {
+  const [status, add] = BD_BUILDUP_BONUS[s] || [];
+  return n + (status && lv > 0 && bdHasStatus(w, status) ? add[Math.min(lv, add.length) - 1] : 0);
+}, 0)) / 3);
 const bdBuildupApplies = w => ['독', '마비', '수면', '폭파'].includes(w?.e)
   || (w?.t === 'switch-axe' && (w.x || []).some(x => /^(독|마비|수면|폭파)병$/.test(x)));
 const bdAmmoBoostApplies = (name, w) => ['light-gun', 'heavy-gun'].includes(w?.t)
@@ -205,9 +213,18 @@ function bdEffects(desc, name = '', weapon = null) {
     const m = /대미지가 (\d+)% (?:상승|증가)/.exec(desc);
     return m ? [{ k: 'dmg', pct: 1, v: +m[1], cond: true, scope: BD_DAMAGE_SCOPE[name] }] : [];
   }
+  /* 상태이상 스킬은 조건 체크 없이 발동률을 곱한 기대값. k:'status'는 대미지 가산(F)과 따로 곱하는 상태 이상 보정(S, 나우칼 ⑪). */
   if (['추가 공격【독】', '추가 공격【마비】'].includes(name)) {
     const m = /(독|마비) 상태인 몬스터에게 주는 대미지가 (\d+)%/.exec(desc);
-    return m ? [{ k: 'dmg', pct: 1, v: +m[2], cond: true, scope: `몬스터 ${m[1]} 상태` }] : [];
+    return m ? [{ k: 'status', v: +m[2], rate: BD_STATUS_RATE[name], scope: `몬스터 ${m[1]} 상태 유지율` }] : [];
+  }
+  if (name === '추가 공격【폭파】') {
+    const m = /공격력이 (\d+) 상승/.exec(desc);
+    return m ? [{ k: 'atk', v: +m[1] * BD_STATUS_RATE[name] / 100, raw: +m[1], rate: BD_STATUS_RATE[name], scope: '폭파 1회 발동분' }] : [];
+  }
+  if (name === '상태 이상 축적 시 위력 UP') {
+    const m = /대미지가 (\d+)% 증가/.exec(desc);
+    return m ? [{ k: 'status', v: +m[1], buildup: true, scope: '축적 확률' }] : [];
   }
   if (name === '힘의 해방') {
     const m = /회심률이 \+?(\d+)%/.exec(desc);
@@ -336,13 +353,14 @@ function bdSkillDesc(name, lv) {
 /* 나우칼 간이 계산식 https://mhnowcalc.com/calc/damage_calc.php?lang=ko
    공격 파라미터는 일반 공격 배율 뒤에 더하고, 공격 활성은 고정 증가분까지 곱한다.
    회심격은 회심 분기에만 C로 가산. 일반/회심 대미지를 구한 후 확률로 평균한다.
-   모션치·육질은 1, 상태이상 수치의 기존 점수 취급은 별도 검토까지 유지한다. */
+   모션치·육질은 1. 상태이상 스킬은 나우칼 기본 발동률로 기대값을 내고 S(⑪ 상태 이상 보정)에 곱한다. */
 function bdStats(b) {
   const w = bdScoreWeapon(b);
   const base = bdWeaponBase(b);
   const info = bdStyleInfo(b), P = info.active ? info.params.reduce((n, x) => n + (x?.stat === 'atk' ? x.value : 0), 0) : 0;
-  let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, T = 1, R = 0, critX = BD_CRIT_UP, negCritX = null, crit = base.crit;
+  let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, S = 1, T = 1, R = 0, critX = BD_CRIT_UP, negCritX = null, crit = base.crit;
   const lvOf = new Map(bdTotals(b));
+  const buildup = bdBuildupChance(new Map([...lvOf].filter(([name]) => !b.ignore?.includes(name))), w);
   const on = b.cond || {};
 
   /* 효과를 먼저 다 모읍니다. 조건부는 켜 둔 것만 씁니다.
@@ -389,6 +407,7 @@ function bdStats(b) {
     if (e.k === 'critx') { if (e.onCrit) critX = Math.max(critX, e.v / 100); continue; }
     if (e.k === 'negcritx') { negCritX = e.v / 100; continue; }
     if (e.k === 'dmg') { F += e.v / 100; continue; }
+    if (e.k === 'status') { S *= 1 + e.v / 100 * (e.buildup ? buildup : e.rate) / 100; continue; }
     if (e.k === 'ele') {
       /* 속성 강화는 무기 속성이 같을 때만 붙습니다. 속성 표기가 없으면 어떤 속성이든 붙습니다. */
       if (!w || !w.e) continue;
@@ -415,14 +434,14 @@ function bdStats(b) {
   const G = !critApplies ? 1 : q >= 0 ? 1 + q * (critX - 1) : negCritX == null ? 1 + r * (BD_CRIT_DOWN - 1)
     : r * BD_BRUTAL_RATE * negCritX + r * (1 - BD_BRUTAL_RATE) * BD_CRIT_DOWN + (1 - r);
   const statusWeapon=['독','마비','수면','폭파'].includes(w?.e);
-  const normal = (attack + (statusWeapon ? 0 : normalEle)) * F, critical = (attack + (statusWeapon ? 0 : criticalEle)) * F * critX;
+  const normal = (attack + (statusWeapon ? 0 : normalEle)) * F * S, critical = (attack + (statusWeapon ? 0 : criticalEle)) * F * S * critX;
   const baseScore = Math.round(R && p > 0 ? normal * (1 - p) + critical * p : normal * G);
   const bowCycle = bdBowCycle(b, lvOf);
   const score = b.bowEfficiency && bowCycle?.multiplier ? Math.round(baseScore * bowCycle.multiplier) : baseScore;
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
-  return { base, now, score, baseScore, bowCycle, hp, conds, ammo, critApplies, statusWeapon, branches: { normal, critical, p, normalEle, criticalEle },
+  return { base, now, score, baseScore, bowCycle, hp, conds, ammo, critApplies, statusWeapon, buildup, branches: { normal, critical, p, normalEle, criticalEle },
     effects: eff, damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null,
-    co: { A, B, C, D, E, F, G, P, T, R, critX, negCritX } };
+    co: { A, B, C, D, E, F, G, P, S, T, R, critX, negCritX } };
 }
 
 function bdTotals(b) {
@@ -1064,7 +1083,7 @@ function bdScoreFormula(stats) {
   const { now, co, branches: x, baseScore } = stats, f = bdCalcNumber;
   return co.R && x.p > 0
     ? `${f(x.normal)} × ${f(1 - x.p)} + ${f(x.critical)} × ${f(x.p)} ≈ ${baseScore}`
-    : `(${now.atk}${stats.base.ele && !stats.statusWeapon ? ` + ${now.ele}` : ''}) × ${f(co.F)} × ${f(co.G)} ≈ ${baseScore}`;
+    : `(${now.atk}${stats.base.ele && !stats.statusWeapon ? ` + ${now.ele}` : ''}) × ${f(co.F)}${co.S !== 1 ? ` × ${f(co.S)}` : ''} × ${f(co.G)} ≈ ${baseScore}`;
 }
 function bdCalc(b) {
   const w = bdWeaponOf(b);
@@ -1093,6 +1112,8 @@ function bdCalc(b) {
     rows.push(`<span>흉회심</span><i>${f(r)} × ${BD_BRUTAL_RATE} × ${f(co.negCritX)} + ${f(r)} × ${f(1 - BD_BRUTAL_RATE)} × ${BD_CRIT_DOWN} + ${f(1 - r)} = <b>${f(co.G)}</b></i>`);
   }
   if (co.F !== 1) rows.push(`<span>대미지</span><i>× <b>${f(co.F)}</b></i>`);
+  if (co.S !== 1) rows.push(`<span>상태 이상 보정</span><i>${stats.effects.filter(e => e.k === 'status')
+    .map(e => `${e.sk} +${e.v}% × ${e.buildup ? `축적 확률 ${f(stats.buildup)}` : `발동률 ${e.rate}`}%`).join(' · ')} → × <b>${f(co.S)}</b></i>`);
   if (co.R && stats.branches.p > 0) {
     rows.push(`<span>일반 공격</span><i>대미지 배율 반영 = ${f(stats.branches.normal)}</i>`);
     rows.push(`<span>회심 공격</span><i>대미지 배율 · 회심 ×${f(co.critX)} 반영 = ${f(stats.branches.critical)}</i>`);

@@ -280,6 +280,7 @@ function abSupportSkills(b, setting) {
       if (e.k === 'crit') return n + Math.max(0, e.v) / 100 * .25;
       if (e.k === 'atk' || e.k === 'ele') return n + (e.perBaseCrit ? e.v * Math.max(0, c.base.crit)
         : e.pct ? (e.k === 'atk' ? c.base.atk : c.base.ele) * e.v / 100 : e.v || 0) / Math.max(1, c.base.atk + (c.element ? c.base.ele : 0));
+      if (e.k === 'status') return n + e.v / 100 * (e.buildup ? 100 / 3 : e.rate) / 100;
       return n + (e.k === 'dmg' ? e.v / 100 : 0);
     }, 0);
     return { s, value, tier:abBuffTier(effects) };

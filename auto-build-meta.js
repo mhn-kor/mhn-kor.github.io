@@ -20,7 +20,7 @@ function abmCandidates(b, gun) {
       extra:d.targets.filter(t => !skeleton.some(x => x.s === t.s)).map(t => ({ ...t, min:0 })), desc:d.desc });
   }
   const used = new Set(metas.flatMap(m => m.skeleton.map(t => t.s)));
-  const buff = s => bdEffects(bdSkillDesc(s, abMax(s)) || '', s, abGunWeapon(b, gun)).some(e => ['atk','dmg'].includes(e.k) && !e.onCrit);
+  const buff = s => bdEffects(bdSkillDesc(s, abMax(s)) || '', s, abGunWeapon(b, gun)).some(e => ['atk','dmg','status'].includes(e.k) && !e.onCrit);
   // 경지는 기본 스킬이 켜지는 무기에서만 (예: 연격이 꺼지는 랜스의 연격·경지 제외).
   const gate = s => !/·경지$/.test(s) || abAssumed(s.replace(/·경지$/, ''), b);
   const avoid = abOperationRule(b, gun)?.avoid || []; // 스타일 비권장은 메타 후보로도 내지 않는다 (직접 추가는 가능)
