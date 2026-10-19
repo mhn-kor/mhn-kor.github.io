@@ -1,0 +1,9 @@
+{
+  "b-diab": {
+    "profile": "nowcalc:None_Element_2",
+    "checkedAt": "2026-10-19",
+    "source": "사용자 게임 확인 (공식·mhn.quest·나우칼 미반영 시점)",
+    "bonus20": { "atk": 204, "ele": 0, "crit": 0 },
+    "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "crit", "value": 10 }]
+  }
+}

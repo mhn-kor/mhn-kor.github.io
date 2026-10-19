@@ -1157,6 +1157,21 @@ check('스타일 미지원·미확인 무기는 버튼과 직접 선택 경로�
   }
 });
 
+check('출처 미반영 스타일강화는 사용자 확인값(style-manual.json)으로 열린다: 디아블로스 아종', () => {
+  const manual = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'style-manual.json'), 'utf8'))['b-diab'];
+  for (const weapon of BUILD.sets.find(s => s.key === 'b-diab').weapons) {
+    assert.ok(weapon.styleSelectable, weapon.t);
+    ctx.manualStyleBuild = { ...bdNewBuild(), w: 'b-diab', wt: weapon.t, st: 1, style20: true, params: ['atk', 'crit', 'atk'] };
+    try {
+      const info = vm.runInContext('bdStyleInfo(manualStyleBuild)', ctx), base = vm.runInContext('bdWeaponBase(manualStyleBuild)', ctx);
+      assert.ok(info.selectable && info.active, weapon.t);
+      assert.deepStrictEqual(JSON.parse(JSON.stringify(info.profile.bonus20)), manual.bonus20);
+      assert.strictEqual(base.atk, weapon.atk + 204 + 200);
+      assert.strictEqual(base.crit, weapon.crit + 10);
+    } finally { delete ctx.manualStyleBuild; }
+  }
+});
+
 check('공식 확인된 4종은 같은 몬스터 강화치로 스타일20 적용과 저장이 가능하다', () => {
   const cases = [
     ['rathi', 'great-sword', '발키리블레이드', 1817, 516],

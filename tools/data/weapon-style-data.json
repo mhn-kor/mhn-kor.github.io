@@ -20,8 +20,8 @@
     "crossCheck": "completed_with_source_policy",
     "crossCheckSite": "https://mhnowcalc.com/calc/",
     "counts": {
-      "supported": 270,
-      "unsupported": 477,
+      "supported": 277,
+      "unsupported": 470,
       "unknown": 4
     },
     "nowcalc": {
@@ -8349,7 +8349,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:None_Element_2",
+        "source": "manual",
+        "checkedAt": "2026-10-19",
+        "stats20": {
+          "atk": 2862,
+          "ele": 0,
+          "crit": -30
+        }
       },
       "siteBaseMatches": true
     },
@@ -8366,7 +8374,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:None_Element_2",
+        "source": "manual",
+        "checkedAt": "2026-10-19",
+        "stats20": {
+          "atk": 2862,
+          "ele": 0,
+          "crit": -30
+        }
       },
       "siteBaseMatches": true
     },
@@ -8383,7 +8399,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:None_Element_2",
+        "source": "manual",
+        "checkedAt": "2026-10-19",
+        "stats20": {
+          "atk": 2862,
+          "ele": 0,
+          "crit": -30
+        }
       },
       "siteBaseMatches": true
     },
@@ -8400,7 +8424,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:None_Element_2",
+        "source": "manual",
+        "checkedAt": "2026-10-19",
+        "stats20": {
+          "atk": 2862,
+          "ele": 0,
+          "crit": -30
+        }
       },
       "siteBaseMatches": true
     },
@@ -8417,7 +8449,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:None_Element_2",
+        "source": "manual",
+        "checkedAt": "2026-10-19",
+        "stats20": {
+          "atk": 2862,
+          "ele": 0,
+          "crit": -30
+        }
       },
       "siteBaseMatches": true
     },
@@ -8434,7 +8474,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:None_Element_2",
+        "source": "manual",
+        "checkedAt": "2026-10-19",
+        "stats20": {
+          "atk": 2862,
+          "ele": 0,
+          "crit": -30
+        }
       },
       "siteBaseMatches": true
     },
@@ -8451,7 +8499,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:None_Element_2",
+        "source": "manual",
+        "checkedAt": "2026-10-19",
+        "stats20": {
+          "atk": 2862,
+          "ele": 0,
+          "crit": -30
+        }
       },
       "siteBaseMatches": true
     },

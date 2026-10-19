@@ -306,6 +306,7 @@ async function main() {
   const { src, data, ko } = await fetchBundle();
   const off = JSON.parse(fs.readFileSync(path.join(DATA, 'official-names.json'), 'utf8'));
   const specs = JSON.parse(fs.readFileSync(path.join(DATA, 'weapon-specs.json'), 'utf8'));
+  const STYLE_MANUAL = JSON.parse(fs.readFileSync(path.join(DATA, 'style-manual.json'), 'utf8'));
   /* 병·탄·포격 등의 한국어 이름표. 게임 패치와 무관하게 거의 바뀌지 않아 저장소에 둡니다. */
   const X = JSON.parse(fs.readFileSync(path.join(DATA, 'wextra.json'), 'utf8'));
   /* 공식 사이트의 조충곤별 사냥벌레(fetch-official.js 가 생성). */
@@ -442,7 +443,8 @@ async function main() {
         t: wkey, tn: wko, name,
         e: elem && elem !== 'white' ? ELEM_KO[elem] || elem : null,
         atk: spec?.atk ?? atk, ele: spec ? (spec.ele || null) : ele, crit: spec?.crit ?? crit,
-        ...(spec ? { officialId, styleSelectable: spec.styleSelectable } : {}),
+        /* 출처보다 먼저 열린 스타일강화는 사용자 확인값(style-manual.json)으로 선택을 연다. */
+        ...(spec ? { officialId, styleSelectable: spec.styleSelectable || !!STYLE_MANUAL[key] } : {}),
         x: weaponExtra(wkey, wmon, X),
         /* 종류 전용 스킬이 있을 때만 담는다. 없으면 세트의 weaponSkills 를 쓴다.
            공식에 장비 스킬이 있으면 번들보다 우선한다(아래에서 세트 공통과 비교해 정리). */

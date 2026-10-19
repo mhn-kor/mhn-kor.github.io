@@ -89,7 +89,18 @@ function applyCalc(output, calc) {
       stats20: Object.fromEntries(STATS.map(s => [s, weapon.base[s] + data.bonus20[s]])) };
     inherited++;
   }
-  output.issues = output.issues.filter(issue => !output.weapons.some(w => w.set === issue.set && w.type === issue.type && w.style.source === 'same_monster'));
+  // 출처보다 먼저 열린 스타일강화: 사용자 확인값이 기존 프로필과 정확히 같을 때만 연결한다. 출처가 지원하면 출처가 우선한다.
+  const manual = JSON.parse(fs.readFileSync(path.join(DATA, 'style-manual.json'), 'utf8'));
+  for (const weapon of output.weapons) {
+    const m = manual[weapon.set];
+    if (!m || weapon.style.status === 'supported') continue;
+    const data = output.profiles[m.profile];
+    if (!data || JSON.stringify(data.bonus20) !== JSON.stringify(m.bonus20)
+      || [10, 15, 20].some(lv => JSON.stringify(data.parameters[lv]) !== JSON.stringify(m.parameters))) throw Error(`수동 스타일 값과 프로필 불일치: ${weapon.set}`);
+    weapon.style = { status: 'supported', profile: m.profile, source: 'manual', checkedAt: m.checkedAt,
+      stats20: Object.fromEntries(STATS.map(s => [s, weapon.base[s] + data.bonus20[s]])) };
+  }
+  output.issues = output.issues.filter(issue => !output.weapons.some(w => w.set === issue.set && w.type === issue.type && ['same_monster', 'manual'].includes(w.style.source)));
   output.schemaVersion = 2;
   output.meta.nowcalc = calc.meta;
   output.meta.sourcePolicy = { base: 'mhn.quest (10-5)', bonus20: 'mhnowcalc.com', parameters: 'mhnowcalc.com' };
