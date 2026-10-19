@@ -23,6 +23,7 @@
 .abm-meta span, .abm-meta small { display: block; font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
 .abm-meta small { color: var(--amber-hi); }
 .abm-meta[aria-pressed="true"] { border-color: var(--amber); outline: 2px solid var(--amber); outline-offset: -1px; background: color-mix(in srgb, var(--amber) 12%, var(--surface-2)); }
+.abm-guide { font-style: normal; font-size: 11px; font-weight: 600; color: var(--jade); border: 1px solid var(--jade); border-radius: 999px; padding: 1px 6px; margin-left: 4px; vertical-align: middle; }
 .abm-meta:disabled { opacity: .45; cursor: not-allowed; }
 
 /* 메타별 결과: 가로 넘김 5장. 다음 카드가 살짝 보이게 85% 폭. */

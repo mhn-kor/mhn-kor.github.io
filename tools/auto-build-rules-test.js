@@ -17,7 +17,7 @@ for(const file of fs.readdirSync(dir).filter(f=>f.endsWith('.md'))) {
     const id=cells[0]?.match(/^`(.+)`$/)?.[1];
     if(!id||!cols) continue;
     assert.ok(!rows.has(id),'문서 ID 중복: '+id);
-    rows.set(id,{file,required:cells[cols['필수 최소']],recommended:cells[cols['권장']],avoid:cells[cols['비권장']],status:cells[cols['상태 · 근거']]});
+    rows.set(id,{file,required:cells[cols['필수 최소']],recommended:cells[cols['권장']],avoid:cells[cols['비권장']],metas:cells[cols['지침 메타']],status:cells[cols['상태 · 근거']]});
   }
 }
 const fmt=list=>list.map(t=>t.min===t.max?`${t.s} ${t.min}`:`${t.s} ${t.min}~${t.max}`).join(' · ')||'—';
@@ -32,6 +32,8 @@ for(const [id,r] of data) {
   assert.strictEqual(row.required.replace(/^B1( · )?/,'')||'—',fmt(r.required),`필수 불일치: ${id}`);
   assert.strictEqual(row.recommended,fmt(r.recommended),`권장 불일치: ${id}`);
   assert.strictEqual(row.avoid,names(r.avoid),`비권장 불일치: ${id}`);
+  assert.strictEqual(row.metas,names(r.metas||[]),`지침 메타 불일치: ${id}`);
+  for(const s of r.metas||[]) assert.ok(known.has(s),`없는 스킬: ${id}/${s}`);
   for(const t of [...r.required,...r.recommended]) {
     assert.ok(known.has(t.s),`없는 스킬: ${id}/${t.s}`);
     const max=t.max==='MAX'?abMax(t.s):t.max;

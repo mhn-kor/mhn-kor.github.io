@@ -2,15 +2,17 @@
    메타 = 메타 주축 스킬(핵심 스킬, Lv4 이상 보장) + 수단(나머지는 점수로 채움, 레벨 강제 없음).
    탐색 엔진(abSearch·abBest)과 판정(abAssumed·abDirections 등)은 auto-build.js를 그대로 쓰고,
    화면·상태는 이 파일에만 둔다. 기존 화면(auto-build.js의 ab*UI, #auto-build-legacy)과 섞지 않는다. */
-const ABM = { maxMetas: 4, coreMin: 4, perMetaMs: 5000, quick: { ms: 250, beam: 40, armor: 12 }, shown: 8, perMeta: 5 };
+const ABM = { maxMetas: 4, coreMin: 4, perMetaMs: 5000, quick: { ms: 250, beam: 40, armor: 12 }, retry: { ms: 800, beam: 80, armor: 24 }, shown: 8, perMeta: 5 };
 
 /* 메타 후보: 기존 투자 방향(회심·속성·흉회심·상태이상)은 첫 핵심을 메타 주축 스킬로, 그 무기에서 켜지는 공격력·대미지 버프는 단일 스킬 메타로. */
 function abmCandidates(b, gun) {
   const core = s => ({ s, min: Math.min(ABM.coreMin, abMax(s)), max: abMax(s) });
-  const metas = [];
+  // 지침 메타: 운용 규칙의 metas. 점수가 없는 스킬도 메타 후보에 항상 보인다 (예: 차지액스 도끼 강화 속전속결).
+  const metas = (abOperationRule(b, gun)?.metas || []).map(s => ({ id:'g:'+s, name:s, guide:true, direction:'manual', skeleton:[core(s)], extra:[],
+    desc:`운용 지침 메타. ${s} Lv${core(s).min} 이상을 확보하고, 나머지는 점수가 오르는 스킬로 채웁니다.` }));
   for (const d of abDirections(b, gun)) {
     const first = d.targets[0];
-    if (!first || metas.some(m => m.skeleton[0].s === first.s)) continue;
+    if (!first || metas.some(m => m.skeleton[0].s === first.s)) continue; // 지침 메타와 같은 주축이면 지침 메타로 둔다
     const skeleton = [core(first.s)];
     // 변형 회심 메타는 회심 100%까지 필요한 약점 특효 레벨도 메타 주축 스킬로 둔다 (CONCEPTS W1).
     for (const t of d.targets.slice(1)) if (t.s === '약점 특효' && d.id === 'morph-critical') skeleton.push({ s:t.s, min:t.max, max:t.max });
@@ -48,12 +50,14 @@ async function abmRun(config, limit, progress, cancelled) {
   finally { Object.assign(AB_LIMIT, saved); }
 }
 
-/* 빠른 계산: 메타마다 짧게 탐색해 예상 최고 점수를 낸다. 빠른 계산에서 메타 주축 스킬을 못 채우면 score:null. */
+/* 빠른 계산: 메타마다 짧게 탐색해 예상 최고 점수를 낸다. 짧은 탐색에서 메타 주축 스킬을 못 채우면 조금 넓혀 한 번 더 보고,
+   그래도 못 채우면 score:null. */
 async function abmEstimate(metas, base, cancelled = () => false, onEach = () => {}) {
   const out = [];
   for (const m of metas) {
     if (cancelled()) return null;
-    const r = await abmRun(abmConfig(m, base), ABM.quick, () => {}, cancelled);
+    let r = await abmRun(abmConfig(m, base), ABM.quick, () => {}, cancelled);
+    if (r && !r.pool.length) r = await abmRun(abmConfig(m, base), ABM.retry, () => {}, cancelled);
     if (!r) return null;
     out.push({ ...m, score: r.pool.length ? Math.max(...r.pool.map(x => x.score)) : null });
     onEach(out.length, metas.length);
@@ -93,9 +97,11 @@ async function abmRefresh() {
       const el = $('#abm-status'); if (el) el.textContent = `메타 후보 계산 중 ${n}/${total}`;
     });
     if (!out || run !== s.run) return;
-    s.metas = out.slice(0, ABM.shown);
+    // 지침 메타는 점수와 무관하게 앞에 두고 함께 선택한다. 나머지 칸은 예상 점수순.
+    const guide = out.filter(m => m.guide), rest = out.filter(m => !m.guide);
+    s.metas = [...guide, ...rest.slice(0, Math.max(0, ABM.shown - guide.length))];
     s.selected = s.selected.filter(id => s.metas.some(m => m.id === id));
-    if (!s.selected.length && s.metas[0]?.score != null) s.selected = [s.metas[0].id];
+    if (!s.selected.length) s.selected = [...(rest[0]?.score != null ? [rest[0].id] : []), ...guide.map(m => m.id)].slice(0, ABM.maxMetas);
   } catch (err) { if (run === s.run) s.notice = '메타 후보 계산 중 오류가 발생했습니다.'; console.error(err); }
   if (run === s.run) { s.busy = ''; abmRender(); }
 }
@@ -165,7 +171,7 @@ function abmMetaUI() {
   if (!s.metas) return `<div class="ab-box"><h3>④ 메타 선택</h3><p id="abm-status" class="ab-notice" role="status" aria-live="polite">${s.busy === 'estimate' ? '메타 후보 계산 중…' : esc(s.notice)}</p></div>`;
   const chip = m => { const on = s.selected.includes(m.id), full = !on && n >= ABM.maxMetas;
     return `<button type="button" class="abm-meta" data-abm-meta="${esc(m.id)}" aria-pressed="${on}"${full || s.busy ? ' disabled' : ''} title="${esc(m.desc)}">
-      <b>${esc(m.name)}</b><span>${m.skeleton.map(t => `${esc(t.s)} Lv${t.min}+`).join(' · ')}</span>
+      <b>${esc(m.name)}${m.guide ? ' <em class="abm-guide">지침</em>' : ''}</b><span>${m.skeleton.map(t => `${esc(t.s)} Lv${t.min}+`).join(' · ')}</span>
       <small>${m.score == null ? '빠른 계산에서 구성 못 찾음' : `예상 ${m.score.toLocaleString()}점`}</small></button>`; };
   return `<div class="ab-box"><h3>④ 메타 선택 <small>최대 ${ABM.maxMetas}개 · 예상 점수순</small></h3>
     <div class="abm-metas" role="group" aria-label="메타 후보">${s.metas.map(chip).join('')}</div>

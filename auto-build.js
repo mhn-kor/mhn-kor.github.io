@@ -101,7 +101,7 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
 /* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
    styles: style ''=기본(스타일 없음). mode=같은 스타일 안의 운용 성향. when=무기 조건. max 'MAX'=스킬 최대.
-   label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
+   metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
 const abT = (s, min, max = min) => ({ s, min, max });
 const AB_RULES = {
   styles: [
@@ -122,6 +122,9 @@ const AB_RULES = {
       recommended:[abT('불퇴전',0,5)], avoid:['가드 성능','매진'],
       desc:'변형 공격 강화3 확보. 격침 후 엑스호퍼로 병·격침 대미지를 터뜨립니다. 가드는 위험할 때만 써서 가드 성능에 투자하지 않고, 제자리 운용이라 불퇴전을 권장 후보로 비교합니다.',
       note:'병 폭발은 속성 공격력, 격침 폭발은 조건 없는 공격력·대미지·속성 버프만 받고 회심·흉회심·상황 버프는 받지 않습니다. 점수는 공격을 나누지 않아 이 차이를 반영하지 못합니다.' },
+    { id:'cb-axe', wt:'charge-blade', style:'도끼 강화', name:'도끼 강화 · 다단 연타', required:[], metas:['속전속결'],
+      recommended:[abT('불퇴전',0,5)], avoid:['가드 성능','매진'],
+      desc:'도끼 다단 연타로 타수가 많아 연격 등 연타형 스킬과 잘 맞습니다. 속전속결은 점수가 없어 지침 메타로 제안합니다. 도끼 가드는 위험할 때만 써서 가드 성능에 투자하지 않습니다.' },
     { id:'sns-base', wt:'shield-sword', style:'', name:'기본 · 가드/방패 연계', required:[abT('가드 성능',5)], recommended:[], avoid:['비연'],
       desc:'가드 성능5 확보 후 밀림 없는 가드에서 방패 공격으로 연결합니다.' },
     { id:'sns-fallbash', wt:'shield-sword', style:'', mode:'fallbash', label:'폴배시', coreSlot:2, name:'기본 · 폴배시',
@@ -185,7 +188,7 @@ const AB_TRAITS = {
   lance: [['가드 · 카운터 · 강화 상태 · 가드·카운터 보유','연속 타격'],['가드 · 강화 상태 · 가드·카운터 보유','연속 타격'],['가드 · 강화 상태 · 가드·카운터 보유','연속 타격']],
   gunlance: [['포격·병 · 강화 상태 · 가드·카운터 보유','연속 타격'],['포격·병 · 강화 상태 · 후방 · 가드·카운터 보유','연속 타격'],['포격·병 · 강화 상태 · 가드·카운터 보유','연속 타격']],
   'switch-axe': [['변형 · 강화 상태','—'],['변형 · 강화 상태','—'],['카운터 · 강화 상태 · 가드·카운터 보유','변형 · 연속 타격']],
-  'charge-blade': [['가드 · 포격·병 · 강화 상태 · 가드·카운터 보유','변형 · 연속 타격'],['변형 · 공중 · 포격·병 · 강화 상태 · 가드·카운터 보유','연속 타격'],['포격·병 · 강화 상태 · 가드·카운터 보유','변형']],
+  'charge-blade': [['가드 · 포격·병 · 강화 상태 · 가드·카운터 보유','변형 · 연속 타격'],['변형 · 공중 · 포격·병 · 강화 상태 · 가드·카운터 보유','연속 타격'],['연속 타격 · 포격·병 · 강화 상태 · 가드·카운터 보유','변형']],
   'insect-glaive': [['강화 상태 · 연속 타격','—'],['강화 상태 · 연속 타격','—'],['강화 상태','—']],
   'light-gun': [['탄·화살','연속 타격'],['탄·화살','연속 타격'],['탄·화살','연속 타격']],
   'heavy-gun': [['탄·화살','연속 타격'],['탄·화살 · 가드 · 가드·카운터 보유','연속 타격'],['탄·화살','연속 타격']],
@@ -251,7 +254,7 @@ function abStyleRule(b) {
   if (!r) return null;
   const targets = list => list.map(t => abT(t.s, t.min, t.max === 'MAX' ? abMax(t.s) : t.max));
   return { id:r.id, name:r.name.replace('{style}', style || '기본'),
-    required:targets(r.required), recommended:targets(r.recommended), avoid:[...r.avoid], desc:r.desc };
+    required:targets(r.required), recommended:targets(r.recommended), avoid:[...r.avoid], metas:[...(r.metas || [])], desc:r.desc };
 }
 const abSustains = b => { const type = BUILD.weaponTypes.find(t => t.k === b.wt)?.n; return !!(type && bdSkillDesc('강화 지속',1)?.includes(type)); };
 /* W7: 단일 버프 분류는 선별 순위만 결정한다. 복합/회심 효과는 별도 실효 비교. */
