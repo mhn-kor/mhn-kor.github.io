@@ -21,7 +21,8 @@ function abmCandidates(b, gun) {
   const buff = s => bdEffects(bdSkillDesc(s, abMax(s)) || '', s, abGunWeapon(b, gun)).some(e => ['atk','dmg'].includes(e.k) && !e.onCrit);
   // 경지는 기본 스킬이 켜지는 무기에서만 (예: 연격이 꺼지는 랜스의 연격·경지 제외).
   const gate = s => !/·경지$/.test(s) || abAssumed(s.replace(/·경지$/, ''), b);
-  const pool = abSupportSkills(b, gun).filter(s => !used.has(s) && abAssumed(s, b) && buff(s) && gate(s)
+  const avoid = abOperationRule(b, gun)?.avoid || []; // 스타일 비권장은 메타 후보로도 내지 않는다 (직접 추가는 가능)
+  const pool = abSupportSkills(b, gun).filter(s => !used.has(s) && !avoid.includes(s) && abAssumed(s, b) && buff(s) && gate(s)
     && !AB_ASSUME.linked.skills.includes(s) && !AB_ASSUME.candidate.includes(s) && !AB_ASSUME.sp.includes(s));
   for (const s of pool) metas.push({ id:'s:'+s, name:s, direction:'manual', skeleton:[core(s)], extra:[],
     desc:`${s} Lv${core(s).min} 이상을 확보하고, 나머지는 점수가 오르는 스킬로 채웁니다.` });
