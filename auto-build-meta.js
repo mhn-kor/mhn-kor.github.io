@@ -1,10 +1,10 @@
 /* 메타 자동빌드 (docs/CONCEPTS.md '메타 탐색').
-   메타 = 뼈대(핵심 스킬, Lv4 이상 보장) + 수단(나머지는 점수로 채움, 레벨 강제 없음).
+   메타 = 메타 주축 스킬(핵심 스킬, Lv4 이상 보장) + 수단(나머지는 점수로 채움, 레벨 강제 없음).
    탐색 엔진(abSearch·abBest)과 판정(abAssumed·abDirections 등)은 auto-build.js를 그대로 쓰고,
    화면·상태는 이 파일에만 둔다. 기존 화면(auto-build.js의 ab*UI, #auto-build-legacy)과 섞지 않는다. */
 const ABM = { maxMetas: 4, coreMin: 4, perMetaMs: 5000, quick: { ms: 250, beam: 40, armor: 12 }, shown: 8, perMeta: 5 };
 
-/* 메타 후보: 기존 투자 방향(회심·속성·흉회심·상태이상)은 첫 핵심을 뼈대로, 그 무기에서 켜지는 공격력·대미지 버프는 단일 스킬 메타로. */
+/* 메타 후보: 기존 투자 방향(회심·속성·흉회심·상태이상)은 첫 핵심을 메타 주축 스킬로, 그 무기에서 켜지는 공격력·대미지 버프는 단일 스킬 메타로. */
 function abmCandidates(b, gun) {
   const core = s => ({ s, min: Math.min(ABM.coreMin, abMax(s)), max: abMax(s) });
   const metas = [];
@@ -12,7 +12,7 @@ function abmCandidates(b, gun) {
     const first = d.targets[0];
     if (!first || metas.some(m => m.skeleton[0].s === first.s)) continue;
     const skeleton = [core(first.s)];
-    // 변형 회심 메타는 회심 100%까지 필요한 약점 특효 레벨도 뼈대로 둔다 (CONCEPTS W1).
+    // 변형 회심 메타는 회심 100%까지 필요한 약점 특효 레벨도 메타 주축 스킬로 둔다 (CONCEPTS W1).
     for (const t of d.targets.slice(1)) if (t.s === '약점 특효' && d.id === 'morph-critical') skeleton.push({ s:t.s, min:t.max, max:t.max });
     metas.push({ id:'d:'+d.id, name:d.name.replace(/^(.*?) · 추천$/, '$1'), direction:d.id, skeleton,
       extra:d.targets.filter(t => !skeleton.some(x => x.s === t.s)).map(t => ({ ...t, min:0 })), desc:d.desc });
@@ -28,7 +28,7 @@ function abmCandidates(b, gun) {
   return metas;
 }
 
-/* 메타 탐색 설정: 사용자 필수 + 뼈대 + 방향의 투자 후보. 같은 스킬은 큰 최소로 합친다. */
+/* 메타 탐색 설정: 사용자 필수 + 메타 주축 스킬 + 방향의 투자 후보. 같은 스킬은 큰 최소로 합친다. */
 function abmConfig(meta, base) {
   const merged = new Map();
   for (const t of [...meta.skeleton, ...base.targets, ...meta.extra]) {
@@ -47,7 +47,7 @@ async function abmRun(config, limit, progress, cancelled) {
   finally { Object.assign(AB_LIMIT, saved); }
 }
 
-/* 빠른 계산: 메타마다 짧게 탐색해 예상 최고 점수를 낸다. 빠른 계산에서 뼈대를 못 채우면 score:null. */
+/* 빠른 계산: 메타마다 짧게 탐색해 예상 최고 점수를 낸다. 빠른 계산에서 메타 주축 스킬을 못 채우면 score:null. */
 async function abmEstimate(metas, base, cancelled = () => false, onEach = () => {}) {
   const out = [];
   for (const m of metas) {
@@ -168,14 +168,14 @@ function abmMetaUI() {
       <small>${m.score == null ? '빠른 계산에서 구성 못 찾음' : `예상 ${m.score.toLocaleString()}점`}</small></button>`; };
   return `<div class="ab-box"><h3>④ 메타 선택 <small>최대 ${ABM.maxMetas}개 · 예상 점수순</small></h3>
     <div class="abm-metas" role="group" aria-label="메타 후보">${s.metas.map(chip).join('')}</div>
-    <p class="ab-muted">뼈대 Lv${ABM.coreMin}+ 확보, 나머지는 점수순 · 예상 점수는 짧은 탐색 값</p>
+    <p class="ab-muted">메타 주축 스킬 Lv${ABM.coreMin}+ 확보, 나머지는 점수순 · 예상 점수는 짧은 탐색 값</p>
     <p class="ab-notice">메타당 최대 ${ABM.perMetaMs / 1000}초 · 많이 고를수록 오래 걸림</p>
     <div class="ab-actions"><button class="btn primary" data-abm-search${!n || s.busy ? ' disabled' : ''}>${s.busy === 'search' ? '빌드 찾는 중…' : `메타 ${n}개로 빌드 찾기 (최대 ${n * ABM.perMetaMs / 1000}초)`}</button>
     ${s.busy === 'search' ? '<button class="btn ghost" data-abm-cancel>중지</button>' : ''}</div>
     <p id="abm-status" role="status" aria-live="polite">${esc(s.notice)}</p></div>`;
 }
 
-/* 결과 카드의 장비 목록. 뼈대 스킬을 강조한다. */
+/* 결과 카드의 장비 목록. 메타 주축 스킬을 강조한다. */
 function abmEquipmentUI(b, core) {
   const chips = (skills, drift = false) => skills.map(x => `<span class="chip${core.has(x.s) ? ' ab-core' : ''}${drift ? ' ab-drift-skill' : ''}">${esc(x.s)}<b>${x.lv}</b></span>`).join('');
   const row = (part, name, set, skills, stones = []) => `<div class="bd-row"><span class="bd-ti static"><img src="assets/part/${esc(part)}.png" width="24" height="24" alt=""></span>
@@ -186,12 +186,12 @@ function abmEquipmentUI(b, core) {
     ${BD_PARTS().map(({ k }) => { const set = bdSet(b[k]); return row(k, set.pieces[k].name, set, set.pieces[k].skills, bdStoneList(b, k)); }).join('')}</div>`;
 }
 
-/* 근거는 짧게: 뼈대·수단·발동 가정·점수 한 줄씩. */
+/* 근거는 짧게: 메타 주축 스킬·수단·발동 가정·점수 한 줄씩. */
 function abmReasonUI(r, meta, lv) {
   const means = [...lv].filter(([s, n]) => n && !meta.skeleton.some(t => t.s === s) && s !== '록온').sort((a, b) => b[1] - a[1]);
   const on = Object.entries(r.b.cond).filter(([, x]) => x).map(([n]) => n);
   return `<details class="abm-reason"><summary>근거</summary><ul>
-    <li>뼈대: ${meta.skeleton.map(t => `${esc(t.s)} Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)} (기준 ${t.min}+)`).join(' · ')}</li>
+    <li>메타 주축 스킬: ${meta.skeleton.map(t => `${esc(t.s)} Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)} (기준 ${t.min}+)`).join(' · ')}</li>
     <li>수단: ${means.slice(0, 4).map(([s, n]) => `${esc(s)} ${n}`).join(' · ') || '없음'}${means.length > 4 ? ` 외 ${means.length - 4}` : ''}</li>
     <li>발동 가정: ${on.map(esc).join(' · ') || '없음'}</li>
     <li>조건 OFF ${r.baseScore.toLocaleString()}점 · 비교 점수(실제 DPS 아님)</li></ul></details>`;
@@ -217,7 +217,7 @@ function abmResultsUI() {
       <div class="abm-track">${builds.map((r, i) => abmCardUI(r, i, builds.length, meta)).join('')}</div>
       <button type="button" class="abm-arrow next" data-abm-scroll="1" aria-label="다음 빌드">›</button></div>
       <div class="abm-dots" aria-hidden="true">${builds.map((_, i) => `<span${i ? '' : ' class="on"'}></span>`).join('')}</div>`
-    : '<p>이 메타의 뼈대를 채우는 조합을 찾지 못했습니다. 제외 스킬을 줄이거나 표류연성을 켜 보세요.</p>'}</section>`).join('');
+    : '<p>메타 주축 스킬을 채우는 조합을 찾지 못했습니다. 제외 스킬을 줄이거나 표류연성을 켜 보세요.</p>'}</section>`).join('');
 }
 
 function abmRender() {

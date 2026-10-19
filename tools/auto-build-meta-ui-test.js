@@ -47,10 +47,10 @@ const { pathToFileURL } = require('url');
       assert.strictEqual(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, '페이지 가로 스크롤 없음');
       await page.locator('#abm-screen').screenshot({ path: path.join(os.tmpdir(), `mhn-meta-${width}.png`) });
       console.log('캡처:', path.join(os.tmpdir(), `mhn-meta-${width}.png`));
-      // 뼈대 확보: 첫 메타의 뼈대 스킬이 결과 빌드에서 최소 레벨 이상.
+      // 메타 주축 스킬 확보: 첫 메타의 메타 주축 스킬이 결과 빌드에서 최소 레벨 이상.
       assert.ok(await page.evaluate(() => abmState.results.every(({ meta, builds }) => builds.every(r => {
         const lv = new Map(bdTotals(r.b)); return meta.skeleton.every(t => (lv.get(t.s) || 0) >= t.min);
-      }))), '뼈대 레벨 확보');
+      }))), '메타 주축 스킬 레벨 확보');
       // 가져오기: 기존 빌드 보존, 점수 유지.
       const score = await page.evaluate(() => abmState.results[0].builds[0].score);
       await page.locator('[data-abm-import]').first().click();
