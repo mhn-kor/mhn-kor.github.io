@@ -413,8 +413,8 @@ check('리오레우스 아종은 스타일20에서만 경지 Lv1을 얻고 기�
     assert.strictEqual(new Map(bdTotals(b)).get(skill), 1);
     b.style20 = false;
     assert.ok(!new Map(bdTotals(b)).has(skill));
-    b.style20 = true; b.st = 0;
-    assert.ok(!new Map(bdTotals(b)).has(skill));
+    b.style20 = true; b.st = 0; // 기본 스타일로도 Lv20 적용 (2026-10-19)
+    assert.strictEqual(new Map(bdTotals(b)).get(skill), 1);
   }
   const armor = { key: 'style-unlock-test', name: '테스트', weaponSkills: [], weapons: [],
     pieces: { helm: { name: '테스트', skills: [], slot: 0 } } };
@@ -1100,11 +1100,18 @@ check('스타일20 지원 무기 전체의 자동 상승·파라미터·해제·
       const shared = bdParse(bdShareParam(b));
       assert.strictEqual(shared.style20, true);
       assert.strictEqual(JSON.stringify(shared.params), JSON.stringify(b.params));
+      const on = JSON.stringify(stats(b).base);
       b.style20 = false;
       const off = stats(b).base, w = BUILD.sets.find(s => s.key === set).weapons.find(w => w.t === type);
       assert.deepStrictEqual(JSON.parse(JSON.stringify(off)), { atk: w.atk, ele: w.ele || 0, crit: w.crit || 0 });
+      // 기본 스타일(st 0)로도 Lv20 강화치·파라미터가 그대로 적용된다 (2026-10-19).
       b.style20 = true; b.st = 0;
-      assert.strictEqual(JSON.stringify(stats(b).base), JSON.stringify(off));
+      assert.strictEqual(JSON.stringify(stats(b).base), on);
+      // 예전 저장·공유의 '스타일만 선택'은 Lv20 적용으로 옮긴다.
+      const legacy = { ...b, st: 1, style20: false };
+      ctx.styleTestBuild = legacy; vm.runInContext('bdNormalizeParams(styleTestBuild)', ctx);
+      assert.strictEqual(legacy.style20, true, key);
+      assert.strictEqual(legacy.st, w.styleSelectable === false ? 0 : 1, key);
     }
     const b = { ...bdNewBuild(), w: 'spring-26', wt: 'light-gun', st: 1, style20: true, params: ['atk', 'crit', 'ele'] };
     stats(b); vm.runInContext('bdNormalizeParams(styleTestBuild)', ctx);

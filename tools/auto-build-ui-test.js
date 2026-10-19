@@ -25,7 +25,8 @@ const { pathToFileURL } = require('url');
       assert.strictEqual(await page.locator('.tabs a[data-tab="build"]').getAttribute('aria-current'), '');
       assert.strictEqual(await page.locator('#bd-cards').isVisible(), false);
       assert.strictEqual(await page.locator('#panel-build > .bd-tools').isVisible(), false);
-      assert.strictEqual(await page.locator('[data-ab="style20"]').isDisabled(), true);
+      // Lv20 적용을 먼저 켜야 스타일을 고를 수 있다 (2026-10-19).
+      assert.strictEqual(await page.locator('[data-ab="st"]').isDisabled(), !(await page.locator('[data-ab="style20"]').isChecked()));
       const fields = await page.locator('.ab-weapon-settings select').evaluateAll(nodes => nodes.map(el => ({
         height: el.getBoundingClientRect().height, background: getComputedStyle(el).backgroundColor,
         fontSize: getComputedStyle(el).fontSize, disabled: el.disabled
@@ -53,6 +54,7 @@ const { pathToFileURL } = require('url');
       assert.ok(!(await page.locator('[data-ab-chip="lock"]').getAttribute('class')).includes('off'));
       // 실드태클: 규칙 스킬은 칩별로 끈다. 끈 스킬만 빠지고 나머지는 유지.
       await page.locator('[data-ab="wt"]').selectOption('lance');
+      await page.locator('[data-ab="style20"]').check();
       await page.locator('[data-ab="st"]').selectOption('1');
       assert.ok(await page.locator('[data-ab-dir="water"]').isVisible() || await page.locator('.ab-card.open').isVisible());
       await page.locator('[data-ab-chip="r:반사"]').click();
@@ -70,8 +72,8 @@ const { pathToFileURL } = require('url');
       await page.locator('[data-ab-op="del"]').click();
       assert.strictEqual(await page.evaluate(() => abState.exclude.length), 0);
       await page.locator('[data-ab="wt"]').selectOption('long-sword');
-      await page.locator('[data-ab="st"]').selectOption('1');
       await page.locator('[data-ab="style20"]').check();
+      await page.locator('[data-ab="st"]').selectOption('1');
       for (let i = 0; i < 3; i++) await page.locator(`[data-ab-param="${i}"]`).selectOption('crit');
       assert.ok((await page.locator('.ab-base').innerText()).includes('50%'));
       assert.ok((await page.locator('.ab-card.open').innerText()).includes('회심격'));

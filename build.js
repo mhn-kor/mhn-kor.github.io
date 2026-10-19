@@ -69,9 +69,11 @@ function bdStyleInfo(b) {
   const record = typeof BD_STYLE_DATA !== 'undefined' && BD_STYLE_DATA.weapons[b.w + ':' + b.wt];
   const profile = record?.status === 'supported' ? BD_STYLE_DATA.profiles[record.profile] : null;
   const params = BD_PARAM_LEVELS.map((lv, i) => profile?.parameters[lv]?.find(p => p.stat === b.params?.[i]) || null);
-  const selected = !!bdStylesOf(b.wt)[b.st - 1];
-  const selectable = bdWeaponOf(b)?.styleSelectable ?? !!profile;
-  return { record, profile, params, selectable, available: !!profile && selected, active: !!profile && selected && !!b.style20 };
+  const selectable = bdWeaponOf(b)?.styleSelectable ?? !!profile, active = !!profile && !!b.style20;
+  /* Lv20 적용을 먼저 켜고 스타일·파라미터를 고른다. 기본 스타일로도 Lv20 적용 가능 (2026-10-19 사용자).
+     강화 수치가 미확인인 무기는 Lv20 적용이 없으므로 스타일만 고른다. */
+  const stylePick = selectable && (active || !profile);
+  return { record, profile, params, selectable, stylePick, available: !!profile, active };
 }
 
 function bdWeaponBase(b) {
@@ -90,9 +92,11 @@ function bdBuildWSkills(b) {
 }
 
 function bdNormalizeParams(b) {
+  // 스타일을 골랐다면 Lv20 기준: 예전 빌드·공유 링크의 '스타일만 선택'은 Lv20 적용으로 옮긴다 (2026-10-19 사용자).
+  if (b.st && !b.style20 && bdStyleInfo(b).profile) b.style20 = true;
   const info = bdStyleInfo(b);
   b.params = info.params.map(p => p?.stat || null);
-  if (!info.selectable) b.st = 0;
+  if (!info.stylePick) b.st = 0;
 }
 
 function bdParamSlots(b, bi) {
@@ -106,7 +110,7 @@ function bdParamSlots(b, bi) {
 function bdStyleControl(b, bi) {
   if (!bdWeaponOf(b)) return '';
   const info = bdStyleInfo(b);
-  const reason = !info.profile ? info.record?.status === 'unsupported' ? '강화 미지원' : '강화 정보 미확인' : !info.available ? '스타일 선택 필요' : '';
+  const reason = !info.profile ? info.record?.status === 'unsupported' ? '강화 미지원' : '강화 정보 미확인' : '';
   return `<span class="bd-style-controls"><label><input type="checkbox" data-style20="${bi}"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
     ${reason ? `<small>${reason}</small>` : ''}</span>`;
 }
@@ -950,8 +954,9 @@ function bdCard(b, bi) {
   const styles = bdStylesOf(b.wt);
   const sp = bdSpOf(b.wt);
   const wsk = ws ? bdBuildWSkills(b) : [];
-  const styleSupported = !!w && bdStyleInfo(b).selectable;
+  const styleInfo = w ? bdStyleInfo(b) : null, styleSupported = !!styleInfo?.stylePick;
   const styleName = styleSupported && b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
+  const styleBlocked = !styleInfo?.selectable ? '선택한 무기의 스타일 강화가 지원되지 않거나 확인되지 않았습니다.' : '스타일강화 Lv20 적용을 먼저 켜세요.';
   const weaponBase = bdWeaponBase(b);
   const type = BUILD.weaponTypes.find(t => t.k === b.wt);
   const D = bdState.detail;
@@ -971,7 +976,7 @@ function bdCard(b, bi) {
                  : '<span class="bd-nm empty">무기 선택</span>'}
           </button>
           ${w ? bdParamSlots(b, bi) : ''}
-          ${styles.length ? `<button class="bd-style${styleName ? ' on' : ''}" data-style="${bi}"${styleSupported ? '' : ' disabled title="선택한 무기의 스타일 강화가 지원되지 않거나 확인되지 않았습니다."'}>${esc(styleName || '스타일 없음')}</button>` : ''}
+          ${styles.length ? `<button class="bd-style${styleName ? ' on' : ''}" data-style="${bi}"${styleSupported ? '' : ` disabled title="${styleBlocked}"`}>${esc(styleName || '기본 스타일')}</button>` : ''}
         </span>
         ${bdStyleControl(b, bi)}
         ${wsk.length ? `<span class="bd-inline">${bdChips(wsk)}</span>` : ''}
@@ -1286,12 +1291,12 @@ function bdOpenList() {
 /* 스타일 강화 */
 function bdOpenStyle(bi) {
   const b = bdState.builds[bi];
-  if (!b || !bdWeaponOf(b) || !bdStyleInfo(b).selectable) return;
+  if (!b || !bdWeaponOf(b) || !bdStyleInfo(b).stylePick) return;
   bdPick = { kind: 'st', bi };
   const styles = bdStylesOf(b.wt);
-  bdOpen('스타일 강화',
+  bdOpen('스타일 선택',
     `<ul class="bd-list">
-      <li><button class="bd-lr${b.st === 0 ? ' on' : ''}" data-v="0">스타일 강화 없음</button></li>
+      <li><button class="bd-lr${b.st === 0 ? ' on' : ''}" data-v="0">기본 스타일</button></li>
       ${styles.map((s, i) => `<li><button class="bd-lr${b.st === i + 1 ? ' on' : ''}" data-v="${i + 1}">${esc(s)}</button></li>`).join('')}
     </ul>`, false);
 }
@@ -1563,7 +1568,8 @@ $('#bd-cards').addEventListener('change', e => {
   const style20 = e.target.closest('[data-style20]');
   if (style20) {
     const b = bdState.builds[+style20.dataset.style20];
-    if (b && bdStyleInfo(b).available) { b.style20 = style20.checked; bdSave(); bdRender(); }
+    // Lv20 적용을 끄면 스타일도 기본으로 돌아간다 (스타일 선택은 Lv20 기준).
+    if (b && bdStyleInfo(b).available) { b.style20 = style20.checked; if (!b.style20) b.st = 0; bdSave(); bdRender(); }
     return;
   }
   const bow = e.target.closest('[data-bow-eff]');
@@ -1642,7 +1648,7 @@ $('#bd-modal-body').addEventListener('click', e => {
   const lr = e.target.closest('.bd-lr');
   if (!lr) return;
   if (bdPick.kind === 'st') {
-    if (!bdStyleInfo(b).selectable) return;
+    if (!bdStyleInfo(b).stylePick) return;
     b.st = +lr.dataset.v; bdSave(); bdRender(); return bdDlg().close();
   }
   if (bdPick.kind === 'gear') {

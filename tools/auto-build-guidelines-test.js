@@ -6,7 +6,7 @@ const ctx=vm.createContext({console,performance,structuredClone,setTimeout,
   location:{hash:'#build'},window:{},requestAnimationFrame(){},document:{querySelector(){return null;}},
   esc:String,closeOnBackdrop(){},nickAuto(){},localStorage:{getItem(){return null;},setItem(){}}});
 for(const f of files) vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx);
-const get=s=>vm.runInContext(s,ctx), seed=(w,wt,st=0)=>({...get('bdNewBuild')(),w,wt,st});
+const get=s=>vm.runInContext(s,ctx), seed=(w,wt,st=0)=>({...get('bdNewBuild')(),w,wt,st,style20:st>0}); // 스타일 선택은 Lv20 기준
 function rules() {
   const lance=seed('mizu','lance'), rule=get('abStyleRule')(lance);
   assert.deepStrictEqual(Array.from(rule.required,t=>[t.s,t.min,t.max]),[['가드 성능',2,3]]);

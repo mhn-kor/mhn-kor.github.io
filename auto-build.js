@@ -100,7 +100,7 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
 
 /* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
-   styles: style ''=기본(스타일 없음). mode=같은 스타일 안의 운용 성향. when=무기 조건. max 'MAX'=스킬 최대.
+   styles: style ''=기본 스타일. mode=같은 스타일 안의 운용 성향. when=무기 조건. max 'MAX'=스킬 최대.
    metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
 const abT = (s, min, max = min) => ({ s, min, max });
 const AB_RULES = {
@@ -1029,8 +1029,8 @@ function abRender() {
     <div class="ab-box ab-form-settings ab-weapon-settings"><h3>① 무기 설정</h3><div class="ab-config">
       <label>무기군<select data-ab="wt">${abOptions(BUILD.weaponTypes.filter(t => abMonsters(t.k).length).map(t => [t.k, t.n]), b.wt)}</select></label>
       <label>몬스터·소재<select data-ab="monster">${abOptions(abMonsters(b.wt).map(s => [s.key, s.name]), b.w)}</select></label>
-      <label>스타일<select data-ab="st"${info.selectable ? '' : ' disabled'}>${abOptions([[0, '스타일 없음'], ...bdStylesOf(b.wt).map((n, i) => [i + 1, n])], b.st)}</select></label>
       <label class="ab-check"><input type="checkbox" data-ab="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
+      <label>스타일<select data-ab="st"${info.stylePick ? '' : ' disabled'}>${abOptions([[0, '기본 스타일'], ...bdStylesOf(b.wt).map((n, i) => [i + 1, n])], b.st)}</select></label>
     </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-ab-param="${i}"${info.active ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
     <p class="ab-base">${esc(w.name)} · 공격력 <b>${base.atk}</b>${w.e ? ` · ${esc(w.e)} <b>${base.ele}</b>` : ''} · 회심 <b>${base.crit}%</b></p></div>
     ${abGunUI(b)}${abModeUI(b)}${abAssumeUI(b)}
@@ -1061,7 +1061,7 @@ function abEquipmentUI(b) {
     <div class="bd-body"><div class="bd-line">${bdMon(set.key)}<span class="ab-name"><span class="bd-nm">${esc(name)}</span> <small>${esc(set.name)}</small></span>${dots(part)}</div>
     <div class="bd-inline">${chips(skills)}${chips(stones.map(d => ({ s: d.s, lv: 1 })), true)}</div></div></div>`;
   const w = bdWeaponOf(b), ws = bdSet(b.w), base = bdWeaponBase(b), stats = bdStats(b);
-  const style = bdStylesOf(b.wt)[b.st - 1] || '스타일 없음';
+  const style = bdStylesOf(b.wt)[b.st - 1] || '기본 스타일';
   return `<div class="bd-rows ab-equipment">${row(b.wt, w.name, ws, bdBuildWSkills(b))}
     <p class="ab-weapon-info">${esc(style)}${bdStyleInfo(b).active ? ' · 스타일강화 Lv20' : ''} · ${b.params.map(p => p ? BD_PARAM_NAMES[p] : '미선택').join(' / ')}</p>
     ${BD_PARTS().map(({ k }) => { const s = bdSet(b[k]); return row(k, s.pieces[k].name, s, s.pieces[k].skills, bdStoneList(b, k)); }).join('')}</div>
@@ -1182,9 +1182,9 @@ $('#ab-screen').addEventListener('change', e => {
   abInvalidate();
   if (el.hasAttribute('data-ab-add')) { abAddSkill(el.dataset.abAdd, el.value); return abRender(); }
   if (['wt', 'monster'].includes(el.dataset.ab)) abChangeWeapon(el.dataset.ab, el.value);
-  if (el.dataset.ab === 'st') { s.b.st = +el.value; if (!s.b.st) s.b.style20 = false; }
+  if (el.dataset.ab === 'st') s.b.st = +el.value;
   if (el.dataset.ab === 'mode') { if (el.value) s.b.snsMode = el.value; else delete s.b.snsMode; }
-  if (el.dataset.ab === 'style20') s.b.style20 = el.checked;
+  if (el.dataset.ab === 'style20') { s.b.style20 = el.checked; if (!el.checked) s.b.st = 0; } // 스타일 선택은 Lv20 기준
   if (el.dataset.ab === 'drift') s.drift = el.checked;
   if (el.dataset.ab === 'gunMode') s.gun = { ...s.gun, mode:el.value, slot:undefined };
   if (el.dataset.ab === 'gunSlot') s.gun.slot = +el.value;

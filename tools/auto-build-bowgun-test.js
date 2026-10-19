@@ -6,7 +6,7 @@ const ctx = vm.createContext({ console, performance, structuredClone, setTimeout
 for (const file of ['smelt-data.js','skill-desc.js','skill-desc-overrides.js','build-data.js','build-styles.js','build-style-data.js','build.js','build-bowgun-data.js','auto-build.js'])
   vm.runInContext(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),ctx);
 const get = code => vm.runInContext(code,ctx), info = get('abGunInfo');
-const seed = (w,wt,st=0) => ({...get('bdNewBuild')(),w,wt,st});
+const seed = (w,wt,st=0) => ({...get('bdNewBuild')(),w,wt,st,style20:st>0}); // 스타일 선택은 Lv20 기준
 for (const [key, row] of Object.entries(get('BD_BOWGUN_DATA.weapons'))) {
   const [w,wt] = key.split('/'), g = info(seed(w,wt));
   assert.ok(!g.unknown,key);
