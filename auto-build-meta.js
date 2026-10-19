@@ -168,9 +168,9 @@ function abmMetaUI() {
       <small>${m.score == null ? '빠른 계산에서 구성 못 찾음' : `예상 ${m.score.toLocaleString()}점`}</small></button>`; };
   return `<div class="ab-box"><h3>④ 메타 선택 <small>최대 ${ABM.maxMetas}개 · 예상 점수순</small></h3>
     <div class="abm-metas" role="group" aria-label="메타 후보">${s.metas.map(chip).join('')}</div>
-    <p class="ab-muted">메타는 핵심 스킬(뼈대)을 Lv${ABM.coreMin} 이상(최대 레벨이 더 낮으면 최대) 확보하고, 나머지 칸은 점수가 오르는 스킬로 채운 구성입니다. 예상 점수는 짧은 탐색 값이라 실제 결과와 다를 수 있습니다.</p>
-    <p class="ab-notice">메타 하나당 최대 약 ${ABM.perMetaMs / 1000}초 걸립니다. 많이 고를수록 오래 걸립니다.</p>
-    <div class="ab-actions"><button class="btn primary" data-abm-search${!n || s.busy ? ' disabled' : ''}>${s.busy === 'search' ? '빌드 찾는 중…' : `메타 ${n}개로 빌드 찾기 (최대 약 ${n * ABM.perMetaMs / 1000}초)`}</button>
+    <p class="ab-muted">뼈대 Lv${ABM.coreMin}+ 확보, 나머지는 점수순 · 예상 점수는 짧은 탐색 값</p>
+    <p class="ab-notice">메타당 최대 ${ABM.perMetaMs / 1000}초 · 많이 고를수록 오래 걸림</p>
+    <div class="ab-actions"><button class="btn primary" data-abm-search${!n || s.busy ? ' disabled' : ''}>${s.busy === 'search' ? '빌드 찾는 중…' : `메타 ${n}개로 빌드 찾기 (최대 ${n * ABM.perMetaMs / 1000}초)`}</button>
     ${s.busy === 'search' ? '<button class="btn ghost" data-abm-cancel>중지</button>' : ''}</div>
     <p id="abm-status" role="status" aria-live="polite">${esc(s.notice)}</p></div>`;
 }
@@ -186,6 +186,16 @@ function abmEquipmentUI(b, core) {
     ${BD_PARTS().map(({ k }) => { const set = bdSet(b[k]); return row(k, set.pieces[k].name, set, set.pieces[k].skills, bdStoneList(b, k)); }).join('')}</div>`;
 }
 
+/* 근거는 짧게: 뼈대·수단·발동 가정·점수 한 줄씩. */
+function abmReasonUI(r, meta, lv) {
+  const means = [...lv].filter(([s, n]) => n && !meta.skeleton.some(t => t.s === s) && s !== '록온').sort((a, b) => b[1] - a[1]);
+  const on = Object.entries(r.b.cond).filter(([, x]) => x).map(([n]) => n);
+  return `<details class="abm-reason"><summary>근거</summary><ul>
+    <li>뼈대: ${meta.skeleton.map(t => `${esc(t.s)} Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)} (기준 ${t.min}+)`).join(' · ')}</li>
+    <li>수단: ${means.slice(0, 4).map(([s, n]) => `${esc(s)} ${n}`).join(' · ') || '없음'}${means.length > 4 ? ` 외 ${means.length - 4}` : ''}</li>
+    <li>발동 가정: ${on.map(esc).join(' · ') || '없음'}</li>
+    <li>조건 OFF ${r.baseScore.toLocaleString()}점 · 비교 점수(실제 DPS 아님)</li></ul></details>`;
+}
 function abmCardUI(r, i, total, meta) {
   const lv = new Map(bdTotals(r.b)), core = new Set(meta.skeleton.map(t => t.s));
   return `<article class="abm-slide bd-card ab-result" aria-label="${i + 1}/${total}">
@@ -193,6 +203,7 @@ function abmCardUI(r, i, total, meta) {
     <div class="ab-levels">${meta.skeleton.map(t => `<span>${esc(t.s)} <b>Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)}</b></span>`).join('')}<span>연성 ${r.drifts}칸</span></div>
     <div class="ab-totals"><h4>스킬 합계</h4><div class="bd-inline">${bdTotals(r.b).map(([s, n]) => `<span class="chip${core.has(s) ? ' ab-core' : ''}">${esc(s)}<b>${n}</b></span>`).join('')}</div></div>
     ${abmEquipmentUI(r.b, core)}
+    ${abmReasonUI(r, meta, lv)}
     <footer><button class="btn primary" data-abm-import="${esc(meta.id)}:${i}">내 빌드로 가져오기</button></footer></article>`;
 }
 
@@ -201,7 +212,7 @@ function abmResultsUI() {
   if (!s.results?.length) return '';
   return `<h3 class="abm-title">⑤ 메타별 빌드</h3>` + s.results.map(({ meta, stats, builds }) => `<section class="ab-box abm-group" data-abm-group="${esc(meta.id)}">
     <div class="ab-heading"><h3>${esc(meta.name)}</h3><span class="abm-count" aria-live="polite">${builds.length ? '1' : '0'}/${builds.length}</span></div>
-    <p class="ab-muted">${esc(meta.desc)} · ${stats.expanded.toLocaleString()}개 조합 · ${(stats.ms / 1000).toFixed(1)}초</p>
+    <p class="ab-muted">${stats.expanded.toLocaleString()}개 조합 · ${(stats.ms / 1000).toFixed(1)}초</p>
     ${builds.length ? `<div class="abm-carousel"><button type="button" class="abm-arrow prev" data-abm-scroll="-1" aria-label="이전 빌드">‹</button>
       <div class="abm-track">${builds.map((r, i) => abmCardUI(r, i, builds.length, meta)).join('')}</div>
       <button type="button" class="abm-arrow next" data-abm-scroll="1" aria-label="다음 빌드">›</button></div>

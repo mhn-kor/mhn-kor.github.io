@@ -40,6 +40,9 @@
   background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--bone); font-size: 22px; cursor: pointer; }
 .abm-arrow.prev { left: -8px; }
 .abm-arrow.next { right: -8px; }
+.abm-reason { padding: 8px 12px; font-size: 13px; line-height: 1.6; }
+.abm-reason summary { cursor: pointer; color: var(--muted); }
+.abm-reason ul { margin: 6px 0 0; padding-left: 18px; }
 .abm-dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
 .abm-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
 .abm-dots span.on { background: var(--amber); }

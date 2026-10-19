@@ -26,7 +26,7 @@ const { pathToFileURL } = require('url');
       assert.strictEqual(await page.locator('.abm-meta[aria-pressed="true"]').count(), Math.min(4, metas));
       assert.ok(await page.locator('.abm-meta[aria-pressed="false"]').first().isDisabled() || metas <= 4, '4개 선택 후 잠금');
       while (await page.locator('.abm-meta[aria-pressed="true"]').count() > 2) await page.locator('.abm-meta[aria-pressed="true"]').last().click();
-      assert.ok((await page.locator('[data-abm-search]').innerText()).includes('최대 약 10초'));
+      assert.ok((await page.locator('[data-abm-search]').innerText()).includes('최대 10초'));
       // 메타별 결과 5장 가로 넘김.
       await page.locator('[data-abm-search]').click();
       await page.locator('[data-abm-cancel]').waitFor();
@@ -35,6 +35,7 @@ const { pathToFileURL } = require('url');
       const group = page.locator('.abm-group').first(), slides = group.locator('.abm-slide');
       assert.ok(await slides.count() >= 1 && await slides.count() <= 5);
       assert.strictEqual(await group.locator('.abm-count').innerText(), `1/${await slides.count()}`);
+      assert.strictEqual(await slides.first().locator('.abm-reason li').count(), 4, '근거 4줄');
       const [slideW, trackW] = await group.evaluate(g => [g.querySelector('.abm-slide').offsetWidth, g.querySelector('.abm-track').clientWidth]);
       if (width === 390) assert.ok(slideW < trackW * .9 && slideW > trackW * .8, '다음 카드가 보이는 폭');
       if (await slides.count() > 1) {
