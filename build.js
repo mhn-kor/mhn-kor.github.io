@@ -185,7 +185,8 @@ function bdCombineEffects(effects) {
 function bdEffects(desc, name = '', weapon = null) {
   const gun = ['light-gun', 'heavy-gun'].includes(weapon?.t);
   const families = gun ? (weapon.x || []).map(bdAmmoFamily) : [];
-  if (['포술','포술·경지'].includes(name) && !['charge-blade','light-gun','heavy-gun','gunlance'].includes(weapon?.t)) return [];
+  // 차지액스 포술은 병 공격에만 들어가고 다른 빌드를 넘지 못해 점수에서 뺀다 (2026-10-19 사용자, weapons/charge-blade.md).
+  if (['포술','포술·경지'].includes(name) && !['light-gun','heavy-gun','gunlance'].includes(weapon?.t)) return [];
   if (gun && name === '적정 거리 위력 UP' && !families.some(x => ['통상','산탄','관통'].includes(x))) return [];
   if (gun && ['포술','포술·경지'].includes(name) && !families.some(x => ['철갑','용격'].includes(x))) return [];
   if (['저스트 교격', '저스트 교격【지속】'].includes(name) && weapon?.fallbash) {
@@ -235,7 +236,7 @@ function bdEffects(desc, name = '', weapon = null) {
       ? [{ k: 'dmg', pct: 1, v: +m[1], cond: true,
         scope: weapon.t === 'hammer' ? '모으기 공격 기준' : '향음 공격 기준' }] : [];
   }
-  // 차지액스·보우건의 포술 계열은 별도 작업까지 기존 처리를 유지한다.
+  // 보우건의 포술 계열은 별도 작업까지 기존 처리를 유지한다.
   const gate = name === '포술·경지' && !gun ? null : bdSkillGate(desc);
   const need = gate ? { s: gate.s, lv: gate.lv } : null;
   /* 완전 충전도 전투 조건이므로 만피를 가정해 자동으로 켜지 않는다.

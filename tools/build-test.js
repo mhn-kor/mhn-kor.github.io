@@ -284,7 +284,7 @@ check('추가 지정한 일곱 스킬은 조건 체크 시에만 대미지를 �
     assert.strictEqual(stats.score, 1500);
     assert.ok(!stats.conds.some(c => c.sk === name));
   }
-  assert.strictEqual(calcSkills([['포술', 1]],{t:'charge-blade'}).stats.co.F, 1.1, '차지액스의 기존 포술 계산 유지');
+  assert.strictEqual(calcSkills([['포술', 1]],{t:'charge-blade'}).stats.co.F, 1, '차지액스 포술은 점수 제외 (weapons/charge-blade.md)');
   assert.strictEqual(calcSkills([['포술', 1]],{t:'great-sword'}).stats.co.F, 1, '대검에 포술 피해 적용 금지');
 });
 
@@ -498,7 +498,7 @@ check('건랜스 포격 시안은 G10·포술·장탄수로 계산하고 기존 
     assert.strictEqual(vm.runInContext('bdShellUI(shellBuild)', ctx), '');
     for (const type of ['charge-blade', 'light-gun', 'heavy-gun']) {
       ctx.shellOtherWeapon = { t: type, x:['철갑유탄 2'] };
-      assert.ok(vm.runInContext('bdEffects(bdSkillDesc("포술", 5), "포술", shellOtherWeapon).length', ctx) > 0);
+      assert.strictEqual(vm.runInContext('bdEffects(bdSkillDesc("포술", 5), "포술", shellOtherWeapon).length', ctx) > 0, type !== 'charge-blade');
     }
     delete ctx.shellOtherWeapon;
   } finally { BUILD.sets.pop(); delete ctx.shellBuild; }
