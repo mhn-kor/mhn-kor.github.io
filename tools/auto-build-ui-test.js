@@ -1,4 +1,5 @@
-/* 사용자 저장소와 분리된 새 브라우저에서 PC/모바일 전체 흐름 검수. */
+/* 이전 자동빌드 화면(#auto-build-legacy): 사용자 저장소와 분리된 새 브라우저에서 PC/모바일 전체 흐름 검수.
+   빌드 메뉴의 자동빌드 버튼은 메타 화면으로 가므로 이 화면은 주소로 연다. 메타 화면은 auto-build-meta-ui-test.js. */
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright'), assert = require('assert'), path = require('path'), os = require('os');
 const { pathToFileURL } = require('url');
 (async () => {
@@ -18,8 +19,8 @@ const { pathToFileURL } = require('url');
         bdWeaponFilter = 'long-sword'; bdSave(); bdRender(); window.scrollTo(0, 500);
       });
       const scroll = await page.evaluate(() => scrollY);
-      await page.locator('#bd-auto').click();
-      await page.waitForURL('**#auto-build');
+      await page.evaluate(() => { abState.scroll = scrollY; location.hash = 'auto-build-legacy'; });
+      await page.waitForURL('**#auto-build-legacy');
       await page.locator('#ab-screen').waitFor({ state: 'visible' });
       assert.strictEqual(await page.locator('.tabs a[data-tab="build"]').getAttribute('aria-current'), '');
       assert.strictEqual(await page.locator('#bd-cards').isVisible(), false);
@@ -130,8 +131,8 @@ const { pathToFileURL } = require('url');
       await page.waitForTimeout(100);
       // 클릭 시 버튼으로 스크롤되므로 저장 시점의 값과 복귀 값만 비교한다.
       assert.strictEqual(await page.evaluate(() => scrollY), await page.evaluate(() => abState.scroll));
-      await page.locator('#bd-auto').click();
-      await page.waitForURL('**#auto-build');
+      await page.evaluate(() => { abState.scroll = scrollY; location.hash = 'auto-build-legacy'; });
+      await page.waitForURL('**#auto-build-legacy');
       await page.locator('#ab-screen').waitFor({ state: 'visible' });
       const score = await page.evaluate(() => abState.results[0].score);
       await page.locator('[data-ab-import="0"]').click();
@@ -144,8 +145,8 @@ const { pathToFileURL } = require('url');
       assert.strictEqual(await page.evaluate(() => new Map(bdTotals(bdState.builds[0])).get('록온') >= 1), true);
       await page.reload();
       assert.strictEqual(await page.evaluate(() => bdStats(bdState.builds[0]).score), score);
-      await page.locator('#bd-auto').click();
-      await page.waitForURL('**#auto-build');
+      await page.evaluate(() => { abState.scroll = scrollY; location.hash = 'auto-build-legacy'; });
+      await page.waitForURL('**#auto-build-legacy');
       await page.locator('#ab-screen').waitFor({ state: 'visible' });
       await page.locator('[data-ab-dir="manual"]').click();
       assert.strictEqual(await page.evaluate(() => abState.targets.length), 0, '직접 구성은 빈 스킬에서 시작');

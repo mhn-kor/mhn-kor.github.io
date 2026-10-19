@@ -1,0 +1,49 @@
+/* 메타 자동빌드 화면 (auto-build-meta.js). 공통 카드·칩 모양은 auto-build.css의 클래스를 쓰고,
+   #ab-screen 범위 규칙은 이 화면 범위로 따로 둔다. */
+#abm-screen { padding-top: 18px; }
+#abm-screen [hidden] { display: none !important; }
+#abm-screen label { display: flex; gap: 6px; flex-direction: column; font-size: 12px; color: var(--muted); min-width: 0; }
+#abm-screen select { width: 100%; min-width: 0; min-height: 44px; padding: 10px; font: inherit; font-size: 16px; font-weight: 600; color: var(--bone);
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface-2)); border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--line));
+  border-radius: 7px; color-scheme: dark; }
+#abm-screen select:disabled { color: var(--muted); background: #211e1a; border-color: #494138; cursor: not-allowed; }
+#abm-screen .ab-chips select { width: auto; min-height: 36px; padding: 6px 8px; font-size: 14px; }
+#abm-screen input[type="checkbox"] { accent-color: var(--amber); width: 18px; height: 18px; flex: none; margin: 0; }
+#abm-screen .ab-check { flex-direction: row; align-items: center; min-height: 44px; padding: 8px 10px; align-self: end;
+  border: 1px solid var(--line); border-radius: 7px; color: var(--bone); box-sizing: border-box; cursor: pointer; font-size: 13px; }
+#abm-screen .ab-check:has(input:checked) { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 12%, var(--surface-2)); }
+#abm-screen .ab-check:has(input:disabled) { color: var(--muted); cursor: not-allowed; }
+#abm-screen .ab-heading > a { font-size: 12px; }
+.abm-extra { margin: 12px 0 0; }
+#abm-status { font-size: 13px; color: var(--amber-hi); min-height: 20px; }
+
+/* 메타 후보: 고른 것은 강조, 최대 개수에 도달하면 나머지는 잠근다. */
+.abm-metas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.abm-meta { text-align: left; padding: 12px; min-height: 44px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--bone); font: inherit; cursor: pointer; }
+.abm-meta span, .abm-meta small { display: block; font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.5; }
+.abm-meta small { color: var(--amber-hi); }
+.abm-meta[aria-pressed="true"] { border-color: var(--amber); outline: 2px solid var(--amber); outline-offset: -1px; background: color-mix(in srgb, var(--amber) 12%, var(--surface-2)); }
+.abm-meta:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 메타별 결과: 가로 넘김 5장. 다음 카드가 살짝 보이게 85% 폭. */
+.abm-title { margin: 6px 0 12px; }
+.abm-group { padding-bottom: 12px; }
+.abm-group > .ab-heading { margin-bottom: 4px; }
+.abm-count { font-variant-numeric: tabular-nums; color: var(--amber-hi); font-size: 14px; }
+.abm-carousel { position: relative; }
+.abm-track { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 4px 0; }
+.abm-track::-webkit-scrollbar { display: none; }
+.abm-slide { flex: 0 0 min(85%, 440px); scroll-snap-align: start; margin: 0; }
+.abm-slide .ab-totals { border-top: 0; }
+.abm-slide footer { padding: 10px 12px; border-top: 1px solid var(--line); }
+.abm-arrow { position: absolute; top: 40%; z-index: 1; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--bone); font-size: 22px; cursor: pointer; }
+.abm-arrow.prev { left: -8px; }
+.abm-arrow.next { right: -8px; }
+.abm-dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+.abm-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.abm-dots span.on { background: var(--amber); }
+@media (max-width: 600px) {
+  .abm-metas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .abm-arrow { display: none; }
+}

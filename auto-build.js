@@ -1112,8 +1112,9 @@ function abInvalidate() {
   abState.run++; abState.busy = false; abState.pool = []; abState.stats = null; abState.notice = '';
 }
 
+/* 이전 화면: 메타 화면(auto-build-meta.js, #auto-build)과 비교용으로 #auto-build-legacy에 남긴다. */
 function abRoute() {
-  const active = location.hash === '#auto-build';
+  const active = location.hash === '#auto-build-legacy';
   if (active && !abState.active) abRender();
   for (const selector of ['#panel-build .hero', '#panel-build .bd-tools', '#bd-weapon-filter', '#bd-cards']) $(selector).hidden = active;
   $('#ab-screen').hidden = !active;
@@ -1124,7 +1125,6 @@ function abRoute() {
   abState.active = active;
 }
 
-$('#bd-auto').addEventListener('click', () => { abState.scroll = window.scrollY; location.hash = 'auto-build'; });
 /* 칩 조정. 규칙·록온 칩은 누르면 켜고 끈다. 사용자 스킬·제외 칩은 조정줄을 연다. */
 function abEditChip(key, op) {
   const s = abState, kind = key[0], id = key.slice(2);
