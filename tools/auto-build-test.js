@@ -132,6 +132,10 @@ const get = s => vm.runInContext(s, ctx);
   assert.ok(!get('abDirections')({...poison,st:2}).some(d=>d.id==='status-rear'));
   const phial = { ...get('bdNewBuild')(),w:'barr',wt:'switch-axe' };
   assert.strictEqual(get('abDirections')(phial)[0].targets[0].s,'추가 공격【마비】');
+  // 상태이상 무기 지침 메타: 해당 추가 공격 + 축적 위력 (수면은 추가 공격 없음, 일반 속성은 없음).
+  assert.deepStrictEqual(Array.from(get('abStatusMetas')(poison)),['추가 공격【독】','상태 이상 축적 시 위력 UP']);
+  assert.deepStrictEqual(Array.from(get('abStatusMetas')({...get('bdNewBuild')(),w:'rado',wt:'hammer'})),['상태 이상 축적 시 위력 UP']);
+  assert.deepStrictEqual(Array.from(get('abStatusMetas')({...get('bdNewBuild')(),w:'mizu',wt:'shield-sword'})),[]);
   assert.deepStrictEqual(Array.from(get('abCurve')('불퇴전',lance).increments),[10,5,5,10,10]);
   assert.strictEqual(get('abTargets(["불퇴전"])[0].min'),0);
   assert.strictEqual(get('abCurve')('반사',lance),null,'비수치 효과의 임의 환산 금지');

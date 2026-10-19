@@ -256,6 +256,12 @@ function abStyleRule(b) {
   return { id:r.id, name:r.name.replace('{style}', style || '기본'),
     required:targets(r.required), recommended:targets(r.recommended), avoid:[...r.avoid], metas:[...(r.metas || [])], desc:r.desc };
 }
+/* 상태이상 무기의 지침 메타 (CONCEPTS W4, 2026-10-19 사용자): 추정 발동률 점수가 실제보다 낮을 수 있어 해당 추가 공격·축적 위력을 항상 메타로 둔다. */
+function abStatusMetas(b, setting) {
+  const w = abGunWeapon(b, setting);
+  if (!bdBuildupApplies(w)) return [];
+  return [...Object.keys(BD_STATUS_BOOST).filter(s => bdStatusBoostApplies(s, w)), '상태 이상 축적 시 위력 UP'];
+}
 const abSustains = b => { const type = BUILD.weaponTypes.find(t => t.k === b.wt)?.n; return !!(type && bdSkillDesc('강화 지속',1)?.includes(type)); };
 /* W7: 단일 버프 분류는 선별 순위만 결정한다. 복합/회심 효과는 별도 실효 비교. */
 function abBuffTier(effects) {

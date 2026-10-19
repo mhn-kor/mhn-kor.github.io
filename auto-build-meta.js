@@ -7,12 +7,14 @@ const ABM = { maxMetas: 4, coreMin: 4, perMetaMs: 5000, quick: { ms: 250, beam: 
 /* 메타 후보: 기존 투자 방향(회심·속성·흉회심·상태이상)은 첫 핵심을 메타 주축 스킬로, 그 무기에서 켜지는 공격력·대미지 버프는 단일 스킬 메타로. */
 function abmCandidates(b, gun) {
   const core = s => ({ s, min: Math.min(ABM.coreMin, abMax(s)), max: abMax(s) });
-  // 지침 메타: 운용 규칙의 metas. 점수가 없는 스킬도 메타 후보에 항상 보인다 (예: 차지액스 도끼 강화 속전속결).
-  const metas = (abOperationRule(b, gun)?.metas || []).map(s => ({ id:'g:'+s, name:s, guide:true, direction:'manual', skeleton:[core(s)], extra:[],
-    desc:`운용 지침 메타. ${s} Lv${core(s).min} 이상을 확보하고, 나머지는 점수가 오르는 스킬로 채웁니다.` }));
+  // 지침 메타: 운용 규칙의 metas + 상태이상 무기 메타. 점수가 없거나 낮아도 메타 후보에 항상 보인다 (예: 차지액스 도끼 강화 속전속결).
+  const metas = [...new Set([...(abOperationRule(b, gun)?.metas || []), ...abStatusMetas(b, gun)])].map(s => ({ id:'g:'+s, name:s, guide:true,
+    direction:'manual', skeleton:[core(s)], extra:[], desc:`운용 지침 메타. ${s} Lv${core(s).min} 이상을 확보하고, 나머지는 점수가 오르는 스킬로 채웁니다.` }));
   for (const d of abDirections(b, gun)) {
-    const first = d.targets[0];
-    if (!first || metas.some(m => m.skeleton[0].s === first.s)) continue; // 지침 메타와 같은 주축이면 지침 메타로 둔다
+    const first = d.targets[0], guide = first && metas.find(m => m.skeleton[0].s === first.s);
+    // 지침 메타와 같은 주축이면 지침 메타로 두고, 방향의 투자 후보(예: 하룡의 독 안개)는 이어받는다.
+    if (guide) Object.assign(guide, { direction:d.id, extra:d.targets.slice(1).map(t => ({ ...t, min:0 })) });
+    if (!first || guide) continue;
     const skeleton = [core(first.s)];
     // 변형 회심 메타는 회심 100%까지 필요한 약점 특효 레벨도 메타 주축 스킬로 둔다 (CONCEPTS W1).
     for (const t of d.targets.slice(1)) if (t.s === '약점 특효' && d.id === 'morph-critical') skeleton.push({ s:t.s, min:t.max, max:t.max });
