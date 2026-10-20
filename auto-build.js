@@ -1,6 +1,7 @@
 /* docs/WEAPONS.md·CONCEPTS.md의 사용자 규칙을 조건별 추천과 탐색에 적용한다.
    bounded beam search: 전역 최적 보장이 아닌 제한 탐색, 점수는 기존 bdStats를 공유. */
-const AB_LIMIT = { beam: 160, armor: 24, evaluated: 6000, ms: 8000 };
+/* 탐색 한도. drift·repair = 초기 연성·교체 단계의 평가 횟수 상한. 메타 예상 점수는 시간이 아니라 이 횟수로 멈춰 기기와 무관하게 같은 결과를 낸다 (ABM). */
+const AB_LIMIT = { beam: 160, armor: 24, evaluated: 6000, ms: 8000, drift: 2400, repair: 2400 };
 const AB_SOURCES = [
   ['물속성 공격 강화', 'https://monsterhunternow.com/ko/skills/water_attack'],
   ['회심격【속성】', 'https://monsterhunternow.com/ko/skills/critical_element'],
@@ -691,7 +692,7 @@ async function abRepairBuilds(pool,all,targets,policy,config,started,progress,ca
   const useful=policy.useful||abUsefulSkills(config?.b||pool[0]?.b,targets,policy);
   const seeds=abSelectRepresentatives(pool,'priority',5), found=[], checked=new Set(), parts=BD_PARTS();
   let evaluated=0, jobs=0, expanded=0, constrained=false;
-  const stop=()=>cancelled()||performance.now()-started>=AB_LIMIT.ms||evaluated>=2400;
+  const stop=()=>cancelled()||performance.now()-started>=AB_LIMIT.ms||evaluated>=AB_LIMIT.repair;
   const budget=()=>{if(stop())return true;evaluated++;return false;};
   for(const before of seeds) {
     // 초기24개 밖의 장비도 재검토. 공급/핵심/전체 이득 경로를 교대로 작업한다.
@@ -892,9 +893,9 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
     if (evaluated % 8 === 0) {
       progress({ stage: 5, expanded, evaluated }); await pause();
       if (cancelled()) return null;
-      if (evaluated >= 2400 || performance.now() - started > AB_LIMIT.ms*0.55) break finish;
+      if (evaluated >= AB_LIMIT.drift || performance.now() - started > AB_LIMIT.ms*0.55) break finish;
     }
-    if (evaluated >= 2400 || performance.now() - started > AB_LIMIT.ms*0.55) break finish;
+    if (evaluated >= AB_LIMIT.drift || performance.now() - started > AB_LIMIT.ms*0.55) break finish;
   }
   const evaluatedPool=pool;
   if(cancelled())return null;

@@ -2,7 +2,13 @@
    메타 = 메타 주축 스킬(핵심 스킬, Lv4 이상 보장) + 수단(나머지는 점수로 채움, 레벨 강제 없음).
    탐색 엔진(abSearch·abBest)과 판정(abAssumed·abDirections 등)은 auto-build.js를 그대로 쓰고,
    화면·상태는 이 파일에만 둔다. 기존 화면(auto-build.js의 ab*UI, #auto-build-legacy)과 섞지 않는다. */
-const ABM = { maxMetas: 4, coreMin: 4, perMetaMs: 5000, quick: { ms: 250, beam: 40, armor: 12 }, retry: { ms: 800, beam: 80, armor: 24 }, shown: 8, perMeta: 5 };
+/* 예상 점수 예산은 시간이 아니라 평가 횟수(drift·repair)로 멈춰 기기와 무관하게 같은 결과를 낸다. ms는 안전 상한.
+   quick = 1단계(모든 후보), retry = 1단계에서 구성을 못 찾았을 때, refine = 2단계(표시할 메타만 다시 탐색).
+   수치는 2026-10-20 측정(6개 설정, 5초 탐색과 비교: 2단계 후 1위 6/6 일치)으로 정했다. */
+const ABM = { maxMetas: 4, coreMin: 4, perMetaMs: 5000, shown: 8, perMeta: 5,
+  quick: { ms: 3000, beam: 30, armor: 10, drift: 60, repair: 40 },
+  retry: { ms: 3000, beam: 80, armor: 24, drift: 300, repair: 300 },
+  refine: { ms: 3000, beam: 80, armor: 24, drift: 300, repair: 300 } };
 
 /* 메타 후보: 기존 투자 방향(회심·속성·흉회심·상태이상)은 첫 핵심을 메타 주축 스킬로, 그 무기에서 켜지는 공격력·대미지 버프는 단일 스킬 메타로. */
 function abmCandidates(b, gun) {
@@ -46,11 +52,15 @@ function abmConfig(meta, base) {
 }
 
 /* 탐색 한도를 잠시 바꿔 돌린다. AB_LIMIT은 auto-build.js의 공유 상수라 끝나면 반드시 되돌린다. */
+/* 탐색은 한 번에 하나씩 돈다: 정밀 계산 중 빌드 찾기·설정 변경이 겹쳐도 앞 탐색이 취소되어 끝난 뒤 시작하므로 AB_LIMIT이 섞이지 않는다. */
+let abmQueue = Promise.resolve();
 async function abmRun(config, limit, progress, cancelled) {
+  const prev = abmQueue; let release; abmQueue = new Promise(r => { release = r; });
+  await prev;
   const saved = { ...AB_LIMIT };
   Object.assign(AB_LIMIT, limit);
-  try { return await abSearch(structuredClone(config), progress, cancelled); }
-  finally { Object.assign(AB_LIMIT, saved); }
+  try { return cancelled() ? null : await abSearch(structuredClone(config), progress, cancelled); }
+  finally { Object.assign(AB_LIMIT, saved); release(); }
 }
 
 /* 빠른 계산: 메타마다 짧게 탐색해 예상 최고 점수를 낸다. 짧은 탐색에서 메타 주축 스킬을 못 채우면 조금 넓혀 한 번 더 보고,
@@ -68,6 +78,20 @@ async function abmEstimate(metas, base, cancelled = () => false, onEach = () => 
   return out.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
 }
 
+/* 2단계: 표시할 메타만 넓은 예산으로 다시 탐색해 예상 점수를 고친다. 빠른 계산은 Lv5·여러 부위 교체 조합을 놓쳐 순위가 틀릴 수 있다.
+   점수는 1단계보다 낮아지지 않는다. 중간에 설정이 바뀌거나 빌드 찾기를 누르면 멈춘다(null). */
+async function abmRefine(metas, base, cancelled = () => false, onEach = () => {}) {
+  for (const [i, m] of metas.entries()) {
+    if (cancelled()) return null;
+    const r = await abmRun(abmConfig(m, base), ABM.refine, () => {}, cancelled);
+    if (!r) return null;
+    if (r.pool.length) m.score = Math.max(m.score ?? -Infinity, ...r.pool.map(x => x.score));
+    m.refined = true;
+    onEach(i + 1, metas.length);
+  }
+  return metas;
+}
+
 /* 선택한 메타마다 5초 탐색해 서로 다른 방어구 조합 5개. 메타 하나가 끝날 때마다 onMeta. */
 async function abmSearch(metas, base, progress = () => {}, cancelled = () => false, onMeta = () => {}) {
   const out = [];
@@ -83,7 +107,7 @@ async function abmSearch(metas, base, progress = () => {}, cancelled = () => fal
 /* ── 화면 ─────────────────────────────────────────────────────── */
 const abmState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, gun:{ mode:'cycle' }, drift:true, lockon:true,
   targets:[], exclude:[], assumeOn:[], assumeOff:[], adding:null, chip:null,
-  metas:null, estimated:0, selected:[], results:null, busy:'', run:0, notice:'', scroll:0, active:false };
+  metas:null, estimated:0, selected:[], picked:false, results:null, busy:'', run:0, notice:'', scroll:0, active:false };
 
 const abmBase = () => { const s = abmState; return { b:s.b, gun:s.gun, targets:s.targets, drift:s.drift, lockon:s.lockon,
   exclude:s.exclude, assumeOn:s.assumeOn, assumeOff:s.assumeOff }; };
@@ -101,10 +125,21 @@ async function abmRefresh() {
     });
     if (!out || run !== s.run) return;
     // 지침 메타는 점수와 무관하게 앞에 두고 함께 선택한다. 나머지 칸은 예상 점수순.
-    const guide = out.filter(m => m.guide), rest = out.filter(m => !m.guide);
-    s.metas = [...guide, ...rest.slice(0, Math.max(0, ABM.shown - guide.length))];
-    s.selected = s.selected.filter(id => s.metas.some(m => m.id === id));
-    if (!s.selected.length) s.selected = [...(rest[0]?.score != null ? [rest[0].id] : []), ...guide.map(m => m.id)].slice(0, ABM.maxMetas);
+    // 사용자가 메타를 직접 고르지 않았으면 기본 선택(점수 1위 + 지침 메타)을 2단계 결과로 다시 정한다.
+    const show = () => {
+      out.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+      const guide = out.filter(m => m.guide), rest = out.filter(m => !m.guide);
+      s.metas = [...guide, ...rest.slice(0, Math.max(0, ABM.shown - guide.length))];
+      s.selected = s.picked ? s.selected.filter(id => s.metas.some(m => m.id === id)) : [];
+      if (!s.selected.length) { s.picked = false; s.selected = [...(rest[0]?.score != null ? [rest[0].id] : []), ...guide.map(m => m.id)].slice(0, ABM.maxMetas); }
+    };
+    show();
+    s.busy = 'refine'; s.notice = '상위 메타 정밀 계산 중 · 순위가 바뀔 수 있습니다'; abmRender();
+    const refined = await abmRefine(s.metas, abmBase(), () => run !== s.run, (n, total) => {
+      const el = $('#abm-status'); if (el) el.textContent = `상위 메타 정밀 계산 중 ${n}/${total} · 순위가 바뀔 수 있습니다`;
+    });
+    if (!refined || run !== s.run) return;
+    s.notice = ''; show();
   } catch (err) { if (run === s.run) s.notice = '메타 후보 계산 중 오류가 발생했습니다.'; console.error(err); }
   if (run === s.run) { s.busy = ''; abmRender(); }
 }
@@ -169,18 +204,20 @@ function abmConditionUI() {
     <label class="ab-check"><input type="checkbox" data-abm="drift"${s.drift ? ' checked' : ''}>표류연성 사용</label></div>`;
 }
 
+/* 정밀 계산(refine) 중에는 메타 선택·빌드 찾기를 막지 않는다. */
+const abmBlocked = () => !!abmState.busy && abmState.busy !== 'refine';
 function abmMetaUI() {
   const s = abmState, n = s.selected.length;
   if (!s.metas) return `<div class="ab-box"><h3>④ 메타 선택</h3><p id="abm-status" class="ab-notice" role="status" aria-live="polite">${s.busy === 'estimate' ? '메타 후보 계산 중…' : esc(s.notice)}</p></div>`;
   const chip = m => { const on = s.selected.includes(m.id), full = !on && n >= ABM.maxMetas;
-    return `<button type="button" class="abm-meta" data-abm-meta="${esc(m.id)}" aria-pressed="${on}"${full || s.busy ? ' disabled' : ''} title="${esc(m.desc)}">
+    return `<button type="button" class="abm-meta" data-abm-meta="${esc(m.id)}" aria-pressed="${on}"${full || abmBlocked() ? ' disabled' : ''} title="${esc(m.desc)}">
       <b>${esc(m.name)}${m.guide ? ' <em class="abm-guide">지침</em>' : ''}</b><span>${m.skeleton.map(t => `${esc(t.s)} Lv${t.min}+`).join(' · ')}</span>
-      <small>${m.score == null ? '빠른 계산에서 구성 못 찾음' : `예상 ${m.score.toLocaleString()}점`}</small></button>`; };
+      <small>${m.score == null ? '빠른 계산에서 구성 못 찾음' : `예상 ${m.score.toLocaleString()}점${m.refined ? '' : ' (빠른 계산)'}`}</small></button>`; };
   return `<div class="ab-box"><h3>④ 메타 선택 <small>최대 ${ABM.maxMetas}개 · 예상 점수순</small></h3>
     <div class="abm-metas" role="group" aria-label="메타 후보">${s.metas.map(chip).join('')}</div>
-    <p class="ab-muted">메타 주축 스킬 Lv${ABM.coreMin}+ 확보, 나머지는 점수순 · 예상 점수는 짧은 탐색 값</p>
+    <p class="ab-muted">메타 주축 스킬 Lv${ABM.coreMin}+ 확보, 나머지는 점수순 · 예상 점수는 짧은 탐색 후 상위 메타를 다시 계산한 값</p>
     <p class="ab-notice">메타당 최대 ${ABM.perMetaMs / 1000}초 · 많이 고를수록 오래 걸림</p>
-    <div class="ab-actions"><button class="btn primary" data-abm-search${!n || s.busy ? ' disabled' : ''}>${s.busy === 'search' ? '빌드 찾는 중…' : `메타 ${n}개로 빌드 찾기 (최대 ${n * ABM.perMetaMs / 1000}초)`}</button>
+    <div class="ab-actions"><button class="btn primary" data-abm-search${!n || abmBlocked() ? ' disabled' : ''}>${s.busy === 'search' ? '빌드 찾는 중…' : `메타 ${n}개로 빌드 찾기 (최대 ${n * ABM.perMetaMs / 1000}초)`}</button>
     ${s.busy === 'search' ? '<button class="btn ghost" data-abm-cancel>중지</button>' : ''}</div>
     <p id="abm-status" role="status" aria-live="polite">${esc(s.notice)}</p></div>`;
 }
@@ -320,6 +357,7 @@ $('#abm-screen').addEventListener('click', async e => {
   if (el.hasAttribute('data-abm-meta')) {
     const id = el.dataset.abmMeta;
     s.selected = s.selected.includes(id) ? s.selected.filter(x => x !== id) : [...s.selected, id].slice(0, ABM.maxMetas);
+    s.picked = true; // 직접 고른 선택은 정밀 계산 뒤에도 유지
     return abmRender();
   }
   if (el.hasAttribute('data-abm-cancel')) { s.run++; s.busy = ''; s.notice = '탐색을 중지했습니다.'; return abmRender(); }
@@ -336,7 +374,7 @@ $('#abm-screen').addEventListener('click', async e => {
     }
     return;
   }
-  if (!el.hasAttribute('data-abm-search') || s.busy) return;
+  if (!el.hasAttribute('data-abm-search') || abmBlocked()) return; // 정밀 계산 중이면 멈추고 1단계 값으로 진행
   const metas = s.selected.map(id => s.metas.find(m => m.id === id)).filter(Boolean), run = ++s.run;
   s.busy = 'search'; s.results = []; s.notice = '빌드를 찾고 있습니다…'; abmRender();
   try {

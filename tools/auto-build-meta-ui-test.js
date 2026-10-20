@@ -22,6 +22,11 @@ const { pathToFileURL } = require('url');
       const metas = await page.locator('.abm-meta').count();
       assert.ok(metas >= 2 && metas <= 8, '메타 후보 수 ' + metas);
       assert.strictEqual(await page.locator('.abm-meta[aria-pressed="true"]').count(), 1);
+      // 2단계 정밀 계산: 표시된 메타를 모두 다시 계산하고, 직접 고르지 않았으면 기본 선택을 2단계 1위로 정한다 (2026-10-20).
+      await page.waitForFunction(() => !abmState.busy, null, { timeout: 120000 });
+      assert.ok(await page.evaluate(() => abmState.metas.every(m => m.refined)), '표시된 메타 모두 정밀 계산');
+      assert.ok(await page.evaluate(() => { const rest = abmState.metas.filter(m => !m.guide);
+        return abmState.selected.includes(rest[0].id) && rest.every(m => (m.score ?? -1) <= (rest[0].score ?? -1)); }), '기본 선택 = 정밀 1위');
       for (let i = 1; i < Math.min(metas, 6); i++) if (!(await page.locator('.abm-meta').nth(i).isDisabled())) await page.locator('.abm-meta').nth(i).click();
       assert.strictEqual(await page.locator('.abm-meta[aria-pressed="true"]').count(), Math.min(4, metas));
       assert.ok(await page.locator('.abm-meta[aria-pressed="false"]').first().isDisabled() || metas <= 4, '4개 선택 후 잠금');
