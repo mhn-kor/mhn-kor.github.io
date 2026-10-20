@@ -87,5 +87,4 @@ const docRates=Object.fromEntries(rateRows.map(c=>{
 }));
 same(JSON.parse(JSON.stringify(get('BD_RATE'))),docRates,'발동률 표 ↔ BD_RATE 불일치');
 for(const s of Object.keys(docRates)) assert.ok(skills.some(c=>c[0]===s),`발동률 표의 스킬이 스킬 사전에 없음: ${s}`);
-assert.ok(!('변형 공격 강화' in docRates),'변형 공격 강화는 발동률 표에 넣지 않음 (사용자 결정)');
 console.log(`운용 가이드 ↔ AB_RULES 일치 (${data.length}개 규칙) · 무기 특성 ${traitRows}행 · 기본 가정 일치 · 발동률 ${rateRows.length}종 일치`);

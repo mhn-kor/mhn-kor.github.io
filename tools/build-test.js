@@ -262,7 +262,7 @@ check('축적 시 위력은 상태이상 무기·슬래시액스 상태이상 �
     }
 });
 
-check('조건부 스킬은 켜면 발동률만큼 반영한다 (나우칼 기본값, 변형 공격 강화는 100%)', () => {
+check('조건부 스킬은 켜면 발동률만큼 반영한다 (나우칼 기본값)', () => {
   const close = (a, b, m) => assert.ok(Math.abs(a - b) < 1e-9, `${m}: ${a} !== ${b}`);
   // 추격 45% × 60% · 용맹 +1000 × 50% · 약점 특효 회심 50% × 85%
   close(calcSkills([['추격', 5]], {}, { '추격': true }).stats.co.F, 1 + 45 * 60 / 100 / 100, '추격');
@@ -271,9 +271,12 @@ check('조건부 스킬은 켜면 발동률만큼 반영한다 (나우칼 기본
   // 무기별 값: 비연은 쌍검 20%, 한손검 80%
   close(calcSkills([['비연', 5]], { t: 'dual-blades' }, { '비연': true }).stats.co.F, 1 + 40 * 20 / 100 / 100, '비연 쌍검');
   close(calcSkills([['비연', 5]], { t: 'shield-sword' }, { '비연': true }).stats.co.F, 1 + 40 * 80 / 100 / 100, '비연 한손검');
-  // 표에 없는 조건부 스킬은 100%: 변형 공격 강화 (사용자 결정)
-  assert.strictEqual(vm.runInContext("bdRate('변형 공격 강화', { t: 'switch-axe' })", ctx), 100);
-  close(calcSkills([['변형 공격 강화', 3]], { t: 'switch-axe' }, { '변형 공격 강화': true }).stats.co.F, 1.8, '변형 공격 강화');
+  // 변형 공격 강화도 10% (변형 공격 비중, 2026-10-20): 대미지 80% × 10%, 회심 80% × 10%
+  const morph = calcSkills([['변형 공격 강화', 3]], { t: 'switch-axe' }, { '변형 공격 강화': true }).stats;
+  close(morph.co.F, 1 + 80 * 10 / 100 / 100, '변형 공격 강화 대미지');
+  assert.strictEqual(morph.now.crit, 8);
+  // 표에 없는 조건부 스킬은 100%
+  assert.strictEqual(vm.runInContext("bdRate('통상탄·속성 통상탄 강화', { t: 'light-gun' })", ctx), 100);
   // 선행 스킬에 묶인 경지는 선행 스킬의 발동률 (연격 90%)
   const combo = calcSkills([['연격', 5], ['연격·경지', 1]], {}, { '연격': true }).stats;
   assert.ok(combo.effects.filter(e => ['연격', '연격·경지'].includes(e.sk)).every(e => e.rate === 90));
@@ -363,7 +366,7 @@ check('탄 강화는 보우건과 해당 보유 탄종에서만 조건부로 계
   assert.ok(mixed.stats.co.F > 1);
 });
 
-check('변형 공격 강화는 슬래시액스·차지액스의 변형 공격에서만 적용한다', () => {
+check('변형 공격 강화는 슬래시액스·차지액스의 변형 공격에서만 적용한다', fullRate(() => {
   const name = '변형 공격 강화';
   assert.strictEqual(bdSkillLevels(name).length, 3);
   for (const { k: type } of BUILD.weaponTypes) for (const [lv, desc] of bdSkillLevels(name)) {
@@ -380,7 +383,7 @@ check('변형 공격 강화는 슬래시액스·차지액스의 변형 공격에
       assert.ok(on.stats.score > baseline.score);
     } else assert.strictEqual(on.stats.score, baseline.score);
   }
-});
+}));
 
 check('연격 경지는 원래 체크에 병합하고 조건부 레벨·수치를 상한으로 표시한다', fullRate(() => {
   for (const lv of [4, 5, 7]) for (const advanced of [0, 1, 2, 3]) {

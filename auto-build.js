@@ -1122,7 +1122,7 @@ function abRenderResults() {
       <h4>적용한 운용 지침</h4>${abGuideUI(r.b, s.direction, s.targets)}
       <h4>연성 배치</h4><p>${r.drifts}개 사용 · 같은 스킬이 기본으로 붙은 부위의 빈 슬롯부터 배치합니다.</p>
       <h4>점수 계산 가정</h4><p>발동 가정: ${Object.entries(r.b.cond).filter(([, on]) => on).map(([n]) => esc(n)).join(' · ') || '없음'}</p>
-      <p>특수 위력·SP 전용 효과와 집중 보정은 제외합니다.${r.b.wt === 'switch-axe' || r.b.wt === 'charge-blade' ? ' 변형 공격 강화는 모든 공격에 적용한 값이라 실제보다 높습니다.' : ''} 실제 전투 DPS가 아닌 비교 점수입니다.</p>
+      <p>특수 위력·SP 전용 효과와 집중 보정은 제외합니다.${r.b.wt === 'switch-axe' || r.b.wt === 'charge-blade' ? ' 변형 공격 강화는 변형 공격 비중을 발동률 10%로 반영한 기대값입니다.' : ''} 실제 전투 DPS가 아닌 비교 점수입니다.</p>
       <h4>기대 점수</h4>${abCalculationUI(r.b)}<p class="ab-muted">일반·회심 공격을 회심률로 평균합니다. 표시와 최종 점수만 반올림합니다.</p></div></details>
       <footer><button class="btn primary" data-ab-import="${i}">내 빌드로 가져오기${g.variants.length > 1 ? ` (${'ABC'[v]}안)` : ''}</button></footer></article>`; }).join('') + '</div>'
     : `<p class="ab-box">설정한 최소 레벨을 만족하는 후보를 찾지 못했습니다. ${s.exclude.some(x => !x.shared) ? '완전 제외한 스킬 때문에 후보 방어구가 줄었을 수 있습니다. ' : ''}연성을 켜거나 최소 레벨을 낮춰 보세요. 제한 탐색이므로 불가능한 조합이라는 뜻은 아닙니다.</p>`}`;
