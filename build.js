@@ -149,8 +149,19 @@ const BD_SKILL_WEAPONS = { '변형 공격 강화': ['switch-axe', 'charge-blade'
 const BD_STATUS_BOOST = { '추가 공격【독】': '독', '추가 공격【마비】': '마비', '추가 공격【폭파】': '폭파' };
 const bdHasStatus = (w, status) => w?.e === status || (w?.t === 'switch-axe' && (w.x || []).includes(status + '병'));
 const bdStatusBoostApplies = (name, w) => bdHasStatus(w, BD_STATUS_BOOST[name]);
-/* 나우칼 빌드 편집기 기본 발동률(%): 추가 공격 독·마비는 상태 유지율, 폭파는 발동 1회당 10% (2026-10-19 사용자 확정, 독 지속 피해는 미반영). */
-const BD_STATUS_RATE = { '추가 공격【독】': 27, '추가 공격【마비】': 20, '추가 공격【폭파】': 10 };
+/* 조건부 스킬 발동률(%): 켜진 조건부 효과는 효과 × 발동률의 기대값으로 계산한다 (docs/SKILLS.md '발동률', 2026-10-20 사용자).
+   출처는 나우칼 빌드 편집기 기본값. w=무기별 값. 표에 없는 조건부 스킬(변형 공격 강화·탄 강화·SP 공격 등)은 켜지면 100%.
+   추가 공격 독·마비는 상태 유지율, 폭파는 발동 1회당 10% (2026-10-19). 독 지속 피해는 미반영. */
+const BD_RATE = {
+  '완전 충전': 100, '연격': 90, '약점 특효': 85, '앙심': 85, '저스트 교격【지속】': 85,
+  '진가 발휘': 80, '무심': 80, '공격적인 방어': 80, '겁혈 망토': 80, '체인지 부스트': 80, '저스트 모으기 해방': 80,
+  '적정 거리 위력 UP': 80, '차지 마스터': 80, '비연': { d: 80, w: { 'dual-blades': 20, hammer: 20, 'switch-axe': 20 } },
+  '기습': 75, '돌파구': 75, '매진': 70, '추격': 60, '힘의 해방': 55, '투기 활성': 53,
+  '용맹': 50, '불퇴전': 50, '귀화 망토': 50, '속성 공격 증강【SP】': 50, '차지 스톡': 50, '전화위복': 50,
+  '유타·향음 강화': 20, '저스트 교격': 10,
+  '추가 공격【독】': 27, '추가 공격【마비】': 20, '추가 공격【폭파】': 10,
+};
+const bdRate = (name, w) => { const r = BD_RATE[name]; return r == null ? 100 : typeof r === 'number' ? r : r.w[w?.t] ?? r.d; };
 /* 축적 확률 = (100 + 가산) ÷ 3, 최대 100% (나우칼 '상태 이상 발동률', 정면 기준). 기습【상태 이상】은 후방 조건이라 넣지 않는다. */
 const BD_BUILDUP_BONUS = { '하룡의 독 안개': ['독', [35, 70, 100]], '염왕룡의 폭발가루': ['폭파', [35, 70, 100]], '추가 공격【폭파】': ['폭파', [20, 40, 60, 80, 100]] };
 const bdBuildupChance = (lvOf, w) => Math.min(100, (100 + [...lvOf].reduce((n, [s, lv]) => {
@@ -220,11 +231,11 @@ function bdEffects(desc, name = '', weapon = null) {
   /* 상태이상 스킬은 조건 체크 없이 발동률을 곱한 기대값. k:'status'는 대미지 가산(F)과 따로 곱하는 상태 이상 보정(S, 나우칼 ⑪). */
   if (['추가 공격【독】', '추가 공격【마비】'].includes(name)) {
     const m = /(독|마비) 상태인 몬스터에게 주는 대미지가 (\d+)%/.exec(desc);
-    return m ? [{ k: 'status', v: +m[2], rate: BD_STATUS_RATE[name], scope: `몬스터 ${m[1]} 상태 유지율` }] : [];
+    return m ? [{ k: 'status', v: +m[2], rate: bdRate(name, weapon), scope: `몬스터 ${m[1]} 상태 유지율` }] : [];
   }
   if (name === '추가 공격【폭파】') {
     const m = /공격력이 (\d+) 상승/.exec(desc);
-    return m ? [{ k: 'atk', v: +m[1] * BD_STATUS_RATE[name] / 100, raw: +m[1], rate: BD_STATUS_RATE[name], scope: '폭파 1회 발동분' }] : [];
+    return m ? [{ k: 'atk', v: +m[1] * bdRate(name, weapon) / 100, raw: +m[1], rate: bdRate(name, weapon), scope: '폭파 1회 발동분' }] : [];
   }
   if (name === '상태 이상 축적 시 위력 UP') {
     const m = /대미지가 (\d+)% 증가/.exec(desc);
@@ -376,7 +387,7 @@ function bdStats(b) {
   const conditional = new Map();
   for (const { name, lv, list } of entries) {
     const active = list.filter(e => e.cond && eligible(e));
-    if (active.length) conditional.set(name, { sk: name,
+    if (active.length) conditional.set(name, { sk: name, rate: bdRate(name, w),
       lv: Math.min(lv, bdSkillLevels(name)?.at(-1)[0] ?? lv), list: active, applied: [] });
   }
   for (const { name, list } of entries) {
@@ -388,7 +399,9 @@ function bdStats(b) {
         if (!parent.applied.includes(name)) parent.applied.push(name);
       }
       if ((parent || e.cond) && !on[parent ? parent.sk : name]) continue;
-      eff.push({ ...e, sk: name });
+      // 켜진 조건부 효과는 발동률 기대값 (BD_RATE). 선행 스킬에 묶인 효과(경지 등)는 선행 스킬의 발동률, 체력은 그대로.
+      const rate = (parent || e.cond) && e.k !== 'hp' ? bdRate(parent ? parent.sk : name, w) : 100;
+      eff.push({ ...e, sk: name, ...(rate !== 100 ? { v: e.v * rate / 100, rate } : {}) });
     }
   }
   const conds = [...conditional.values()].map(c => ({ ...c, list: bdCombineEffects(c.list) }));
@@ -525,12 +538,12 @@ function bdCondList(b) {
   const on = b.cond || {};
   const n = conds.filter(c => on[c.sk]).length;
   return `<div class="bd-cond">
-    <p class="bd-cdh">조건부 스킬 <b>${n}/${conds.length}</b> <i>켠 것만 점수에 들어갑니다</i></p>
+    <p class="bd-cdh">조건부 스킬 <b>${n}/${conds.length}</b> <i>켠 것은 발동률만큼 점수에 들어갑니다</i></p>
     ${conds.map(c => {
       const what = c.list.map(e => `${e.scope ? e.scope + ' · ' : ''}${BD_KIND[e.k] || e.k} ${e.v > 0 ? '+' : ''}${e.v}${e.pct || e.k === 'crit' || e.k === 'critx' ? '%' : ''}`).join(' · ');
       return `<label class="bd-cl${on[c.sk] ? ' on' : ''}">
         <input type="checkbox" data-cond="${bi}:${esc(c.sk)}"${on[c.sk] ? ' checked' : ''}>
-        <span>${esc(c.sk)} <b>${c.lv}</b>${c.applied.length ? ` <small>(${esc(c.applied.map(s => ['특수 스킬 위력 UP·경지', '특수 스킬 위력 상승·경지'].includes(s) ? '특위UP 경지' : s).join(' · '))} 적용)</small>` : ''}</span>
+        <span>${esc(c.sk)} <b>${c.lv}</b>${c.applied.length ? ` <small>(${esc(c.applied.map(s => ['특수 스킬 위력 UP·경지', '특수 스킬 위력 상승·경지'].includes(s) ? '특위UP 경지' : s).join(' · '))} 적용)</small>` : ''}${c.rate !== 100 ? ` <small>발동률 ${c.rate}%</small>` : ''}</span>
         <i>${esc(what)}</i>
       </label>`;
     }).join('')}

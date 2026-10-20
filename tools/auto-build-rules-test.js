@@ -77,4 +77,15 @@ same(pick(c=>/^ON \(.+ 무기는 OFF\)$/.test(c[4])),sorted(Object.keys(assume.b
 const actions=skills.filter(c=>c[4]==='조건부 ON (무기 동작)'&&!get('abSP')(c[0]));
 same(actions.map(c=>c[0]).sort(),sorted(Object.keys(assume.actions)),'무기 동작 스킬 불일치');
 for(const c of actions) assert.strictEqual(assume.actions[c[0]],c[5],`액션 조건 불일치: ${c[0]}`);
-console.log(`운용 가이드 ↔ AB_RULES 일치 (${data.length}개 규칙) · 무기 특성 ${traitRows}행 · 기본 가정 일치`);
+// 스킬 사전 발동률 표 ↔ BD_RATE (무기별 값 포함).
+const rateDoc=fs.readFileSync(path.join(root,'docs','SKILLS.md'),'utf8').split('## 발동률')[1].split('\n## ')[0];
+const typeKo=Object.fromEntries(get('BUILD.weaponTypes').map(t=>[t.n,t.k]));
+const rateRows=tableRows(rateDoc).filter(c=>c.length>=3&&c[0]!=='스킬'&&!/^-+$/.test(c[0]));
+const docRates=Object.fromEntries(rateRows.map(c=>{
+  const w=c[2]?Object.fromEntries(c[2].split(' · ').map(x=>{const m=/^(.+) (\d+)$/.exec(x);assert.ok(m&&typeKo[m[1]],`발동률 무기별 표기: ${x}`);return [typeKo[m[1]],+m[2]];})):null;
+  return [c[0],w?{d:+c[1],w}:+c[1]];
+}));
+same(JSON.parse(JSON.stringify(get('BD_RATE'))),docRates,'발동률 표 ↔ BD_RATE 불일치');
+for(const s of Object.keys(docRates)) assert.ok(skills.some(c=>c[0]===s),`발동률 표의 스킬이 스킬 사전에 없음: ${s}`);
+assert.ok(!('변형 공격 강화' in docRates),'변형 공격 강화는 발동률 표에 넣지 않음 (사용자 결정)');
+console.log(`운용 가이드 ↔ AB_RULES 일치 (${data.length}개 규칙) · 무기 특성 ${traitRows}행 · 기본 가정 일치 · 발동률 ${rateRows.length}종 일치`);

@@ -48,6 +48,14 @@ let fail = 0;
 const check = (label, fn) => {
   try { fn(); } catch (e) { fail++; console.log('✗ ' + label + '\n  ' + e.message); }
 };
+/* 효과가 계산식의 어느 자리(A·B·C·F…)에 들어가는지 보는 검사는 발동률을 100%로 두고 돌린다.
+   발동률 자체는 '조건부 스킬은 켜면 발동률만큼' 검사가 본다. */
+const fullRate = fn => () => {
+  const rate = vm.runInContext('BD_RATE', ctx), saved = { ...rate };
+  for (const k of Object.keys(rate)) delete rate[k];
+  vm.runInContext('bdEffectCache.clear()', ctx);
+  try { fn(); } finally { Object.assign(rate, saved); vm.runInContext('bdEffectCache.clear()', ctx); }
+};
 
 /* 테스트 장비로 실제 스킬 합계·계산·조건 체크 표시를 함께 통과시킨다. */
 function calcSkills(skills, weapon = {}, cond = {}) {
@@ -79,7 +87,7 @@ check('파괴왕 3종은 모든 레벨에서 대미지와 조건부 체크에 �
   }
 });
 
-check('차지 마스터는 체크한 모으기 공격의 실제 속성만 증가시킨다', () => {
+check('차지 마스터는 체크한 모으기 공격의 실제 속성만 증가시킨다', fullRate(() => {
   const name = '차지 마스터', rates = [10, 25, 40, 55, 70];
   for (const element of ['불', '물', '번개', '얼음', '용']) for (let lv = 1; lv <= 5; lv++) {
     const off = calcSkills([[name, lv]], { e: element });
@@ -100,9 +108,9 @@ check('차지 마스터는 체크한 모으기 공격의 실제 속성만 증가
     assert.ok(!stats.conds.some(c => c.sk === name));
     assert.ok(!html.includes('data-cond='));
   }
-});
+}));
 
-check('유타·향음 강화는 해머·수렵피리만 조건 체크로 계산한다', () => {
+check('유타·향음 강화는 해머·수렵피리만 조건 체크로 계산한다', fullRate(() => {
   const name = '유타·향음 강화', rates = [15, 25, 40, 55, 70];
   for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {
     const off = calcSkills([[name, lv]], { t: type });
@@ -116,9 +124,9 @@ check('유타·향음 강화는 해머·수렵피리만 조건 체크로 계산�
     if (allowed) assert.ok(on.html.includes(type === 'hammer' ? '모으기 공격 기준' : '향음 공격 기준'));
     else assert.ok(!on.html.includes('data-cond='));
   }
-});
+}));
 
-check('용맹은 첫 포효 조건 체크 시 공격력 정액만 더한다', () => {
+check('용맹은 첫 포효 조건 체크 시 공격력 정액만 더한다', fullRate(() => {
   const name = '용맹', values = [400, 550, 700, 850, 1000];
   for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {
     const off = calcSkills([[name, lv]], { t: type });
@@ -138,9 +146,9 @@ check('용맹은 첫 포효 조건 체크 시 공격력 정액만 더한다', ()
   const combined = calcSkills([[name, 3], ['공격', 3], ['공격 활성', 1]], {}, { [name]: true }).stats;
   assert.strictEqual(combined.now.atk, 2035, '(기본 공격력 + 공격 150 + 용맹 700) × 공격 활성 1.1');
   assert.ok(bdSkillDesc(name, 5).includes('특수 게이지'), '스킬 설명은 그대로 유지');
-});
+}));
 
-check('회심격은 일반 속성 C에 합산하고 고룡 E만 고정 증가분까지 증폭한다', () => {
+check('회심격은 일반 속성 C에 합산하고 고룡 E만 고정 증가분까지 증폭한다', fullRate(() => {
   const weapon = { t: 'long-sword', atk: 1427, ele: 1532, crit: 50, e: '물' };
   const skills = [['물속성 공격 강화', 5], ['물속성 공격 강화·경지', 1], ['슈퍼회심', 3],
     ['회심격【속성】', 3], ['명룡의 파뢰', 2], ['힘의 해방', 1], ['저스트 교격', 2]];
@@ -166,7 +174,7 @@ check('회심격은 일반 속성 C에 합산하고 고룡 E만 고정 증가분
   assert.strictEqual(charged.co.R, .5);
   assert.strictEqual(charged.co.E, 1.15);
   assert.strictEqual(charged.now.ele, Math.round((1532 * 1.45 + 700) * 1.15));
-});
+}));
 
 check('추가 공격 독·마비는 나우칼 유지율(27·20%)을 곱한 기대값을 상태 이상 보정에 따로 곱한다', () => {
   for (const [name, values, status, rate] of [
@@ -197,7 +205,7 @@ check('일반·회심 분기는 회심률 0/100 및 역회심에서도 중복 �
   }
 });
 
-check('공격 파라미터는 일반 배율 뒤, 공격 활성은 고정 증가분·파라미터 뒤에 적용한다', () => {
+check('공격 파라미터는 일반 배율 뒤, 공격 활성은 고정 증가분·파라미터 뒤에 적용한다', fullRate(() => {
   const data = vm.runInContext('BD_STYLE_DATA', ctx), state = vm.runInContext('bdState', ctx);
   const set = { key: 'style-order-test', name: '적용 순서 검수', pieces: {},
     weapons: [{ t: 'shield-sword', atk: 1912, ele: 417, crit: 0, e: '독' }],
@@ -220,7 +228,7 @@ check('공격 파라미터는 일반 배율 뒤, 공격 활성은 고정 증가�
   } finally {
     BUILD.sets.pop(); state.builds.pop(); delete data.weapons[set.key + ':shield-sword']; delete ctx.styleOrderBuild;
   }
-});
+}));
 
 check('추가 공격 3종은 상태이상 일치 또는 슬래시액스의 해당 병에서만 계산한다', () => {
   for (const status of ['독', '마비', '폭파']) {
@@ -254,6 +262,26 @@ check('축적 시 위력은 상태이상 무기·슬래시액스 상태이상 �
     }
 });
 
+check('조건부 스킬은 켜면 발동률만큼 반영한다 (나우칼 기본값, 변형 공격 강화는 100%)', () => {
+  const close = (a, b, m) => assert.ok(Math.abs(a - b) < 1e-9, `${m}: ${a} !== ${b}`);
+  // 추격 45% × 60% · 용맹 +1000 × 50% · 약점 특효 회심 50% × 85%
+  close(calcSkills([['추격', 5]], {}, { '추격': true }).stats.co.F, 1 + 45 * 60 / 100 / 100, '추격');
+  assert.strictEqual(calcSkills([['용맹', 5]], {}, { '용맹': true }).stats.co.A, 500);
+  close(calcSkills([['약점 특효', 5]], {}, { '약점 특효': true }).stats.now.crit, 43, '약점 특효 (반올림)');
+  // 무기별 값: 비연은 쌍검 20%, 한손검 80%
+  close(calcSkills([['비연', 5]], { t: 'dual-blades' }, { '비연': true }).stats.co.F, 1 + 40 * 20 / 100 / 100, '비연 쌍검');
+  close(calcSkills([['비연', 5]], { t: 'shield-sword' }, { '비연': true }).stats.co.F, 1 + 40 * 80 / 100 / 100, '비연 한손검');
+  // 표에 없는 조건부 스킬은 100%: 변형 공격 강화 (사용자 결정)
+  assert.strictEqual(vm.runInContext("bdRate('변형 공격 강화', { t: 'switch-axe' })", ctx), 100);
+  close(calcSkills([['변형 공격 강화', 3]], { t: 'switch-axe' }, { '변형 공격 강화': true }).stats.co.F, 1.8, '변형 공격 강화');
+  // 선행 스킬에 묶인 경지는 선행 스킬의 발동률 (연격 90%)
+  const combo = calcSkills([['연격', 5], ['연격·경지', 1]], {}, { '연격': true }).stats;
+  assert.ok(combo.effects.filter(e => ['연격', '연격·경지'].includes(e.sk)).every(e => e.rate === 90));
+  // 끄면 0, 화면에 발동률 표시
+  assert.strictEqual(calcSkills([['추격', 5]]).stats.co.F, 1);
+  assert.ok(calcSkills([['추격', 5]], {}, { '추격': true }).html.includes('발동률 60%'));
+});
+
 check('축적 확률은 (100 + 가산) ÷ 3, 일치하는 상태이상의 하룡·염왕룡·추가 공격【폭파】만 가산한다', () => {
   const name = '상태 이상 축적 시 위력 UP', S = chance => 1 + 50 / 100 * chance / 100;
   for (const [skills, e, chance] of [
@@ -284,7 +312,7 @@ check('저스트 교격과 지속형은 저장된 체크 상태와 무관하게 
   }
 });
 
-check('추가 지정한 일곱 스킬은 조건 체크 시에만 대미지를 높인다', () => {
+check('추가 지정한 일곱 스킬은 조건 체크 시에만 대미지를 높인다', fullRate(() => {
   for (const name of ['비연', '추격', '불퇴전', '특수 스킬 위력 상승', '적정 거리 위력 UP',
     '통상탄·속성 통상탄 강화', '참렬탄/속성 참렬탄 강화']) {
     for (const [lv, desc] of bdSkillLevels(name)) {
@@ -304,7 +332,7 @@ check('추가 지정한 일곱 스킬은 조건 체크 시에만 대미지를 �
   }
   assert.strictEqual(calcSkills([['포술', 1]],{t:'charge-blade'}).stats.co.F, 1, '차지액스 포술은 점수 제외 (weapons/charge-blade.md)');
   assert.strictEqual(calcSkills([['포술', 1]],{t:'great-sword'}).stats.co.F, 1, '대검에 포술 피해 적용 금지');
-});
+}));
 
 check('탄 강화는 보우건과 해당 보유 탄종에서만 조건부로 계산한다', () => {
   const normal = '통상탄·속성 통상탄 강화', slicing = '참렬탄/속성 참렬탄 강화';
@@ -354,7 +382,7 @@ check('변형 공격 강화는 슬래시액스·차지액스의 변형 공격에
   }
 });
 
-check('연격 경지는 원래 체크에 병합하고 조건부 레벨·수치를 상한으로 표시한다', () => {
+check('연격 경지는 원래 체크에 병합하고 조건부 레벨·수치를 상한으로 표시한다', fullRate(() => {
   for (const lv of [4, 5, 7]) for (const advanced of [0, 1, 2, 3]) {
     const skills = [['연격', lv], ...(advanced ? [['연격·경지', advanced]] : [])];
     const percent = lv < 5 ? 20 : 30 + Math.min(advanced, 2) * 5;
@@ -374,7 +402,7 @@ check('연격 경지는 원래 체크에 병합하고 조건부 레벨·수치�
   }
   assert.strictEqual(calcSkills([['연격·경지', 2]]).stats.co.B, 1, '연격 없이 경지 적용 금지');
   assert.strictEqual(calcSkills([['공격', 5], ['공격·경지', 1]]).stats.co.A, 450, '상시 스킬 경지는 레벨 조건으로 자동 적용');
-});
+}));
 
 check('특수 스킬 위력 상승 경지도 부모 체크와 합산 수치를 사용한다', () => {
   const gateOf = vm.runInContext('bdSkillGate', ctx);
@@ -522,7 +550,7 @@ check('건랜스 포격 시안은 G10·포술·장탄수로 계산하고 기존 
   } finally { BUILD.sets.pop(); delete ctx.shellBuild; }
 });
 
-check('힘의 해방은 체크 시 회심 증가분만 적용한다', () => {
+check('힘의 해방은 체크 시 회심 증가분만 적용한다', fullRate(() => {
   const name = '힘의 해방', values = [20, 30, 40, 50, 60];
   for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {
     const off = calcSkills([[name, lv]], { t: type });
@@ -539,9 +567,9 @@ check('힘의 해방은 체크 시 회심 증가분만 적용한다', () => {
   const combined = calcSkills([[name, 5], ['공격 증강【회심】', 1]], { crit: -20 }, { [name]: true }).stats;
   assert.strictEqual(combined.now.crit, 40);
   assert.strictEqual(combined.co.A, 0, '힘의 해방은 무기 기본 회심을 바꾸지 않음');
-});
+}));
 
-check('완전 충전은 빌드에 있어도 체크하지 않으면 공격력을 더하지 않는다', () => {
+check('완전 충전은 빌드에 있어도 체크하지 않으면 공격력을 더하지 않는다', fullRate(() => {
   const name = '완전 충전';
   for (const type of BUILD.weaponTypes.map(w => w.k)) for (let lv = 1; lv <= 5; lv++) {
     const off = calcSkills([[name, lv]], { t: type });
@@ -558,7 +586,7 @@ check('완전 충전은 빌드에 있어도 체크하지 않으면 공격력을 
   assert.strictEqual(both.now.atk, 1500);
   assert.strictEqual(both.now.crit, 20);
   assert.strictEqual(both.score, 2100);
-});
+}));
 
 check('공격 증강【회심】은 양수 무기 기본 회심 1%당 공격력 8을 더한다', () => {
   const name = '공격 증강【회심】';

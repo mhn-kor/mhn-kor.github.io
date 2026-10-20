@@ -143,9 +143,9 @@ function abmAssumeOn(n) {
   return candidate ? s.assumeOn.includes(n) || (!s.assumeOff.includes(n) && abAutoCandidate(n, s.b)) : !s.assumeOff.includes(n);
 }
 function abmAssumeUI(b) {
-  const chip = (n, title) => `<button type="button" class="ab-chip rule${abmAssumeOn(n) ? '' : ' off'}" data-abm-assume="${esc(n)}" title="${title}">${esc(n)}</button>`;
+  const chip = (n, title) => `<button type="button" class="ab-chip rule${abmAssumeOn(n) ? '' : ' off'}" data-abm-assume="${esc(n)}" title="${title}">${esc(n)}${abRateLabel(n, b)}</button>`;
   const control = AB_ASSUME.control.filter(n => abAssumed(n, { ...b, _abAssume:{} }));
-  return `<div class="ab-box ab-form-settings"><h3>② 발동 가정 <small>켠 것만 점수에 들어갑니다</small></h3>
+  return `<div class="ab-box ab-form-settings"><h3>② 발동 가정 <small>켠 것은 발동률만큼 점수에 들어갑니다</small></h3>
     <div class="ab-chips">${[...AB_ASSUME.monster, ...control].map(n => chip(n, control.includes(n) ? '컨트롤로 유지하는 조건 · 고수 기준으로 켬' : '몬스터·전투에 따라 갈림')).join('')}</div>
     <p class="ab-muted">조건부 후보 · 이번 세팅에 포함할 스킬만 켜기</p>
     <div class="ab-chips">${[...AB_ASSUME.candidate, ...AB_ASSUME.sp].map(n => chip(n, '조건부 후보')).join('')}</div></div>`;
