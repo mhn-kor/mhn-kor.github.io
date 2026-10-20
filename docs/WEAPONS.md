@@ -90,7 +90,7 @@
 | 수렵피리 | [weapons/hunting-horn.md](weapons/hunting-horn.md) | 지침 없음 |
 | 랜스 | [weapons/lance.md](weapons/lance.md) | 작성 |
 | 건랜스 | [weapons/gunlance.md](weapons/gunlance.md) | 지침 없음 |
-| 슬래시액스 | [weapons/switch-axe.md](weapons/switch-axe.md) | 작성·미반영 |
+| 슬래시액스 | [weapons/switch-axe.md](weapons/switch-axe.md) | 작성 · 기본/비상용검 지침 메타만 반영 |
 | 차지액스 | [weapons/charge-blade.md](weapons/charge-blade.md) | 기본 작성 · 검/도끼 강화 일부 |
 | 조충곤 | [weapons/insect-glaive.md](weapons/insect-glaive.md) | 지침 없음 |
 | 라이트·헤비보우건 | [weapons/bowgun.md](weapons/bowgun.md) | 작성 |

@@ -115,6 +115,10 @@ const AB_RULES = {
       required:[abT('가드 성능',5),abT('반사',1,5),abT('불퇴전',4,5)], recommended:[], avoid:['매진'],
       desc:'가드 성능 5 · 반사 1 이상 · 불퇴전 4~5. 돌진 중 가드를 활용합니다.',
       note:'반사 효과는 임의 피해 점수로 더하지 않습니다.' },
+    { id:'sa-base', wt:'switch-axe', style:'', name:'기본 · 검/도끼 변형', required:[], recommended:[], avoid:[], metas:['변형 공격 강화'],
+      desc:'변형 공격 강화가 가장 유용한 스타일입니다. 점수는 변형 공격 비중(발동률 10%)만 반영해 낮게 나오므로 지침 메타로 항상 제안합니다.' },
+    { id:'sa-emergency', wt:'switch-axe', style:'비상용검', name:'비상용검 · 도끼 중심', required:[], recommended:[], avoid:[], metas:['변형 공격 강화'],
+      desc:'도끼 중심 일반 투자. 변형 공격 강화는 적용되지만 기본 스타일보다 효율이 낮습니다. 점수가 낮게 나와 지침 메타로 함께 제안합니다.' },
     { id:'cb-base', wt:'charge-blade', style:'', name:'기본 · 가드 카운터', required:[abT('가드 성능',3,5)],
       recommended:[abT('불퇴전',0,5)], avoid:['매진'],
       desc:'가드 성능 최소3·목표5. 가드 후 카운터 고출력·초고출력으로 반격하며 불퇴전을 권장 후보로 비교합니다. 매진은 불퇴전을 꺼서 쓰지 않습니다.' },
@@ -165,7 +169,7 @@ const AB_RULES = {
       required:[abT('회피 장전',4),abT('특수 게이지 가속',3),abT('특수 게이지 가속【저스트 회피】',3),abT('절대 회피【SP】',1,3)] },
   },
   // 무기 공통: 지침 출처, 동시 발동하지 않는 조건 (앞 조건 ON이면 뒤 조건 OFF).
-  weapons: { lance:{ source:'W5' }, 'charge-blade':{ source:'weapons/charge-blade.md' }, 'shield-sword':{ source:'W9' }, 'great-sword':{ source:'W10' },
+  weapons: { lance:{ source:'W5' }, 'charge-blade':{ source:'weapons/charge-blade.md' }, 'switch-axe':{ source:'weapons/switch-axe.md' }, 'shield-sword':{ source:'W9' }, 'great-sword':{ source:'W10' },
     bow:{ source:'기존 집중 기준' }, 'light-gun':{ source:'B1–B3' }, 'heavy-gun':{ source:'B1–B3' } },
   // 문맥별 자동 보충 제외 (W2·W4·B5). 사용자가 직접 지정한 스킬은 제외하지 않는다.
   avoid: [

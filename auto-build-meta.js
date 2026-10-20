@@ -11,15 +11,16 @@ function abmCandidates(b, gun) {
   const metas = [...new Set([...(abOperationRule(b, gun)?.metas || []), ...abStatusMetas(b, gun)])].map(s => ({ id:'g:'+s, name:s, guide:true,
     direction:'manual', skeleton:[core(s)], extra:[], desc:`운용 지침 메타. ${s} Lv${core(s).min} 이상을 확보하고, 나머지는 점수가 오르는 스킬로 채웁니다.` }));
   for (const d of abDirections(b, gun)) {
-    const first = d.targets[0], guide = first && metas.find(m => m.skeleton[0].s === first.s);
-    // 지침 메타와 같은 주축이면 지침 메타로 두고, 방향의 투자 후보(예: 하룡의 독 안개)는 이어받는다.
-    if (guide) Object.assign(guide, { direction:d.id, extra:d.targets.slice(1).map(t => ({ ...t, min:0 })) });
-    if (!first || guide) continue;
+    const first = d.targets[0];
+    if (!first) continue;
     const skeleton = [core(first.s)];
     // 변형 회심 메타는 회심 100%까지 필요한 약점 특효 레벨도 메타 주축 스킬로 둔다 (CONCEPTS W1).
     for (const t of d.targets.slice(1)) if (t.s === '약점 특효' && d.id === 'morph-critical') skeleton.push({ s:t.s, min:t.max, max:t.max });
-    metas.push({ id:'d:'+d.id, name:d.name.replace(/^(.*?) · 추천$/, '$1'), direction:d.id, skeleton,
-      extra:d.targets.filter(t => !skeleton.some(x => x.s === t.s)).map(t => ({ ...t, min:0 })), desc:d.desc });
+    const extra = d.targets.filter(t => !skeleton.some(x => x.s === t.s)).map(t => ({ ...t, min:0 }));
+    // 지침 메타와 같은 주축이면 지침 메타로 두고, 방향의 메타 주축·투자 후보(예: 변형 회심의 약점 특효, 하룡의 독 안개)를 이어받는다.
+    const guide = metas.find(m => m.guide && m.skeleton[0].s === first.s);
+    if (guide) { Object.assign(guide, { direction:d.id, skeleton, extra, desc:'운용 지침 메타. ' + d.desc }); continue; }
+    metas.push({ id:'d:'+d.id, name:d.name.replace(/^(.*?) · 추천$/, '$1'), direction:d.id, skeleton, extra, desc:d.desc });
   }
   const used = new Set(metas.flatMap(m => m.skeleton.map(t => t.s)));
   const buff = s => bdEffects(bdSkillDesc(s, abMax(s)) || '', s, abGunWeapon(b, gun)).some(e => ['atk','dmg','status'].includes(e.k) && !e.onCrit);

@@ -4,7 +4,7 @@ const els = {}, ctx = vm.createContext({ console, performance, structuredClone, 
   location: { hash: '#build' }, requestAnimationFrame() {}, window: {},
   document: { querySelector() { return null; } }, esc: s => String(s), closeOnBackdrop() {}, nickAuto() {},
   localStorage: { getItem() { return null; }, setItem() {} } });
-for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build-styles.js', 'build-style-data.js', 'build.js', 'build-bowgun-data.js', 'auto-build.js'])
+for (const f of ['smelt-data.js', 'skill-desc.js', 'skill-desc-overrides.js', 'build-data.js', 'build-styles.js', 'build-style-data.js', 'build.js', 'build-bowgun-data.js', 'auto-build.js', 'auto-build-meta.js'])
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx);
 const get = s => vm.runInContext(s, ctx);
 (async () => {
@@ -136,6 +136,17 @@ const get = s => vm.runInContext(s, ctx);
   assert.deepStrictEqual(Array.from(get('abStatusMetas')(poison)),['추가 공격【독】','상태 이상 축적 시 위력 UP']);
   assert.deepStrictEqual(Array.from(get('abStatusMetas')({...get('bdNewBuild')(),w:'rado',wt:'hammer'})),['상태 이상 축적 시 위력 UP']);
   assert.deepStrictEqual(Array.from(get('abStatusMetas')({...get('bdNewBuild')(),w:'mizu',wt:'shield-sword'})),[]);
+  // 슬래시액스 기본·비상용검: 변형 공격 강화 지침 메타 (2026-10-20). 변형 회심 방향의 약점 특효 메타 주축을 이어받는다.
+  const waterSa=get('abMonsters("switch-axe").find(s=>s.weapons.find(w=>w.t==="switch-axe").e==="물").key');
+  for (const st of [0,1]) {
+    const sa={...get('bdNewBuild')(),w:waterSa,wt:'switch-axe',st,style20:st>0}, metas=get('abmCandidates')(sa,{mode:'cycle'});
+    const morph=metas.find(m=>m.name==='변형 공격 강화');
+    assert.ok(morph&&morph.guide,`슬래시액스 ${st} 변형 공격 강화 지침 메타`);
+    assert.strictEqual(morph.direction,'morph-critical');
+    assert.ok(!metas.some(m=>m.id==='d:morph-critical'),'같은 주축의 방향 메타는 지침 메타로 합침');
+    if (get('bdWeaponBase')(sa).crit<20) assert.ok(morph.skeleton.some(t=>t.s==='약점 특효'&&t.min>0),'약점 특효 메타 주축 이어받기');
+  }
+  assert.ok(!get('abmCandidates')({...get('bdNewBuild')(),w:waterSa,wt:'switch-axe',st:2,style20:true},{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'속성충전 카운터는 변형 지침 메타 없음');
   assert.deepStrictEqual(Array.from(get('abCurve')('불퇴전',lance).increments),[10,5,5,10,10]);
   assert.strictEqual(get('abTargets(["불퇴전"])[0].min'),0);
   assert.strictEqual(get('abCurve')('반사',lance),null,'비수치 효과의 임의 환산 금지');
