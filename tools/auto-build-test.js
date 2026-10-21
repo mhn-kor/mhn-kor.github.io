@@ -147,6 +147,12 @@ const get = s => vm.runInContext(s, ctx);
     if (get('bdWeaponBase')(sa).crit<20) assert.ok(morph.skeleton.some(t=>t.s==='약점 특효'&&t.min>0),'약점 특효 메타 주축 이어받기');
   }
   assert.ok(!get('abmCandidates')({...get('bdNewBuild')(),w:waterSa,wt:'switch-axe',st:2,style20:true},{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'속성충전 카운터는 변형 지침 메타 없음');
+  // 해머 기본 (weapons/hammer.md, 2026-10-21): 속성 공격 증강【SP】 처음부터 켬, 모으기 계열·연격 끔. 다른 무기는 SP 기본 끔.
+  { const hb={...get('bdNewBuild')(),w:'zino',wt:'hammer'}, other={...get('bdNewBuild')(),w:'zino',wt:'shield-sword'};
+    assert.strictEqual(get('abAssumed')('속성 공격 증강【SP】',hb),true,'해머 기본 SP 증강 ON');
+    assert.strictEqual(get('abAssumed')('속성 공격 증강【SP】',{...hb,_abAssume:{off:['속성 공격 증강【SP】']}}),false,'칩으로 끄면 OFF');
+    assert.strictEqual(get('abAssumed')('속성 공격 증강【SP】',other),false,'다른 무기는 SP 기본 OFF');
+    for (const s of ['유타·향음 강화','차지 마스터','저스트 모으기 해방','차지 스톡','연격']) assert.strictEqual(get('abAssumed')(s,hb),false,'해머 기본 '+s+' OFF'); }
   // 메타 화면 결과(drift:false): 연성을 덜 채운 대안을 따로 두지 않는다 (2026-10-21).
   { const mk=(helm,score,drifts)=>({b:{...get('bdNewBuild')(),helm},score,baseScore:score,drifts,operation:[],operationNames:[],policyKey:'k',profile:helm+drifts});
     const pool=[mk('a',100,5),mk('b',90,4)];

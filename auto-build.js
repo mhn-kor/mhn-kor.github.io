@@ -120,6 +120,9 @@ const AB_RULES = {
       desc:'변형 공격 강화가 가장 유용한 스타일입니다. 점수는 변형 공격 비중(발동률 10%)만 반영해 낮게 나오므로 지침 메타로 항상 제안합니다.' },
     { id:'sa-emergency', wt:'switch-axe', style:'비상용검', name:'비상용검 · 도끼 중심', required:[], recommended:[], avoid:[], metas:['변형 공격 강화'],
       desc:'도끼 중심 일반 투자. 변형 공격 강화는 적용되지만 기본 스타일보다 효율이 낮습니다. 점수가 낮게 나와 지침 메타로 함께 제안합니다.' },
+    { id:'hammer-base', wt:'hammer', style:'', name:'기본 · 쿵쿵따 연계', required:[],
+      recommended:[abT('속성 공격 증강【SP】',0,'MAX')], avoid:['유타·향음 강화','차지 마스터','저스트 모으기 해방','차지 스톡'],
+      desc:'일반 공격 파생(쿵-쿵-따)이 주력이라 모으기 계열 스킬을 쓰지 않고 다른 근접 무기처럼 세팅합니다. 용맹·속성 공격 증강【SP】 발동을 베이스로 속성 강화를 맞춥니다.' },
     { id:'cb-base', wt:'charge-blade', style:'', name:'기본 · 가드 카운터', required:[abT('가드 성능',3,5)],
       recommended:[abT('불퇴전',0,5)], avoid:['매진'],
       desc:'가드 성능 최소3·목표5. 가드 후 카운터 고출력·초고출력으로 반격하며 불퇴전을 권장 후보로 비교합니다. 매진은 불퇴전을 꺼서 쓰지 않습니다.' },
@@ -170,7 +173,7 @@ const AB_RULES = {
       required:[abT('회피 장전',4),abT('특수 게이지 가속',3),abT('특수 게이지 가속【저스트 회피】',3),abT('절대 회피【SP】',1,3)] },
   },
   // 무기 공통: 지침 출처, 동시 발동하지 않는 조건 (앞 조건 ON이면 뒤 조건 OFF).
-  weapons: { lance:{ source:'W5' }, 'charge-blade':{ source:'weapons/charge-blade.md' }, 'switch-axe':{ source:'weapons/switch-axe.md' }, 'shield-sword':{ source:'W9' }, 'great-sword':{ source:'W10' },
+  weapons: { lance:{ source:'W5' }, 'charge-blade':{ source:'weapons/charge-blade.md' }, 'switch-axe':{ source:'weapons/switch-axe.md' }, hammer:{ source:'weapons/hammer.md' }, 'shield-sword':{ source:'W9' }, 'great-sword':{ source:'W10' },
     bow:{ source:'기존 집중 기준' }, 'light-gun':{ source:'B1–B3' }, 'heavy-gun':{ source:'B1–B3' } },
   // 문맥별 자동 보충 제외 (W2·W4·B5). 사용자가 직접 지정한 스킬은 제외하지 않는다.
   avoid: [
@@ -188,7 +191,7 @@ const AB_TRAITS = {
   'great-sword': [['모으기 · 태클','연속 타격 · 가드·카운터 보유'],['모으기 · 가드·카운터 보유','가드 · 태클 · 연속 타격'],['모으기 · 가드 · 가드·카운터 보유','연속 타격']],
   'long-sword': [['강화 상태 · 연속 타격 · 후방 · 가드·카운터 보유','—'],['강화 상태 · 후방 · 가드·카운터 보유','연속 타격'],['강화 상태 · 연속 타격 · 후방 · 가드·카운터 보유','—']],
   'dual-blades': [['강화 상태 · 연속 타격 · 후방','—'],['강화 상태 · 연속 타격 · 후방','—'],['강화 상태 · 연속 타격 · 후방','—']],
-  hammer: [['모으기','연속 타격'],['모으기 · 카운터 · 가드·카운터 보유','—'],['모으기','연속 타격']],
+  hammer: [['—','모으기 · 연속 타격'],['모으기 · 카운터 · 가드·카운터 보유','—'],['모으기','연속 타격']],
   'hunting-horn': [['강화 상태 · 연속 타격','—'],['강화 상태','연속 타격'],['강화 상태 · 연속 타격','—']],
   lance: [['가드 · 카운터 · 강화 상태 · 가드·카운터 보유','연속 타격'],['가드 · 강화 상태 · 가드·카운터 보유','연속 타격'],['가드 · 강화 상태 · 가드·카운터 보유','연속 타격']],
   gunlance: [['포격·병 · 강화 상태 · 가드·카운터 보유','연속 타격'],['포격·병 · 강화 상태 · 후방 · 가드·카운터 보유','연속 타격'],['포격·병 · 강화 상태 · 가드·카운터 보유','연속 타격']],
@@ -230,7 +233,9 @@ function abTrait(b, code) {
 const abAttackBuffs = b => abTrait(b, '연속 타격') === 'yes' ? ['연격','용맹','공격 활성']
   : [...(abAssumed('공격적인 방어', b) ? ['공격적인 방어'] : []), '공격 활성', '용맹'];
 // 앙심 자동 후보: 대검 기본·격앙참의 태클·가드태클 칩 대미지, 무속성 무기 (SKILLS.md 앙심 메모).
-const abAutoCandidate = (s, b) => s === '앙심' && b.wt === 'great-sword' && b.st !== 1 && !abElementSkill(b);
+// 운용 규칙의 필수·권장에 적힌 조건부 후보·SP 스킬도 처음부터 켠다 (예: 해머 기본 속성 공격 증강【SP】, 2026-10-21). 칩으로 끄면 끈다.
+const abAutoCandidate = (s, b) => (s === '앙심' && b.wt === 'great-sword' && b.st !== 1 && !abElementSkill(b))
+  || [...(abStyleRow(b)?.required || []), ...(abStyleRow(b)?.recommended || [])].some(t => t.s === s);
 /* 이 빌드에서 조건부 스킬을 켠 것으로 볼지. fill=자동 보충 후보 판정(연계 스킬은 빌드가 정해지기 전이라 허용). */
 function abAssumed(s, b, { fill = false, lv = null, row = abStyleRow(b) } = {}) {
   const a = b._abAssume || {}, ruled = [...(row?.required || []), ...(row?.recommended || [])].some(t => t.s === s);
@@ -238,7 +243,7 @@ function abAssumed(s, b, { fill = false, lv = null, row = abStyleRow(b) } = {}) 
   if (a.on?.includes(s)) return true;
   if (AB_ASSUME.off.includes(s) || row?.avoid.includes(s)) return false;
   if (AB_ASSUME.blockedBy[s] && abTrait(b, AB_ASSUME.blockedBy[s]) === 'yes') return false;
-  if (AB_ASSUME.sp.includes(s)) return false;
+  if (AB_ASSUME.sp.includes(s)) return abAutoCandidate(s, b);
   if (AB_ASSUME.candidate.includes(s)) return abAutoCandidate(s, b);
   if (AB_ASSUME.linked.skills.includes(s)) {
     if (fill) return true;
