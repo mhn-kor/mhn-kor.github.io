@@ -147,6 +147,11 @@ const get = s => vm.runInContext(s, ctx);
     if (get('bdWeaponBase')(sa).crit<20) assert.ok(morph.skeleton.some(t=>t.s==='약점 특효'&&t.min>0),'약점 특효 메타 주축 이어받기');
   }
   assert.ok(!get('abmCandidates')({...get('bdNewBuild')(),w:waterSa,wt:'switch-axe',st:2,style20:true},{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'속성충전 카운터는 변형 지침 메타 없음');
+  // 메타 화면 결과(drift:false): 연성을 덜 채운 대안을 따로 두지 않는다 (2026-10-21).
+  { const mk=(helm,score,drifts)=>({b:{...get('bdNewBuild')(),helm},score,baseScore:score,drifts,operation:[],operationNames:[],policyKey:'k',profile:helm+drifts});
+    const pool=[mk('a',100,5),mk('b',90,4)];
+    assert.strictEqual(get('abBest')(pool,5).length,2,'이전 화면: 연성 최소 대안 유지');
+    assert.deepStrictEqual(Array.from(get('abBest')(pool,5,{drift:false}).map(r=>r.score)),[100],'메타 화면: 연성 최소 대안 없음'); }
   // 역회심 무기 (CONCEPTS W2, 2026-10-21): 흉회심 메타가 아니어도 흉회심을 보충 후보로, 흉회심 메타는 1/3/5.
   const bdiab=p=>({...get('bdNewBuild')(),w:'b-diab',wt:'insect-glaive',style20:true,params:[p,p,p]});
   assert.ok(get('abPolicy')(bdiab('atk'),'manual',[{s:'연격·경지',min:2,max:2}]).fillers.includes('흉회심'),'역회심 무기 단일 메타에서도 흉회심 보충');

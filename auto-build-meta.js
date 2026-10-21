@@ -99,7 +99,7 @@ async function abmSearch(metas, base, progress = () => {}, cancelled = () => fal
   for (const [i, m] of metas.entries()) {
     const r = await abmRun(abmConfig(m, base), { ms: ABM.perMetaMs }, p => progress({ ...p, meta:m, index:i, total:metas.length }), cancelled);
     if (!r) return null;
-    out.push({ meta:m, stats:r, builds:abBest(r.pool, ABM.perMeta) });
+    out.push({ meta:m, stats:r, builds:abBest(r.pool, ABM.perMeta, { drift:false }) });
     onMeta(out);
   }
   return out;
@@ -282,8 +282,9 @@ function abmBindCarousels() {
     const track = g.querySelector('.abm-track');
     if (!track) continue;
     const update = () => {
-      const slides = [...track.children], left = track.scrollLeft;
-      const i = slides.reduce((best, el, j) => Math.abs(el.offsetLeft - track.offsetLeft - left) < Math.abs(slides[best].offsetLeft - track.offsetLeft - left) ? j : best, 0);
+      const slides = [...track.children], left = track.scrollLeft, end = left >= track.scrollWidth - track.clientWidth - 1;
+      // 끝까지 넘기면 마지막 카드. 넓은 화면에서 카드가 적으면(메타당 5장 미만) 뒤쪽 카드 위치까지 넘길 수 없다.
+      const i = end && left > 0 ? slides.length - 1 : slides.reduce((best, el, j) => Math.abs(el.offsetLeft - track.offsetLeft - left) < Math.abs(slides[best].offsetLeft - track.offsetLeft - left) ? j : best, 0);
       g.querySelector('.abm-count').textContent = `${i + 1}/${slides.length}`;
       g.querySelectorAll('.abm-dots span').forEach((d, j) => d.classList.toggle('on', j === i));
     };

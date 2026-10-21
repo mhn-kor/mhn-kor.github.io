@@ -518,9 +518,10 @@ function abArmorEvaluator(seed, targets, policy, stones) {
 /* 결과: 서로 다른 방어구 조합 count개를 각 조합의 최고 ON 점수순으로. 기준별 1위(배지)의 조합은 반드시 포함하고,
    같은 방어구에 연성만 다른 대안은 variants(최대 AB_VARIANTS)로 묶는다. A0: 점수 하나로만 고르지 않는다. */
 const AB_VARIANTS = 3;
-function abBest(pool, count = 5) {
+/* drift=false (메타 화면): 메타당 카드가 5장이라 연성을 덜 채운 대안을 따로 두지 않는다. 각 카드는 그 방어구 조합의 최고 점수 (2026-10-21 사용자). */
+function abBest(pool, count = 5, { drift = true } = {}) {
   const byScore = (a,b) => b.score-a.score || b.baseScore-a.baseScore || a.drifts-b.drifts || abCandidateKey(a.b).localeCompare(abCandidateKey(b.b));
-  const sorted = abFrontier(pool).sort(byScore), badges = new Map();
+  const sorted = abFrontier(pool, drift).sort(byScore), badges = new Map();
   const award = (name, cmp, value) => {
     if (!sorted.length || (name !== '공격 고점' && new Set(sorted.map(value)).size < 2)) return; // 모두 같으면 배지 없음
     const r = [...sorted].sort((a,b) => cmp(a,b) || byScore(a,b))[0];
@@ -529,7 +530,7 @@ function abBest(pool, count = 5) {
   award('공격 고점', byScore, r => r.score);
   award('조건 OFF 최고', (a,b) => b.baseScore-a.baseScore, r => r.baseScore);
   (sorted[0]?.operationNames || []).forEach((s,i) => award(`${s} 최고`, (a,b) => b.operation[i]-a.operation[i], r => r.operation[i]));
-  award('연성 최소', (a,b) => a.drifts-b.drifts, r => r.drifts);
+  if (drift) award('연성 최소', (a,b) => a.drifts-b.drifts, r => r.drifts);
   const groups = new Map();
   for (const r of sorted) { const k = abSignature(r.b); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); }
   const keys = [...new Set([...[...badges.keys()].map(r => abSignature(r.b)), ...groups.keys()])].slice(0, count);
@@ -599,13 +600,15 @@ function abEvaluateCandidate(b, targets, policy) {
     support:[...lv].filter(([s])=>!targets.some(t=>t.user&&t.s===s)&&policy.fillers.includes(s)),
     policyKey:JSON.stringify([policy.ruleVersion,b.w,b.wt,b.st,b.style20,b.params,b._abGun,b.snsMode,targets,policy.operation])};
 }
-function abDominates(a,b) {
+/* drift=false: 연성 칸 수를 비교 축에서 뺀다 (메타 화면, 2026-10-21). */
+function abDominates(a,b,drift=true) {
   if(a.policyKey!==b.policyKey) return false;
-  return a.score>=b.score && a.baseScore>=b.baseScore && a.drifts<=b.drifts
+  const fewer=drift&&a.drifts<b.drifts;
+  return a.score>=b.score && a.baseScore>=b.baseScore && (!drift||a.drifts<=b.drifts)
     && a.operation.every((v,i)=>v>=b.operation[i])
-    && (a.score>b.score||a.baseScore>b.baseScore||a.drifts<b.drifts||a.operation.some((v,i)=>v>b.operation[i]));
+    && (a.score>b.score||a.baseScore>b.baseScore||fewer||a.operation.some((v,i)=>v>b.operation[i]));
 }
-function abFrontier(pool) {
+function abFrontier(pool,drift=true) {
   const same=new Map();
   for(const r of pool) {
     const key=[r.policyKey,r.score,r.baseScore,r.drifts,...r.operation].join('|'), prev=same.get(key);
@@ -613,8 +616,8 @@ function abFrontier(pool) {
   }
   const front=[];
   for(const r of [...same.values()].sort((a,b)=>b.score-a.score||b.baseScore-a.baseScore)) {
-    if(front.some(x=>abDominates(x,r))) continue;
-    for(let i=front.length-1;i>=0;i--) if(abDominates(r,front[i])) front.splice(i,1);
+    if(front.some(x=>abDominates(x,r,drift))) continue;
+    for(let i=front.length-1;i>=0;i--) if(abDominates(r,front[i],drift)) front.splice(i,1);
     front.push(r);
   }
   return front;

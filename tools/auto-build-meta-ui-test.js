@@ -46,7 +46,9 @@ const { pathToFileURL } = require('url');
       if (await slides.count() > 1) {
         await group.locator('.abm-track').evaluate(t => { t.style.scrollBehavior = 'auto'; t.scrollLeft = t.children[1].offsetLeft - t.offsetLeft; });
         await page.waitForTimeout(200);
-        assert.strictEqual(await group.locator('.abm-count').innerText(), `2/${await slides.count()}`);
+        // 끝까지 넘겨진 경우(넓은 화면 · 카드 3장 이하)는 마지막 카드로 표시한다.
+        const atEnd = await group.locator('.abm-track').evaluate(t => t.scrollLeft >= t.scrollWidth - t.clientWidth - 1);
+        assert.strictEqual(await group.locator('.abm-count').innerText(), `${atEnd ? await slides.count() : 2}/${await slides.count()}`);
         assert.strictEqual(await group.locator('.abm-dots span.on').count(), 1);
       }
       assert.strictEqual(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, '페이지 가로 스크롤 없음');
