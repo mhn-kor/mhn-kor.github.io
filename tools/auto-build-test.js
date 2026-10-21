@@ -147,6 +147,11 @@ const get = s => vm.runInContext(s, ctx);
     if (get('bdWeaponBase')(sa).crit<20) assert.ok(morph.skeleton.some(t=>t.s==='약점 특효'&&t.min>0),'약점 특효 메타 주축 이어받기');
   }
   assert.ok(!get('abmCandidates')({...get('bdNewBuild')(),w:waterSa,wt:'switch-axe',st:2,style20:true},{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'속성충전 카운터는 변형 지침 메타 없음');
+  // 역회심 무기 (CONCEPTS W2, 2026-10-21): 흉회심 메타가 아니어도 흉회심을 보충 후보로, 흉회심 메타는 1/3/5.
+  const bdiab=p=>({...get('bdNewBuild')(),w:'b-diab',wt:'insect-glaive',style20:true,params:[p,p,p]});
+  assert.ok(get('abPolicy')(bdiab('atk'),'manual',[{s:'연격·경지',min:2,max:2}]).fillers.includes('흉회심'),'역회심 무기 단일 메타에서도 흉회심 보충');
+  assert.ok(!get('abPolicy')(bdiab('crit'),'manual',[{s:'연격·경지',min:2,max:2}]).fillers.includes('흉회심'),'3회심이면 흉회심 보충 없음');
+  assert.deepStrictEqual(Array.from(get('abmCandidates')(bdiab('atk'),{mode:'cycle'}).filter(m=>/^d:brutal-/.test(m.id)).map(m=>m.skeleton[0].min)),[1,3,5]);
   assert.deepStrictEqual(Array.from(get('abCurve')('불퇴전',lance).increments),[10,5,5,10,10]);
   assert.strictEqual(get('abTargets(["불퇴전"])[0].min'),0);
   assert.strictEqual(get('abCurve')('반사',lance),null,'비수치 효과의 임의 환산 금지');

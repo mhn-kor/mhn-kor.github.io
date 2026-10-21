@@ -19,7 +19,8 @@ function abmCandidates(b, gun) {
   for (const d of abDirections(b, gun)) {
     const first = d.targets[0];
     if (!first) continue;
-    const skeleton = [core(first.s)];
+    // 흉회심 방향(저투자 1 / 균형 3 / 고점 5)은 Lv4 규칙 대신 방향의 레벨을 메타 주축으로 쓴다 (CONCEPTS W2).
+    const skeleton = [/^brutal-/.test(d.id) ? { s:first.s, min:first.max, max:first.max } : core(first.s)];
     // 변형 회심 메타는 회심 100%까지 필요한 약점 특효 레벨도 메타 주축 스킬로 둔다 (CONCEPTS W1).
     for (const t of d.targets.slice(1)) if (t.s === '약점 특효' && d.id === 'morph-critical') skeleton.push({ s:t.s, min:t.max, max:t.max });
     const extra = d.targets.filter(t => !skeleton.some(x => x.s === t.s)).map(t => ({ ...t, min:0 }));

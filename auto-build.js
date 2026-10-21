@@ -446,7 +446,8 @@ function abPolicy(b, direction, targets, styleGuide = true, setting) {
   excluded.forEach(s => skip.add(s));
   const investmentSkills = c.element ? [c.element,c.element+'·경지',...BD_ELE_MUL].filter(s=>
     bdEffects(bdSkillDesc(s,abMax(s)) || '',s,c.w).some(e=>e.k==='ele'&&(!e.el||e.el===c.w.e))) : [];
-  const contextSkills = [c.status, c.element, ...(c.base.crit > 0 ? ['공격 증강【회심】'] : []),
+  // 역회심 무기는 어느 방향·메타에서도 흉회심 보완을 보충 후보로 둔다 (CONCEPTS W2). 3회심이면 AB_RULES.avoid가 뺀다.
+  const contextSkills = [c.status, c.element, ...(c.base.crit > 0 ? ['공격 증강【회심】'] : []), ...(c.base.crit < 0 ? ['흉회심'] : []),
     ...(['critical','morph-critical'].includes(direction) ? ['간파','약점 특효'] : []), '진가 발휘', ...abAttackBuffs(b),
     ...[...AB_ASSUME.candidate, ...AB_ASSUME.sp].filter(s => abAssumed(s, b, { fill:true }))].filter(Boolean);
   const support = abSupportSkills(b,setting).filter(s => !skip.has(s));
