@@ -18,12 +18,15 @@ const { pathToFileURL } = require('url');
       assert.strictEqual(await page.locator('#ab-screen').isVisible(), false, '이전 화면은 숨김');
       assert.strictEqual(await page.locator('#bd-cards').isVisible(), false);
       // 메타 후보: 예상 점수순 최대 8개, 1위 자동 선택, 최대 4개 선택.
+      const monsterSelect = await page.locator('[data-abm="monster"]').elementHandle();
       await page.locator('.abm-meta').first().waitFor({ timeout: 30000 });
       const metas = await page.locator('.abm-meta').count();
       assert.ok(metas >= 2 && metas <= 8, '메타 후보 수 ' + metas);
       assert.strictEqual(await page.locator('.abm-meta[aria-pressed="true"]').count(), 1);
       // 2단계 정밀 계산: 표시된 메타를 모두 다시 계산하고, 직접 고르지 않았으면 기본 선택을 2단계 1위로 정한다 (2026-10-20).
       await page.waitForFunction(() => !abmState.busy, null, { timeout: 120000 });
+      // 계산 진행·완료 갱신은 메타·결과만 다시 그린다: 몬스터 선택 상자가 교체되지 않아 열린 목록이 닫히지 않는다 (2026-10-21).
+      assert.ok(await monsterSelect.evaluate(el => el.isConnected), '몬스터 선택 상자 유지');
       assert.ok(await page.evaluate(() => abmState.metas.every(m => m.refined)), '표시된 메타 모두 정밀 계산');
       assert.ok(await page.evaluate(() => { const rest = abmState.metas.filter(m => !m.guide);
         return abmState.selected.includes(rest[0].id) && rest.every(m => (m.score ?? -1) <= (rest[0].score ?? -1)); }), '기본 선택 = 정밀 1위');

@@ -135,14 +135,14 @@ async function abmRefresh() {
       if (!s.selected.length) { s.picked = false; s.selected = [...(rest[0]?.score != null ? [rest[0].id] : []), ...guide.map(m => m.id)].slice(0, ABM.maxMetas); }
     };
     show();
-    s.busy = 'refine'; s.notice = '상위 메타 정밀 계산 중 · 순위가 바뀔 수 있습니다'; abmRender();
+    s.busy = 'refine'; s.notice = '상위 메타 정밀 계산 중 · 순위가 바뀔 수 있습니다'; abmRenderMeta();
     const refined = await abmRefine(s.metas, abmBase(), () => run !== s.run, (n, total) => {
       const el = $('#abm-status'); if (el) el.textContent = `상위 메타 정밀 계산 중 ${n}/${total} · 순위가 바뀔 수 있습니다`;
     });
     if (!refined || run !== s.run) return;
     s.notice = ''; show();
   } catch (err) { if (run === s.run) s.notice = '메타 후보 계산 중 오류가 발생했습니다.'; console.error(err); }
-  if (run === s.run) { s.busy = ''; abmRender(); }
+  if (run === s.run) { s.busy = ''; abmRenderMeta(); }
 }
 
 function abmChangeWeapon(field, value) {
@@ -272,7 +272,15 @@ function abmRender() {
   const s = abmState;
   $('#abm-screen').innerHTML = `<div class="ab-heading"><button class="btn ghost" data-abm-back>← 내 빌드</button><h2>자동빌드 (테스트중)</h2>
     <a class="ab-muted" href="#auto-build-legacy">이전 화면</a></div>
-    ${abmWeaponUI(s.b)}${abmAssumeUI(s.b)}${abmConditionUI()}${abmMetaUI()}<div id="abm-results">${abmResultsUI()}</div>`;
+    ${abmWeaponUI(s.b)}${abmAssumeUI(s.b)}${abmConditionUI()}<div id="abm-meta">${abmMetaUI()}</div><div id="abm-results">${abmResultsUI()}</div>`;
+  abmBindCarousels();
+}
+/* 계산 진행·완료처럼 설정이 그대로인 갱신은 메타·결과만 다시 그린다. 화면 전체를 다시 그리면
+   몬스터 목록처럼 열려 있던 선택 상자가 닫힌다 (2026-10-21 사용자). */
+function abmRenderMeta() {
+  const meta = $('#abm-meta'), results = $('#abm-results');
+  if (!meta || !results) return abmRender();
+  meta.innerHTML = abmMetaUI(); results.innerHTML = abmResultsUI();
   abmBindCarousels();
 }
 
@@ -387,6 +395,6 @@ $('#abm-screen').addEventListener('click', async e => {
     if (!out || run !== s.run) return;
     s.notice = '빌드 탐색이 완료되었습니다.';
   } catch (err) { if (run === s.run) s.notice = '탐색 중 오류가 발생했습니다. 다시 시도해 주세요.'; console.error(err); }
-  if (run === s.run) { s.busy = ''; abmRender(); }
+  if (run === s.run) { s.busy = ''; abmRenderMeta(); }
 });
 abmRoute();
