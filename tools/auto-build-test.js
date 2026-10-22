@@ -163,6 +163,12 @@ const get = s => vm.runInContext(s, ctx);
       assert.strictEqual(st.charge.off,get('bdStats')({...b,cond:{}}).score,'묶음 미적용 = 두 스킬 없음');
       assert.ok(!get('bdStats')({...b,st:0}).charge,'기본 스타일은 묶음 없음');
     } finally { get('BUILD.sets').pop(); } }
+  // 해머 임팩트 크레이터 (2026-10-22): 비연 필수 1 · 발동률 60% 덮어쓰기 · 비연 단일 메타 없음 · SP 증강 켬.
+  { const hi={...get('bdNewBuild')(),w:'zino',wt:'hammer',st:2};
+    assert.strictEqual(get('bdRateFor')(hi,'비연',get('bdWeaponOf')(hi)),60);
+    assert.strictEqual(get('bdRateFor')({...hi,st:0},'비연',get('bdWeaponOf')(hi)),20,'다른 스타일은 나우칼 해머 값');
+    assert.strictEqual(get('abAssumed')('비연',hi),true); assert.strictEqual(get('abAssumed')('속성 공격 증강【SP】',hi),true);
+    assert.ok(!get('abmCandidates')(hi,{mode:'cycle'}).some(m=>m.name==='비연'),'필수 스킬은 단일 메타 없음'); }
   // 메타 화면 결과(drift:false): 연성을 덜 채운 대안을 따로 두지 않는다 (2026-10-21).
   { const mk=(helm,score,drifts)=>({b:{...get('bdNewBuild')(),helm},score,baseScore:score,drifts,operation:[],operationNames:[],policyKey:'k',profile:helm+drifts});
     const pool=[mk('a',100,5),mk('b',90,4)];

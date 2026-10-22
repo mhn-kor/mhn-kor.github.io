@@ -34,7 +34,9 @@ function abmCandidates(b, gun) {
   // 경지는 기본 스킬이 켜지는 무기에서만 (예: 연격이 꺼지는 랜스의 연격·경지 제외).
   const gate = s => !/·경지$/.test(s) || abAssumed(s.replace(/·경지$/, ''), b);
   const avoid = abOperationRule(b, gun)?.avoid || []; // 스타일 비권장은 메타 후보로도 내지 않는다 (직접 추가는 가능)
-  const pool = abSupportSkills(b, gun).filter(s => !used.has(s) && !avoid.includes(s) && abAssumed(s, b) && buff(s) && gate(s)
+  // 운용 규칙 필수 스킬은 모든 메타에 이미 그 레벨로 들어가므로 단일 스킬 메타(Lv4+)로 내지 않는다 (예: 임팩트 크레이터 비연 1).
+  const required = (abOperationRule(b, gun)?.required || []).map(t => t.s);
+  const pool = abSupportSkills(b, gun).filter(s => !used.has(s) && !avoid.includes(s) && !required.includes(s) && abAssumed(s, b) && buff(s) && gate(s)
     && !AB_ASSUME.linked.skills.includes(s) && !AB_ASSUME.candidate.includes(s) && !AB_ASSUME.sp.includes(s));
   for (const s of pool) metas.push({ id:'s:'+s, name:s, direction:'manual', skeleton:[core(s)], extra:[],
     desc:`${s} Lv${core(s).min} 이상을 확보하고, 나머지는 점수가 오르는 스킬로 채웁니다.` });

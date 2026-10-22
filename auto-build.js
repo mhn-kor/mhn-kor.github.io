@@ -102,7 +102,7 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
 /* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
    styles: style ''=기본 스타일. mode=같은 스타일 안의 운용 성향. when=무기 조건. max 'MAX'=스킬 최대.
-   metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). charge=차지 묶음 {rate, skills}: 같은 차지 공격에 함께 붙는 스킬을 묶어 비중으로 계산 (build.js bdChargeGroup). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
+   metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). rates=스타일별 발동률 {스킬: %} (BD_RATE 덮어쓰기). charge=차지 묶음 {rate, skills}: 같은 차지 공격에 함께 붙는 스킬을 묶어 비중으로 계산 (build.js bdChargeGroup). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
 const abT = (s, min, max = min) => ({ s, min, max });
 const AB_RULES = {
   styles: [
@@ -133,6 +133,9 @@ const AB_RULES = {
       charge:{ rate:80, skills:['유타·향음 강화','저스트 모으기 해방'] },
       avoid:['가드 성능','차지 마스터','차지 스톡'],
       desc:'수면치기 카운터 성공 직후 바로 3차지 회전 공격을 최대한 많이 맞힙니다. 회전 공격은 차지 공격이라 유타·향음 강화와 저스트 모으기 해방이 핵심이고, 앙갚음 1로 카운터 판정 시간을 늘립니다. 카운터로 무효화해 가드 성능은 쓰지 않습니다.' },
+    { id:'hammer-impact', wt:'hammer', style:'임팩트 크레이터', name:'임팩트 크레이터 · 쿵쿵따 공중 내려찍기', required:[abT('비연',1)],
+      recommended:[abT('속성 공격 증강【SP】',0,'MAX')], avoid:['유타·향음 강화','차지 마스터','저스트 모으기 해방','차지 스톡'], rates:{ '비연':60 },
+      desc:'쿵-쿵-따 3타째가 임팩트 크레이터(공중 내려찍기 2타)라 비연 1을 확보하고, 나머지는 기본 스타일처럼 용맹·속성 공격 증강【SP】 발동을 베이스로 세팅합니다. 차지 기술이 주력이 아니라 모으기 계열 스킬을 쓰지 않습니다.' },
     { id:'cb-base', wt:'charge-blade', style:'', name:'기본 · 가드 카운터', required:[abT('가드 성능',3,5)],
       recommended:[abT('불퇴전',0,5)], avoid:['매진'],
       desc:'가드 성능 최소3·목표5. 가드 후 카운터 고출력·초고출력으로 반격하며 불퇴전을 권장 후보로 비교합니다. 매진은 불퇴전을 꺼서 쓰지 않습니다.' },
@@ -201,7 +204,7 @@ const AB_TRAITS = {
   'great-sword': [['모으기 · 태클','연속 타격 · 가드·카운터 보유'],['모으기 · 가드·카운터 보유','가드 · 태클 · 연속 타격'],['모으기 · 가드 · 가드·카운터 보유','연속 타격']],
   'long-sword': [['강화 상태 · 연속 타격 · 후방 · 가드·카운터 보유','—'],['강화 상태 · 후방 · 가드·카운터 보유','연속 타격'],['강화 상태 · 연속 타격 · 후방 · 가드·카운터 보유','—']],
   'dual-blades': [['강화 상태 · 연속 타격 · 후방','—'],['강화 상태 · 연속 타격 · 후방','—'],['강화 상태 · 연속 타격 · 후방','—']],
-  hammer: [['—','모으기 · 연속 타격'],['모으기 · 카운터 · 가드·카운터 보유','연속 타격'],['모으기','연속 타격']],
+  hammer: [['—','모으기 · 연속 타격'],['모으기 · 카운터 · 가드·카운터 보유','연속 타격'],['공중','모으기 · 연속 타격']],
   'hunting-horn': [['강화 상태 · 연속 타격','—'],['강화 상태','연속 타격'],['강화 상태 · 연속 타격','—']],
   lance: [['가드 · 카운터 · 강화 상태 · 가드·카운터 보유','연속 타격'],['가드 · 강화 상태 · 가드·카운터 보유','연속 타격'],['가드 · 강화 상태 · 가드·카운터 보유','연속 타격']],
   gunlance: [['포격·병 · 강화 상태 · 가드·카운터 보유','연속 타격'],['포격·병 · 강화 상태 · 후방 · 가드·카운터 보유','연속 타격'],['포격·병 · 강화 상태 · 가드·카운터 보유','연속 타격']],
@@ -297,7 +300,7 @@ function abSupportSkills(b, setting) {
   return [...new Set([...abEquipmentSkills(), ...abStonePool().keys()])].filter(s => abAssumed(s, b, { fill:true, row })
     && (s !== '상태 이상 축적 시 위력 UP' || bdBuildupApplies(c.w))).map(s => {
     // 조건부 효과는 발동률 기대값 (BD_RATE, 차지 묶음 스킬은 묶음 비중)
-    const weapon = abGunWeapon(b,setting), rate = (bdChargeGroup(b)?.skills.includes(s) ? bdChargeGroup(b).rate : bdRate(s, weapon)) / 100;
+    const weapon = abGunWeapon(b,setting), rate = (bdChargeGroup(b)?.skills.includes(s) ? bdChargeGroup(b).rate : bdRateFor(b, s, weapon)) / 100;
     const effects = bdEffects(bdSkillDesc(s, abMax(s)) || '', s, weapon).map(e => e.cond && e.k !== 'hp' ? { ...e, v: e.v * rate } : e);
     const value = effects.reduce((n, e) => {
       if (e.el && e.el !== c.w?.e) return n;
@@ -990,7 +993,7 @@ function abModeUI(b) {
 }
 /* 발동 가정: 몬스터·전투에 따라 갈리는 조건은 켠 채로, 조건부 후보는 끈 채로 시작한다. 칩으로 바꾼다. */
 // 발동 가정 칩의 발동률 표시 (BD_RATE). 100%는 표시하지 않는다.
-const abRateLabel = (n, b) => { const r = bdRate(n, bdWeaponOf(b)); return r === 100 ? '' : ` <small>${r}%</small>`; };
+const abRateLabel = (n, b) => { const r = bdRateFor(b, n, bdWeaponOf(b)); return r === 100 ? '' : ` <small>${r}%</small>`; };
 function abAssumeUI(b) {
   const s = abState, chip = (n, on, title) => `<button type="button" class="ab-chip${on ? ' rule' : ' rule off'}" data-ab-assume="${esc(n)}" title="${title}">${esc(n)}${abRateLabel(n, b)}</button>`;
   const control = AB_ASSUME.control.filter(n => abAssumed(n, { ...b, _abAssume:{} }));
