@@ -162,6 +162,16 @@ const BD_RATE = {
   '추가 공격【독】': 27, '추가 공격【마비】': 20, '추가 공격【폭파】': 10,
 };
 const bdRate = (name, w) => { const r = BD_RATE[name]; return r == null ? 100 : typeof r === 'number' ? r : r.w[w?.t] ?? r.d; };
+/* 차지 묶음: 같은 차지 공격에서 함께 터지는 스킬(예: 해머 수면 치기의 유타·향음 강화 + 차지 마스터).
+   운용 규칙 행의 charge {rate, skills}가 정한다 (auto-build.js AB_RULES, 2026-10-22 사용자).
+   점수 = 차지 비중 × (묶음 스킬 모두 적용) + (1 − 비중) × (묶음 스킬 없음). 따로 평균내면 두 효과가 곱해지는 몫이 빠진다. */
+const bdChargeCache = new Map();
+function bdChargeGroup(b) {
+  if (typeof abStyleRow !== 'function') return null;
+  const key = [b.w, b.wt, b.st, b.snsMode].join('|');
+  if (!bdChargeCache.has(key)) { if (bdChargeCache.size >= 512) bdChargeCache.clear(); bdChargeCache.set(key, abStyleRow(b)?.charge || null); }
+  return bdChargeCache.get(key);
+}
 /* 축적 확률 = (100 + 가산) ÷ 3, 최대 100% (나우칼 '상태 이상 발동률', 정면 기준). 기습【상태 이상】은 후방 조건이라 넣지 않는다. */
 const BD_BUILDUP_BONUS = { '하룡의 독 안개': ['독', [35, 70, 100]], '염왕룡의 폭발가루': ['폭파', [35, 70, 100]], '추가 공격【폭파】': ['폭파', [20, 40, 60, 80, 100]] };
 const bdBuildupChance = (lvOf, w) => Math.min(100, (100 + [...lvOf].reduce((n, [s, lv]) => {
@@ -369,7 +379,16 @@ function bdSkillDesc(name, lv) {
    공격 파라미터는 일반 공격 배율 뒤에 더하고, 공격 활성은 고정 증가분까지 곱한다.
    회심격은 회심 분기에만 C로 가산. 일반/회심 대미지를 구한 후 확률로 평균한다.
    모션치·육질은 1. 상태이상 스킬은 나우칼 기본 발동률로 기대값을 내고 S(⑪ 상태 이상 보정)에 곱한다. */
-function bdStats(b) {
+function bdStats(b, group = null) {
+  // group: 차지 묶음 계산의 'on'(묶음 스킬 100%) / 'off'(묶음 스킬 제외). 바깥 호출은 두 경우를 차지 비중으로 섞는다.
+  const charge = bdChargeGroup(b);
+  if (charge && !group && charge.skills.some(s => b.cond?.[s] && !b.ignore?.includes(s) && bdTotals(b).some(([n, lv]) => n === s && lv > 0))) {
+    const withCharge = bdStats(b, 'on'), without = bdStats(b, 'off'), p = charge.rate / 100;
+    const mix = k => Math.round(withCharge[k] * p + without[k] * (1 - p));
+    return { ...withCharge, score: mix('score'), baseScore: mix('baseScore'),
+      charge: { rate: charge.rate, skills: charge.skills, on: withCharge.score, off: without.score } };
+  }
+  const chargeSkills = new Set(group ? charge.skills : []);
   const w = bdScoreWeapon(b);
   const base = bdWeaponBase(b);
   const info = bdStyleInfo(b), P = info.active ? info.params.reduce((n, x) => n + (x?.stat === 'atk' ? x.value : 0), 0) : 0;
@@ -387,7 +406,7 @@ function bdStats(b) {
   const conditional = new Map();
   for (const { name, lv, list } of entries) {
     const active = list.filter(e => e.cond && eligible(e));
-    if (active.length) conditional.set(name, { sk: name, rate: bdRate(name, w),
+    if (active.length) conditional.set(name, { sk: name, rate: charge?.skills.includes(name) ? charge.rate : bdRate(name, w),
       lv: Math.min(lv, bdSkillLevels(name)?.at(-1)[0] ?? lv), list: active, applied: [] });
   }
   for (const { name, list } of entries) {
@@ -400,7 +419,9 @@ function bdStats(b) {
       }
       if ((parent || e.cond) && !on[parent ? parent.sk : name]) continue;
       // 켜진 조건부 효과는 발동률 기대값 (BD_RATE). 선행 스킬에 묶인 효과(경지 등)는 선행 스킬의 발동률, 체력은 그대로.
-      const rate = (parent || e.cond) && e.k !== 'hp' ? bdRate(parent ? parent.sk : name, w) : 100;
+      const owner = parent ? parent.sk : name;
+      if (group === 'off' && chargeSkills.has(owner)) continue;
+      const rate = (parent || e.cond) && e.k !== 'hp' && !chargeSkills.has(owner) ? bdRate(owner, w) : 100;
       eff.push({ ...e, sk: name, ...(rate !== 100 ? { v: e.v * rate / 100, rate } : {}) });
     }
   }
@@ -1137,6 +1158,7 @@ function bdCalc(b) {
     rows.push(`<span>회심 공격</span><i>대미지 배율 · 회심 ×${f(co.critX)} 반영 = ${f(stats.branches.critical)}</i>`);
   }
   rows.push(`<span>점수</span><i>${bdScoreFormula(stats)}</i>`);
+  if (stats.charge) rows.push(`<span>차지 묶음</span><i>${stats.charge.skills.map(esc).join(' · ')} 함께 적용 ${stats.charge.on} × ${stats.charge.rate}% + 미적용 ${stats.charge.off} × ${100 - stats.charge.rate}% ≈ <b>${stats.score}</b></i>`);
 
   return `<div class="bd-calc">
     ${bdScoreContextUI(b)}

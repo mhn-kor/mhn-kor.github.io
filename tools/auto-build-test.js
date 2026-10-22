@@ -153,6 +153,16 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abAssumed')('속성 공격 증강【SP】',{...hb,_abAssume:{off:['속성 공격 증강【SP】']}}),false,'칩으로 끄면 OFF');
     assert.strictEqual(get('abAssumed')('속성 공격 증강【SP】',other),false,'다른 무기는 SP 기본 OFF');
     for (const s of ['유타·향음 강화','차지 마스터','저스트 모으기 해방','차지 스톡','연격']) assert.strictEqual(get('abAssumed')(s,hb),false,'해머 기본 '+s+' OFF'); }
+  // 해머 수면 치기 차지 묶음 (2026-10-22): 유타·향음 강화 + 차지 마스터를 함께 80% / 둘 다 없음 20%로 섞는다.
+  { const set=get('BUILD.sets').find(s=>s.key==='zino'), hb={...get('bdNewBuild')(),w:'zino',wt:'hammer',st:1};
+    get('BUILD.sets').push({key:'charge-test',name:'검수',weapons:[],weaponSkills:[],pieces:{helm:{name:'검수',skills:[{s:'유타·향음 강화',lv:5},{s:'차지 마스터',lv:5}],slot:0}}});
+    try {
+      const b={...hb,helm:'charge-test',cond:{'유타·향음 강화':true,'차지 마스터':true}}, st=get('bdStats')(b);
+      assert.ok(st.charge&&st.charge.rate===80,'차지 묶음 적용');
+      assert.strictEqual(st.score,Math.round(st.charge.on*.8+st.charge.off*.2));
+      assert.strictEqual(st.charge.off,get('bdStats')({...b,cond:{}}).score,'묶음 미적용 = 두 스킬 없음');
+      assert.ok(!get('bdStats')({...b,st:0}).charge,'기본 스타일은 묶음 없음');
+    } finally { get('BUILD.sets').pop(); } }
   // 메타 화면 결과(drift:false): 연성을 덜 채운 대안을 따로 두지 않는다 (2026-10-21).
   { const mk=(helm,score,drifts)=>({b:{...get('bdNewBuild')(),helm},score,baseScore:score,drifts,operation:[],operationNames:[],policyKey:'k',profile:helm+drifts});
     const pool=[mk('a',100,5),mk('b',90,4)];
