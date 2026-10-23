@@ -20,9 +20,9 @@
     "crossCheck": "completed_with_source_policy",
     "crossCheckSite": "https://mhnowcalc.com/calc/",
     "counts": {
-      "supported": 277,
+      "supported": 278,
       "unsupported": 470,
-      "unknown": 4
+      "unknown": 3
     },
     "nowcalc": {
       "source": "https://mhnowcalc.com/calc/build_editor_simple.php?lang=ko",
@@ -36,7 +36,8 @@
     },
     "crossCheckCounts": {
       "compared": 266,
-      "inherited": 4,
+      "inherited": 5,
+      "manual": 7,
       "baseMatches": 265,
       "bonus20Matches": 220,
       "parametersMatches": 265
@@ -3266,7 +3267,7 @@
       "style": {
         "status": "unsupported"
       },
-      "siteBaseMatches": false
+      "siteBaseMatches": true
     },
     {
       "set": "g-wrog",
@@ -3283,7 +3284,7 @@
       "style": {
         "status": "unsupported"
       },
-      "siteBaseMatches": false
+      "siteBaseMatches": true
     },
     {
       "set": "g-wrog",
@@ -3300,7 +3301,7 @@
       "style": {
         "status": "unsupported"
       },
-      "siteBaseMatches": false
+      "siteBaseMatches": true
     },
     {
       "set": "g-wrog",
@@ -3317,7 +3318,7 @@
       "style": {
         "status": "unsupported"
       },
-      "siteBaseMatches": false
+      "siteBaseMatches": true
     },
     {
       "set": "g-wrog",
@@ -3334,7 +3335,7 @@
       "style": {
         "status": "unsupported"
       },
-      "siteBaseMatches": false
+      "siteBaseMatches": true
     },
     {
       "set": "quem",
@@ -5094,7 +5095,7 @@
       "sourceSet": "rathi",
       "type": "light-gun",
       "name": "발키리파이어",
-      "element": "독",
+      "element": null,
       "base": {
         "atk": 2251,
         "ele": 0,
@@ -5102,8 +5103,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "공식 무기 확인됨; 스타일강화 수치 미확인"
+        "status": "supported",
+        "profile": "nowcalc:None_Element_2",
+        "source": "same_monster",
+        "referenceType": "heavy-gun",
+        "stats20": {
+          "atk": 2455,
+          "ele": 0,
+          "crit": 0
+        }
       }
     },
     {
@@ -11597,7 +11605,7 @@
       "style": {
         "status": "unsupported"
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false
     },
     {
       "set": "narg",
@@ -16550,34 +16558,9 @@
   ],
   "issues": [
     {
-      "set": "g-wrog",
-      "type": "shield-sword",
+      "set": "narg",
+      "type": "insect-glaive",
       "reason": "현재 사이트의 기본 수치와 원본 불일치"
-    },
-    {
-      "set": "g-wrog",
-      "type": "long-sword",
-      "reason": "현재 사이트의 기본 수치와 원본 불일치"
-    },
-    {
-      "set": "g-wrog",
-      "type": "dual-blades",
-      "reason": "현재 사이트의 기본 수치와 원본 불일치"
-    },
-    {
-      "set": "g-wrog",
-      "type": "hammer",
-      "reason": "현재 사이트의 기본 수치와 원본 불일치"
-    },
-    {
-      "set": "g-wrog",
-      "type": "bow",
-      "reason": "현재 사이트의 기본 수치와 원본 불일치"
-    },
-    {
-      "set": "rathi",
-      "type": "light-gun",
-      "reason": "공식 무기 확인됨; 스타일강화 수치 미확인"
     },
     {
       "set": "carnival-24",

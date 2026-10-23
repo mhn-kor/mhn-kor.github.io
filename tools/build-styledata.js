@@ -105,7 +105,7 @@ function applyCalc(output, calc) {
   output.meta.nowcalc = calc.meta;
   output.meta.sourcePolicy = { base: 'mhn.quest (10-5)', bonus20: 'mhnowcalc.com', parameters: 'mhnowcalc.com' };
   output.meta.crossCheck = 'completed_with_source_policy';
-  output.meta.crossCheckCounts = { compared: comparisons.length, inherited,
+  output.meta.crossCheckCounts = { compared: comparisons.length, inherited, manual: output.weapons.filter(w => w.style.source === 'manual').length,
     ...Object.fromEntries(['base', 'bonus20', 'parameters'].map(k => [k + 'Matches', comparisons.filter(c => c.matches[k]).length])) };
   output.meta.counts = Object.fromEntries(['supported', 'unsupported', 'unknown'].map(s => [s, output.weapons.filter(w => w.style.status === s).length]));
   output.comparisons = comparisons;

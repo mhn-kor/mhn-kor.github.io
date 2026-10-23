@@ -51,7 +51,10 @@ assert.deepStrictEqual(data('somn', 'great-sword').bonus20, { atk: 144, ele: 52,
 assert.deepStrictEqual(data('mizu', 'shield-sword').bonus20, { atk: 64, ele: 96, crit: 0 });
 assert.deepStrictEqual(data('rathi', 'heavy-gun').bonus20, { atk: 204, ele: 0, crit: 0 });
 for (const lv of [10, 15, 20]) assert.deepStrictEqual(data('spring-26', 'light-gun').parameters[lv], [{ stat: 'atk', value: 100 }]);
-assert.strictEqual(output.meta.crossCheckCounts.compared + output.meta.crossCheckCounts.inherited, output.meta.counts.supported);
+assert.strictEqual(output.meta.crossCheckCounts.compared + output.meta.crossCheckCounts.inherited + output.meta.crossCheckCounts.manual, output.meta.counts.supported);
+// 리오레이아 라이트보우건: 공식 스펙상 무속성 → 같은 몬스터 헤비보우건의 무속성 프로필을 잇는다 (2026-10-23 사용자 승인).
+assert.strictEqual(get('rathi', 'light-gun').style.source, 'same_monster');
+assert.deepStrictEqual(data('rathi', 'light-gun'), data('rathi', 'heavy-gun'));
 for (const [set, type] of [['rathi', 'great-sword'], ['barr', 'long-sword'], ['barr', 'charge-blade'], ['puke', 'gunlance']]) {
   assert.strictEqual(get(set, type).style.source, 'same_monster');
   assert.deepStrictEqual(data(set, type), data(set, 'shield-sword'));
