@@ -182,6 +182,13 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(inert.has('얼음 내성')&&!inert.has('반사')&&!inert.has('공격'),'내성은 흐림, 반사(운용)·공격(점수)은 그대로');
     assert.ok(!get('abInertSkills')(b,new Set(['얼음 내성'])).has('얼음 내성'),'지정 스킬은 흐리지 않음');
   } finally { get('BUILD.sets').pop(); }
+  // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
+  for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
+    const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
+    for (const cond of [{}, Object.fromEntries(get('bdCondNames')(b).map(s=>[s,true]))])
+      assert.deepStrictEqual(Array.from(get('bdCondNames')(b)),Array.from(get('bdStats')({...b,cond}).conds.map(c=>c.sk)),`조건부 목록: ${w}/${wt}`);
+    assert.strictEqual(get('abScoreStats')(structuredClone(b)).score,get('abScoreBuild')(structuredClone(b)));
+  }
   // 견인불발 3은 'Lv2의 효과와 더불어'로 회심 +50%를 물려받고, 조건부 후보라 기본은 끔 (2026-10-23).
   { const ls={...get('bdNewBuild')(),w:'mizu',wt:'long-sword'};
     assert.deepStrictEqual(Array.from(get('bdEffects')(get('bdSkillDesc')('견인불발',3),'견인불발',null).map(e=>e.k+e.v)),['crit50']);

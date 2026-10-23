@@ -334,7 +334,7 @@ const BD_BASE_HP = 110;
 /* 반복 탐색은 같은 설명을 재해석하지 않는다. 설명·무기 적용 조건이 바뀌면 다른 키 사용. */
 const bdEffectCache = new Map();
 function bdCachedEffects(desc, name, weapon) {
-  const key=JSON.stringify([desc,name,weapon?.t,weapon?.e,weapon?.x,!!weapon?.fallbash]);
+  const key=`${name}\u0001${desc}\u0001${weapon?.t}\u0001${weapon?.e}\u0001${weapon?.x?.join('\u0002')}\u0001${!!weapon?.fallbash}`;
   if (!bdEffectCache.has(key)) {
     if (bdEffectCache.size>=4096) bdEffectCache.clear();
     bdEffectCache.set(key,bdEffects(desc,name,weapon));
@@ -379,6 +379,14 @@ function bdSkillDesc(name, lv) {
   const cap = Math.min(lv, rows[rows.length - 1][0]);
   const hit = rows.find(r => r[0] === cap);
   return hit ? hit[1] : null;
+}
+
+/* 조건부 스킬 이름: bdStats의 conds와 같은 목록을 점수 계산 없이 낸다. 목록은 발동 여부(b.cond)와 무관하다. */
+function bdCondNames(b) {
+  const w = bdScoreWeapon(b), lvOf = new Map(bdTotals(b));
+  const eligible = e => !e.need || (lvOf.get(e.need.s) || 0) >= e.need.lv;
+  return [...lvOf].filter(([name, lv]) => !b.ignore?.includes(name)
+    && bdCachedEffects(bdSkillDesc(name, lv) || '', name, w).some(e => e.cond && eligible(e))).map(([name]) => name);
 }
 
 /* 나우칼 간이 계산식 https://mhnowcalc.com/calc/damage_calc.php?lang=ko
@@ -488,6 +496,7 @@ function bdStats(b, group = null) {
     co: { A, B, C, D, E, F, G, P, S, T, R, critX, negCritX } };
 }
 
+const bdKoCompare = new Intl.Collator('ko').compare; // localeCompare(…, 'ko')와 같은 순서, 매번 콜레이터를 만들지 않는다
 function bdTotals(b) {
   const total = new Map();
   const add = (name, lv) => total.set(name, (total.get(name) || 0) + lv);
@@ -498,7 +507,7 @@ function bdTotals(b) {
     /* 표류석은 스킬 레벨 1을 줍니다. 예전 저장값에 lv 2·3 이 남아 있어도 1로 셉니다. */
     (b.ds[k] || []).slice(0, bdSlotCount(b, k)).forEach(d => { if (d && d.s) add(d.s, 1); });
   }
-  return [...total.entries()].sort((a, b2) => b2[1] - a[1] || a[0].localeCompare(b2[0], 'ko'));
+  return [...total.entries()].sort((a, b2) => b2[1] - a[1] || bdKoCompare(a[0], b2[0]));
 }
 
 /* 조건부 스킬. 조건의 성격이 제각각이라(약점 공격은 사실상 상시, 부활은 사고)

@@ -1,7 +1,7 @@
 /* docs/WEAPONS.md·CONCEPTS.md의 사용자 규칙을 조건별 추천과 탐색에 적용한다.
    bounded beam search: 전역 최적 보장이 아닌 제한 탐색, 점수는 기존 bdStats를 공유. */
 /* 탐색 한도. drift·repair = 초기 연성·교체 단계의 평가 횟수 상한. 메타 예상 점수는 시간이 아니라 이 횟수로 멈춰 기기와 무관하게 같은 결과를 낸다 (ABM). */
-const AB_LIMIT = { beam: 160, armor: 24, evaluated: 6000, ms: 8000, drift: 2400, repair: 2400 };
+const AB_LIMIT = { beam: 160, armor: 24, ms: 8000, drift: 2400, repair: 2400 };
 const AB_SOURCES = [
   ['물속성 공격 강화', 'https://monsterhunternow.com/ko/skills/water_attack'],
   ['회심격【속성】', 'https://monsterhunternow.com/ko/skills/critical_element'],
@@ -345,8 +345,7 @@ function abContext(b, setting) {
 function abInvestmentDirections(b, setting) {
   const c = abContext(b,setting), directions = [], atk = abAttackBuffs(b);
   const pick = (...used) => atk.find(s => !used.includes(s));
-  const make = (id, name, skills, desc, extra = {}) => ({ id, name,
-    targets: abTargets(skills).map((t, i) => ({ ...t, min: abOperationRule(b,setting)?.required.length && i > 0 ? 0 : t.min })), desc, ...extra });
+  const make = (id, name, skills, desc, extra = {}) => ({ id, name, targets: abTargets(skills), desc, ...extra });
   if (c.critAllowed && c.nativeNegative && c.base.crit < 0 && !c.tripleCrit) {
     // 돌파구는 자체 상태이상 스킬이 있을 때만 쓰므로 방향 핵심에 두지 않는다 (SKILLS.md 돌파구).
     const second = c.status || c.element || atk[0], third = pick(second);
@@ -445,7 +444,7 @@ function abChangeWeapon(field, value) {
   s.b.st = 0; s.b.style20 = false; s.b.params = [null, null, null];
   delete s.b.snsMode; delete s.b.ammoSlot;
   s.gun = {mode:'cycle'};
-  if (!s.edited) abApplyDirection(abDirections(s.b)[0]?.id || 'manual'); else if (s.direction !== 'manual') s.stale = true;
+  if (!s.edited) abApplyDirection(abDirections(s.b,s.gun)[0]?.id || 'manual'); else if (s.direction !== 'manual') s.stale = true;
 }
 
 function abApplyDirection(id) {
@@ -454,16 +453,18 @@ function abApplyDirection(id) {
     targets:d ? structuredClone(d.targets) : [] });
 }
 
-function abScoreBuild(b) {
-  const conds = bdStats(b).conds, lv = new Map(bdTotals(b)), row = abStyleRow(b);
-  b.cond = Object.fromEntries(conds.map(c => [c.sk, abAssumed(c.sk, b, { lv, row })]));
+/* 발동 가정을 정해 b.cond에 쓰고 점수 계산 결과 전체를 돌려준다 (bdStats 1회). */
+function abScoreStats(b) {
+  const lv = new Map(bdTotals(b)), row = abStyleRow(b);
+  b.cond = Object.fromEntries(bdCondNames(b).map(sk => [sk, abAssumed(sk, b, { lv, row })]));
   for (const s of Object.keys(BD_AMMO_BOOST)) if (s in b.cond && !bdAmmoBoostApplies(s,abGunWeapon(b))) b.cond[s] = false;
   // 앞 스킬이 발동 중이면(조건부는 켠 것, 상시는 장착) 뒤 스킬은 끈다.
   for (const [on, off] of [...(AB_RULES.weapons[b.wt]?.exclusive || []), ...AB_ASSUME.exclusive])
     if (off in b.cond && (on in b.cond ? b.cond[on] : lv.get(on) > 0)) b.cond[off] = false;
   b.bowEfficiency = false; // 집중 주기 보정은 추천 시 사용자가 지정하지 않은 가정이다.
-  return bdStats(b).score;
+  return bdStats(b);
 }
+const abScoreBuild = b => abScoreStats(b).score;
 
 function abPolicy(b, direction, targets, styleGuide = true, setting) {
   const c = abContext(b,setting), meta = abDirections(b,setting).find(d => d.id === direction) || {};
@@ -844,7 +845,7 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
       const index = userTargets.findIndex(x => x.s === t.s);
       return n + contribution * (requireLock && t.s === '록온' ? 500 : index >= 0 ? abPriorityWeight(index) : 80);
     }, 0);
-    const score = abScoreBuild(b), stats=bdStats(b);
+    const stats = abScoreStats(b), score = stats.score;
     const cost=policy.investmentSkills.reduce((n,s)=>n+Math.min(abMax(s),lv.get(s)||0),0);
     const element=cost ? Math.max(0,stats.now.ele-stats.base.ele)/cost : 0;
     return { priority, score, element, armor:armorOf(b) };
@@ -945,7 +946,7 @@ async function abSearch(config, progress = () => {}, cancelled = () => false) {
   }
   return { pool:[...evaluatedPool,...repair.pool], expanded:expanded+repair.expanded, evaluated:evaluated+repair.evaluated,
     repair:{jobs:repair.jobs,limited:repair.limited,sourceParts:registered.map(x=>({part:x.part,items:x.rows.length}))},
-    limited:repair.limited || performance.now() - started > AB_LIMIT.ms || evaluated >= AB_LIMIT.evaluated,
+    limited:repair.limited || performance.now() - started > AB_LIMIT.ms || evaluated >= AB_LIMIT.drift,
     ms: Math.round(performance.now() - started) };
 }
 
@@ -955,7 +956,7 @@ function abOptions(rows, selected) {
 
 function abGuideUI(b, direction, targets) {
   const setting = b._abGun || abState.gun;
-  const policy = abPolicy(b, direction, targets, abState.styleOff,setting), c = abContext(b);
+  const policy = abPolicy(b, direction, targets, abState.styleOff,setting), c = abContext(b,setting);
   const extra = abSearchTargets({ b, targets, gun:setting, styleGuide: abState.styleOff })
     .filter(t => !targets.some(x => x.s === t.s && x.min >= t.min));
   return `<p>${esc(policy.desc || '직접 설정: 사용자 스킬과 레벨을 우선하며 적용 가능한 효과만 평가합니다.')}</p>
