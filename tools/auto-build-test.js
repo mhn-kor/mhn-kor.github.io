@@ -182,6 +182,14 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(inert.has('얼음 내성')&&!inert.has('반사')&&!inert.has('공격'),'내성은 흐림, 반사(운용)·공격(점수)은 그대로');
     assert.ok(!get('abInertSkills')(b,new Set(['얼음 내성'])).has('얼음 내성'),'지정 스킬은 흐리지 않음');
   } finally { get('BUILD.sets').pop(); }
+  // 아마츠마가즈치 수동 선등록 (2026-10-23): 공격력 미공개 무기는 자동빌드 무기 목록에서 빼고, 방어구는 후보로 쓴다. 신규 스킬은 점수 없음.
+  { const amat=get('BUILD.sets').find(s=>s.key==='amat');
+    assert.ok(amat&&amat.weapons.length===14&&amat.weapons.every(w=>w.atk==null)&&Object.keys(amat.pieces).length===5);
+    assert.ok(!get('abMonsters')('long-sword').some(s=>s.key==='amat'),'공격력 미공개 무기 제외');
+    for (const [s,lv] of [['아마츠 스콜',5],['힘의 해방·경지',4],['아마츠 스톰블레이드',1]])
+      assert.strictEqual(get('bdEffects')(get('bdSkillDesc')(s,lv),s,null).length,0,`${s} 점수 없음`);
+    assert.ok(get('abReachLv')({...get('bdNewBuild')(),w:'mizu',wt:'long-sword'},'하이 차지【물】')>=2,'아마츠 다리로 물 하이 차지 Lv2 가능');
+  }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
@@ -201,7 +209,8 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(mastery.extra.some(t=>t.s==='하이 차지【번개】'&&t.min===0),'경지 메타에 하이 차지는 점수 후보');
     const hc=metas.find(m=>m.id==='e:high-charge');
     assert.ok(hc&&hc.skeleton[0].s==='하이 차지【번개】'&&hc.skeleton[0].min===2&&hc.extra[0].s==='체력 증강'&&hc.extra[0].min===0);
-    assert.ok(!get('abmCandidates')(ls,{mode:'cycle'}).some(m=>m.id==='e:high-charge'),'물속성 하이 차지는 Lv1뿐');
+    // 물속성 하이 차지는 쇼군기자미 머리 1뿐이었지만 아마츠 다리 2로 Lv2 이상이 가능해져 메타가 열린다 (2026-10-23).
+    assert.ok(get('abmCandidates')(ls,{mode:'cycle'}).some(m=>m.id==='e:high-charge'),'아마츠 다리로 물 하이 차지 메타');
     // 컨셉 메타: 조건에 맞는 것만, 앉아쏘기 통상탄 컨셉은 첫째 탄 반복·탄 운용 조건 없음.
     const ids=b=>Array.from(get('abmConcepts')(b,{mode:'cycle'}).map(m=>m.id));
     assert.deepStrictEqual(ids(ls),['c:break-chase','c:sp-roar','c:bloodlust','c:laceration-crit']);
@@ -280,7 +289,8 @@ const get = s => vm.runInContext(s, ctx);
   let selectable = 0;
   for (const type of get('BUILD.weaponTypes')) {
     const sets = get('abMonsters')(type.k);
-    assert.deepStrictEqual(Array.from(sets, s => s.key), Array.from(get('bdOrderedSets()').filter(s => s.weapons.some(w => w.t === type.k)), s => s.key));
+    // 공격력 미공개 무기(수동 선등록)는 빠진다 (2026-10-23).
+    assert.deepStrictEqual(Array.from(sets, s => s.key), Array.from(get('bdOrderedSets()').filter(s => s.weapons.some(w => w.t === type.k && w.atk != null)), s => s.key));
     get('abChangeWeapon')('wt', type.k);
     for (const set of sets) {
       get('abChangeWeapon')('monster', set.key);

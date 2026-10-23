@@ -22,7 +22,7 @@
     "counts": {
       "supported": 278,
       "unsupported": 470,
-      "unknown": 3
+      "unknown": 17
     },
     "nowcalc": {
       "source": "https://mhnowcalc.com/calc/build_editor_simple.php?lang=ko",
@@ -15552,6 +15552,244 @@
       "siteBaseMatches": true
     },
     {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "shield-sword",
+      "name": "아마츠마가즈치 한손검",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "dual-blades",
+      "name": "아마츠마가즈치 쌍검",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "great-sword",
+      "name": "아마츠마가즈치 대검",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "long-sword",
+      "name": "아마츠마가즈치 태도",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "hammer",
+      "name": "아마츠마가즈치 해머",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "hunting-horn",
+      "name": "아마츠마가즈치 수렵피리",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "lance",
+      "name": "아마츠마가즈치 랜스",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "gunlance",
+      "name": "아마츠마가즈치 건랜스",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "switch-axe",
+      "name": "아마츠마가즈치 슬래시액스",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "charge-blade",
+      "name": "아마츠마가즈치 차지액스",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "insect-glaive",
+      "name": "아마츠마가즈치 조충곤",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "light-gun",
+      "name": "아마츠마가즈치 라이트보우건",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "heavy-gun",
+      "name": "아마츠마가즈치 헤비보우건",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "amat",
+      "sourceSet": "amat",
+      "type": "bow",
+      "name": "아마츠마가즈치 활",
+      "element": "물",
+      "base": {
+        "atk": null,
+        "ele": 0,
+        "crit": 0
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
       "set": "mr-beast",
       "sourceSet": "mr-beast",
       "type": "shield-sword",
@@ -16561,6 +16799,76 @@
       "set": "narg",
       "type": "insect-glaive",
       "reason": "현재 사이트의 기본 수치와 원본 불일치"
+    },
+    {
+      "set": "amat",
+      "type": "shield-sword",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "dual-blades",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "great-sword",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "long-sword",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "hammer",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "hunting-horn",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "lance",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "gunlance",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "switch-axe",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "charge-blade",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "insect-glaive",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "light-gun",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "heavy-gun",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "amat",
+      "type": "bow",
+      "reason": "원본 소재 정보 없음"
     },
     {
       "set": "carnival-24",
