@@ -1301,5 +1301,11 @@ check('추천빌드 가져오기는 맨 앞에 추가하고 필터를 해제한�
   }
 });
 
+check('모든 장비 세트에 아이콘이 있다 (이벤트 장비는 mhn.quest, 2026-10-23)', () => {
+  const noIcon = vm.runInContext('BD_NOICON', ctx);
+  const missing = BUILD.sets.map(s => s.key).filter(k => !noIcon.has(k) && !fs.existsSync(path.join(__dirname, '..', 'assets', 'monster', k + '.png')));
+  assert.strictEqual(missing.join(', '), '', '아이콘 없음: node tools/fetch-icons.js');
+});
+
 console.log(fail ? `실패 ${fail}건` : '모두 통과');
 process.exit(fail ? 1 : 0);

@@ -6,8 +6,10 @@
  * 남는 곳은 투명하게 둡니다 — 정사각으로 눌러 담으면 기존 아이콘과 눈에 띄게 다릅니다.
  * ImageMagick 같은 도구 없이 PNG 를 직접 읽고 씁니다(의존성 0).
  *
- * 이벤트 장비처럼 참조 사이트에도 그림이 없는 것은 404 로 건너뜁니다.
- * 그 키는 build.js 의 BD_NOICON 에 적어 두면 이벤트 표류석 아이콘으로 대신 나옵니다.
+ * mhnow.me 에 없으면 mhn.quest 의 /monster/{키}.png 를 씁니다 (이벤트 장비 아이콘, 2026-10-23).
+ * 둘 다 없으면 건너뜁니다. 그 키는 build.js 의 BD_NOICON 에 적어 두면 이벤트 표류석 아이콘으로 대신 나옵니다.
+ *
+ *   node tools/fetch-icons.js --keys=halloween-26,lunar-26   # 장비 자료보다 먼저 아이콘만 받아 둘 때
  */
 const fs = require('fs');
 const path = require('path');
@@ -21,7 +23,9 @@ const DIR = path.join(ROOT, 'assets', 'monster');
 const snake = (v) => String(v).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const EN = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'monster-en.json'), 'utf8'));
 const candidates = (key) => [...new Set([snake(EN[key] || ''), key].filter(Boolean))];
-const SRC = (name) => `https://mhnow.me/images/icon/${name}.png`;
+// mhn.quest 는 이 사이트와 같은 세트 키를 파일 이름으로 쓴다.
+const sources = (key) => [...candidates(key).map(name => [name, `https://mhnow.me/images/icon/${name}.png`]),
+  [`mhn.quest:${key}`, `https://mhn.quest/monster/${key}.png`]];
 const SIZE = 64;
 
 /* ── PNG 읽기/쓰기 (8비트, 모든 색 타입) ───────────────────────────── */
@@ -128,16 +132,17 @@ function crc32(buf) {
 
 async function main() {
   const BUILD = new Function(fs.readFileSync(path.join(ROOT, 'build-data.js'), 'utf8') + ';return BUILD;')();
-  const need = BUILD.sets.map(s => s.key).filter(k => !fs.existsSync(path.join(DIR, `${k}.png`)));
+  const only = process.argv.find(a => a.startsWith('--keys='))?.slice(7).split(',').filter(Boolean);
+  const need = (only || BUILD.sets.map(s => s.key)).filter(k => !fs.existsSync(path.join(DIR, `${k}.png`)));
   if (!need.length) { process.stderr.write('아이콘 전부 있습니다.\n'); return; }
   process.stderr.write(`아이콘 없는 세트 ${need.length}개: ${need.join(', ')}\n`);
 
   const got = [], missing = [];
   for (const key of need) {
     let done = false;
-    for (const name of candidates(key)) {
+    for (const [name, url] of sources(key)) {
       try {
-        const r = await fetch(SRC(name), { headers: { 'user-agent': 'Mozilla/5.0' } });
+        const r = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0' } });
         if (!r.ok) continue;
         const buf = Buffer.from(await r.arrayBuffer());
         if (buf.subarray(0, 4).toString('hex') !== '89504e47') continue;
@@ -152,7 +157,7 @@ async function main() {
   }
   if (got.length) process.stderr.write(`받음 ${got.length}개: ${got.join(', ')}\n`);
   if (missing.length) {
-    process.stderr.write(`참조 사이트에 없음 ${missing.length}개: ${missing.join(', ')}\n`
+    process.stderr.write(`참조 사이트(mhnow.me·mhn.quest)에 없음 ${missing.length}개: ${missing.join(', ')}\n`
       + '  → 이벤트 장비라면 build.js 의 BD_NOICON 에 키를 넣어 주세요.\n');
   }
 }

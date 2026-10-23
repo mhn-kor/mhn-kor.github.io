@@ -812,7 +812,7 @@ node tools/update.js          # 이거 하나면 됩니다
 | 장비 한국어 이름, 방어구 나열 순서 | monsterhunternow.com | `tools/data/official-names.json` |
 | 조충곤 사냥벌레(타입·공격 계통·성능·보너스) | monsterhunternow.com | `tools/data/kinsect.json` |
 | 스킬 레벨별 설명(=점수 계산의 근거) | monsterhunternow.com | `skill-desc.js` |
-| 몬스터 아이콘 | mhnow.me | `assets/monster/*.png` |
+| 몬스터 아이콘 | mhnow.me (없으면 mhn.quest `/monster/{키}.png`, 이벤트 장비) | `assets/monster/*.png` |
 | 재료·서식지 | mhnow.me + mhn.quest | `material-data.js`, `assets/material/*.png` |
 
 두 사이트의 키가 달라 **영문 몬스터 이름을 다리로 이어 붙입니다.** 그래서
@@ -839,7 +839,7 @@ Node 22 에서 프록시를 거쳐야 하면 `NODE_USE_ENV_PROXY=1 node tools/up
 node tools/fetch-official.js                                   # 이름·순서
 node tools/build-skilldesc.js tools/data/skill-urls.json > skill-desc.js
 node tools/build-builddata.js > build-data.js                  # 인자 없음
-node tools/fetch-icons.js                                      # 빠진 아이콘만
+node tools/fetch-icons.js                                      # 빠진 아이콘만 (--keys=키,키 로 지정 가능)
 node tools/build-materialdata.js && node tools/material-test.js
 node tools/build-test.js                                       # 무기 스킬 회귀 (필수)
 ```

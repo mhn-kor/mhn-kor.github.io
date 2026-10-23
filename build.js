@@ -978,7 +978,8 @@ const BD_I = {
    404 를 띄우지 않고 이벤트 표류석 아이콘으로 대신합니다.
    brachy·a-somna 아이콘은 참조 사이트에 오르기 전까지 몬스터헌터 위키의 타 시리즈
    아이콘(MHWI·MHRS)을 임시로 담아 두었습니다 — 오르면 fetch-icons 로 교체합니다. */
-const BD_NOICON = new Set(['mr-beast', 'halloween-25', 'winter-25', 'lunar-25', 'spring-26', 'guardian']);
+// 아이콘이 없는 세트는 이벤트 표류석 아이콘으로 대신한다. 이벤트 장비 아이콘은 mhn.quest에서 받는다 (tools/fetch-icons.js, 2026-10-23).
+const BD_NOICON = new Set([]);
 const bdIcon = key => (BD_NOICON.has(key) ? 'assets/stone/event.png' : `assets/monster/${key}.png`);
 const bdMon = key => `<img class="bd-mi" src="${esc(bdIcon(key))}" width="26" height="26" alt="" loading="lazy">`;
 const bdChips = list => list.map(x => `<span class="chip">${esc(x.s)}<b>${x.lv}</b></span>`).join('');
