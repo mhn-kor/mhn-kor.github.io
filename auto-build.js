@@ -107,13 +107,13 @@ const abT = (s, min, max = min) => ({ s, min, max });
 const AB_RULES = {
   styles: [
     { id:'lance-base', wt:'lance', style:'', name:'기본 · 카운터 운용', required:[abT('가드 성능',2,3)],
-      recommended:[abT('불퇴전',0,5),abT('공격적인 방어',0,5)], avoid:['매진'],
+      recommended:[abT('불퇴전',0,5),abT('공격적인 방어',0,5)], avoid:['매진'], rates:{ '불퇴전':85 },
       desc:'가드 성능 최소2·목표3. 불퇴전·공격적인 방어는 권장 후보이며 가드 동작의 보정을 상시 스킬 레벨로 더하지 않습니다.' },
     { id:'lance-just', wt:'lance', style:'저스트 가드', name:'저스트가드 · 공격 특화', required:[abT('불퇴전',4,5),abT('반사',1,5)],
-      recommended:[], avoid:['가드 성능','매진'], desc:'불퇴전 4~5 · 반사 1 이상. 가드 성능은 우대하지 않습니다. 매진은 앞회피로 불퇴전을 꺼서 쓰지 않습니다.',
+      recommended:[], avoid:['가드 성능','매진'], rates:{ '불퇴전':85 }, desc:'불퇴전 4~5 · 반사 1 이상. 가드 성능은 우대하지 않습니다. 매진은 앞회피로 불퇴전을 꺼서 쓰지 않습니다.',
       note:'반사 효과는 임의 피해 점수로 더하지 않습니다.' },
     { id:'lance-shield', wt:'lance', style:'실드 태클', name:'실드태클 · 돌진 유지',
-      required:[abT('가드 성능',5),abT('반사',1,5),abT('불퇴전',4,5)], recommended:[], avoid:['매진'],
+      required:[abT('가드 성능',5),abT('반사',1,5),abT('불퇴전',4,5)], recommended:[], avoid:['매진'], rates:{ '불퇴전':85 },
       desc:'가드 성능 5 · 반사 1 이상 · 불퇴전 4~5. 돌진 중 가드를 활용합니다.',
       note:'반사 효과는 임의 피해 점수로 더하지 않습니다.' },
     { id:'sa-base', wt:'switch-axe', style:'', name:'기본 · 검/도끼 변형', required:[], recommended:[], avoid:[], metas:['변형 공격 강화'],
