@@ -286,6 +286,16 @@ function abStatusMetas(b, setting) {
   return [...Object.keys(BD_STATUS_BOOST).filter(s => bdStatusBoostApplies(s, w)), '상태 이상 축적 시 위력 UP'];
 }
 const abSustains = b => { const type = BUILD.weaponTypes.find(t => t.k === b.wt)?.n; return !!(type && bdSkillDesc('강화 지속',1)?.includes(type)); };
+/* A6 #7: 방어구에 딸려 온 스킬 중 빼도 점수가 같은 것. 결과 칩을 흐리게 표시한다.
+   keep(핵심·사용자 지정)·운용·규칙 필수/권장·강화 지속·다른 효과의 선행 스킬은 점수가 없어도 제외. */
+function abInertSkills(b, keep = new Set()) {
+  const lv = new Map(bdTotals(b)), w = bdScoreWeapon(b), rule = abOperationRule(b), score = bdStats(b).score;
+  const protect = new Set([...keep, ...AB_RULES.operation, ...[...(rule?.required || []), ...(rule?.recommended || [])].map(t => t.s)]);
+  if (abSustains(b)) protect.add('강화 지속');
+  for (const [s, n] of lv) for (const e of bdEffects(bdSkillDesc(s, n) || '', s, w)) if (e.need) protect.add(e.need.s);
+  return new Set([...lv.keys()].filter(s => !protect.has(s) && bdStats({ ...b, ignore:[...(b.ignore || []), s] }).score === score));
+}
+const AB_INERT_TITLE = '방어구에 붙어 온 스킬 · 점수 없음';
 /* W7: 단일 버프 분류는 선별 순위만 결정한다. 복합/회심 효과는 별도 실효 비교. */
 function abBuffTier(effects) {
   const types = effects.map(e => ['dmg','atk','ele'].includes(e.k) && !e.onCrit && !e.perBaseCrit && !e.hpx
@@ -1082,7 +1092,11 @@ function abEquipmentUI(b) {
   const core = new Set(abState.targets.map(t => t.s));
   abOperationRule(b, undefined, abState.styleOff)?.required.forEach(t => core.add(t.s));
   if (abState.lockon && abMelee(b.wt)) core.add('록온');
-  const chips = (skills, drift = false) => skills.map(x => `<span class="chip${core.has(x.s) ? ' ab-core' : ''}${drift ? ' ab-drift-skill' : ''}"${drift ? ' title="표류연성 스킬"' : ''}>${esc(x.s)}<b>${x.lv}</b></span>`).join('');
+  const inert = abInertSkills(b, core);
+  const chips = (skills, drift = false) => skills.map(x => {
+    const title = [drift && '표류연성 스킬', inert.has(x.s) && AB_INERT_TITLE].filter(Boolean).join(' · ');
+    return `<span class="chip${core.has(x.s) ? ' ab-core' : ''}${drift ? ' ab-drift-skill' : ''}${inert.has(x.s) ? ' ab-inert' : ''}"${title ? ` title="${title}"` : ''}>${esc(x.s)}<b>${x.lv}</b></span>`;
+  }).join('');
   const dots = part => `<span class="bd-ds">${Array.from({ length: bdSlotCount(b, part) }, (_, i) => {
     const d = b.ds[part]?.[i], g = d && bdStones().find(x => x.group === d.c);
     return `<span class="bd-dot${d ? ' on' : ''}"${g ? ` style="--c:${g.color}"` : ''} role="img" aria-label="${d ? esc(d.s + ' Lv1 · 표류석【' + d.c + '】') : '빈 연성 슬롯'}" title="${d ? esc(d.s + ' Lv1') : '빈 연성 슬롯'}"></span>`;
@@ -1096,7 +1110,7 @@ function abEquipmentUI(b) {
   return `<div class="bd-rows ab-equipment">${row(b.wt, w.name, ws, bdBuildWSkills(b))}
     <p class="ab-weapon-info">${esc(style)}${bdStyleInfo(b).active ? ' · 스타일강화 Lv20' : ''} · ${b.params.map(p => p ? BD_PARAM_NAMES[p] : '미선택').join(' / ')}</p>
     ${BD_PARTS().map(({ k }) => { const s = bdSet(b[k]); return row(k, s.pieces[k].name, s, s.pieces[k].skills, bdStoneList(b, k)); }).join('')}</div>
-    <div class="ab-totals"><h4>스킬 합계 <small>강조: 핵심 스킬 · 필수 록온</small></h4><div class="bd-inline">${chips(bdTotals(b).map(([s, lv]) => ({ s, lv })))}</div>
+    <div class="ab-totals"><h4>스킬 합계 <small>강조: 핵심 스킬 · 필수 록온 · 흐림: 점수 없는 딸린 스킬</small></h4><div class="bd-inline">${chips(bdTotals(b).map(([s, lv]) => ({ s, lv })))}</div>
     <div class="bd-stats"><span>${BD_SI.atk}${base.atk} ▸ <b>${stats.now.atk}</b></span>${w.e && BD_EI[w.e] ? `<span>${bdIco(`assets/element/${BD_EI[w.e]}.png`)}${base.ele} ▸ <b>${stats.now.ele}</b></span>` : ''}<span>${BD_SI.crit}${base.crit}% ▸ <b>${stats.now.crit}%</b></span></div></div>`;
 }
 

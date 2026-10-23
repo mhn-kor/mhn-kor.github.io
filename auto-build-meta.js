@@ -225,9 +225,10 @@ function abmMetaUI() {
     <p id="abm-status" role="status" aria-live="polite">${esc(s.notice)}</p></div>`;
 }
 
-/* 결과 카드의 장비 목록. 메타 주축 스킬을 강조한다. */
-function abmEquipmentUI(b, core) {
-  const chips = (skills, drift = false) => skills.map(x => `<span class="chip${core.has(x.s) ? ' ab-core' : ''}${drift ? ' ab-drift-skill' : ''}">${esc(x.s)}<b>${x.lv}</b></span>`).join('');
+/* 결과 카드의 스킬 칩. 메타 주축 스킬은 강조, 점수 없는 딸린 스킬(A6 #7)은 흐리게. */
+const abmChips = (skills, core, inert, drift = false) => skills.map(x => `<span class="chip${core.has(x.s) ? ' ab-core' : ''}${drift ? ' ab-drift-skill' : ''}${inert.has(x.s) ? ` ab-inert" title="${AB_INERT_TITLE}` : ''}">${esc(x.s)}<b>${x.lv}</b></span>`).join('');
+function abmEquipmentUI(b, core, inert) {
+  const chips = (skills, drift) => abmChips(skills, core, inert, drift);
   const row = (part, name, set, skills, stones = []) => `<div class="bd-row"><span class="bd-ti static"><img src="assets/part/${esc(part)}.png" width="24" height="24" alt=""></span>
     <div class="bd-body"><div class="bd-line">${bdMon(set.key)}<span class="ab-name"><span class="bd-nm">${esc(name)}</span></span></div>
     <div class="bd-inline">${chips(skills)}${chips(stones.map(d => ({ s:d.s, lv:1 })), true)}</div></div></div>`;
@@ -248,11 +249,12 @@ function abmReasonUI(r, meta, lv) {
 }
 function abmCardUI(r, i, total, meta) {
   const lv = new Map(bdTotals(r.b)), core = new Set(meta.skeleton.map(t => t.s));
+  const inert = abInertSkills(r.b, new Set([...core, ...abmState.targets.map(t => t.s), ...(abmState.lockon ? ['록온'] : [])]));
   return `<article class="abm-slide bd-card ab-result" aria-label="${i + 1}/${total}">
     <div class="ab-heading"><h3>${i + 1}/${total}</h3><b class="ab-score">${r.score.toLocaleString()}점</b></div>
     <div class="ab-levels">${meta.skeleton.map(t => `<span>${esc(t.s)} <b>Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)}</b></span>`).join('')}<span>연성 ${r.drifts}칸</span></div>
-    <div class="ab-totals"><h4>스킬 합계</h4><div class="bd-inline">${bdTotals(r.b).map(([s, n]) => `<span class="chip${core.has(s) ? ' ab-core' : ''}">${esc(s)}<b>${n}</b></span>`).join('')}</div></div>
-    ${abmEquipmentUI(r.b, core)}
+    <div class="ab-totals"><h4>스킬 합계</h4><div class="bd-inline">${abmChips(bdTotals(r.b).map(([s, lv]) => ({ s, lv })), core, inert)}</div></div>
+    ${abmEquipmentUI(r.b, core, inert)}
     ${abmReasonUI(r, meta, lv)}
     <footer><button class="btn primary" data-abm-import="${esc(meta.id)}:${i}">내 빌드로 가져오기</button></footer></article>`;
 }

@@ -174,6 +174,14 @@ const get = s => vm.runInContext(s, ctx);
     const pool=[mk('a',100,5),mk('b',90,4)];
     assert.strictEqual(get('abBest')(pool,5).length,2,'이전 화면: 연성 최소 대안 유지');
     assert.deepStrictEqual(Array.from(get('abBest')(pool,5,{drift:false}).map(r=>r.score)),[100],'메타 화면: 연성 최소 대안 없음'); }
+  // 점수 없는 딸린 스킬 흐림 (A6 #7, 2026-10-23): 빼도 점수가 같으면 흐림. 운용 스킬·지정 스킬은 제외.
+  get('BUILD.sets').push({key:'inert-test',name:'검수',weapons:[],weaponSkills:[],pieces:{helm:{name:'검수',skills:[{s:'얼음 내성',lv:1},{s:'반사',lv:1},{s:'공격',lv:3}],slot:0}}});
+  try {
+    const b={...get('bdNewBuild')(),w:'mizu',wt:'long-sword',helm:'inert-test'};
+    const inert=get('abInertSkills')(b);
+    assert.ok(inert.has('얼음 내성')&&!inert.has('반사')&&!inert.has('공격'),'내성은 흐림, 반사(운용)·공격(점수)은 그대로');
+    assert.ok(!get('abInertSkills')(b,new Set(['얼음 내성'])).has('얼음 내성'),'지정 스킬은 흐리지 않음');
+  } finally { get('BUILD.sets').pop(); }
   // 역회심 무기 (CONCEPTS W2, 2026-10-21): 흉회심 메타가 아니어도 흉회심을 보충 후보로, 흉회심 메타는 1/3/5.
   const bdiab=p=>({...get('bdNewBuild')(),w:'b-diab',wt:'insect-glaive',style20:true,params:[p,p,p]});
   assert.ok(get('abPolicy')(bdiab('atk'),'manual',[{s:'연격·경지',min:2,max:2}]).fillers.includes('흉회심'),'역회심 무기 단일 메타에서도 흉회심 보충');

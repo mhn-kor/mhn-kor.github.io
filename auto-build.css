@@ -64,6 +64,7 @@
 .ab-result .bd-dot { cursor: default; }
 .ab-result .bd-dot:not(.on):hover { background: rgba(255,255,255,.14); }
 .ab-result .ab-drift-skill { border-color: var(--amber); border-style: dashed; }
+.ab-result .ab-inert { opacity: .5; }
 .ab-reason h4 { margin: 14px 0 5px; font-size: 13px; color: var(--bone); }
 .ab-reason p { margin: 5px 0; }
 .ab-reason ul { padding-left: 18px; margin: 5px 0; }
