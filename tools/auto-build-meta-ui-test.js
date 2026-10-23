@@ -77,6 +77,16 @@ const { pathToFileURL } = require('url');
       await page.evaluate(() => { location.hash = 'auto-build'; });
       await page.locator('#abm-screen').waitFor({ state: 'visible' });
       assert.strictEqual(await page.locator('#ab-screen').isVisible(), false);
+      // 메타 종류: 컨셉 메타를 고르면 컨셉 메타만 보인다 (2026-10-23).
+      if (width === 1280) {
+        await page.locator('[data-abm="kind"]').selectOption('concept');
+        await page.waitForFunction(() => abmState.metas?.length && !abmState.busy, null, { timeout: 120000 });
+        assert.ok(await page.evaluate(() => abmState.metas.every(m => m.concept)), '컨셉 메타만 표시');
+        assert.ok((await page.locator('.abm-meta').first().innerText()).length > 0);
+        await page.locator('[data-abm="kind"]').selectOption('skill');
+        await page.waitForFunction(() => abmState.metas?.length && !abmState.busy, null, { timeout: 120000 });
+        assert.ok(await page.evaluate(() => abmState.metas.every(m => !m.concept)), '스킬 메타로 복귀');
+      }
       await page.locator('[data-abm-back]').click();
       await page.locator('#bd-cards').waitFor({ state: 'visible' });
       assert.deepStrictEqual(errors, []);

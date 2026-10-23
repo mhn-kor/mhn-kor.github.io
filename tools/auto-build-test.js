@@ -182,6 +182,27 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(inert.has('얼음 내성')&&!inert.has('반사')&&!inert.has('공격'),'내성은 흐림, 반사(운용)·공격(점수)은 그대로');
     assert.ok(!get('abInertSkills')(b,new Set(['얼음 내성'])).has('얼음 내성'),'지정 스킬은 흐리지 않음');
   } finally { get('BUILD.sets').pop(); }
+  // 견인불발 3은 'Lv2의 효과와 더불어'로 회심 +50%를 물려받고, 조건부 후보라 기본은 끔 (2026-10-23).
+  { const ls={...get('bdNewBuild')(),w:'mizu',wt:'long-sword'};
+    assert.deepStrictEqual(Array.from(get('bdEffects')(get('bdSkillDesc')('견인불발',3),'견인불발',null).map(e=>e.k+e.v)),['crit50']);
+    assert.strictEqual(get('abAssumed')('견인불발',ls),false,'견인불발 기본 OFF');
+    assert.strictEqual(get('abAssumed')('견인불발',{...ls,_abAssume:{on:['견인불발']}}),true,'컨셉·직접 추가면 ON');
+    // 속성 메타: 경지 = 속성 5 + 경지 1~2, 하이 차지 = Lv2 이상 (만들 수 없는 물속성은 없음).
+    const hm={...get('bdNewBuild')(),w:'zino',wt:'hammer'}, metas=get('abmCandidates')(hm,{mode:'cycle'});
+    const mastery=metas.find(m=>m.skeleton[0].s==='번개속성 공격 강화');
+    assert.deepStrictEqual(Array.from(mastery.skeleton.map(t=>`${t.s} ${t.min}~${t.max}`)),['번개속성 공격 강화 5~5','번개속성 공격 강화·경지 1~2']);
+    assert.ok(mastery.extra.some(t=>t.s==='하이 차지【번개】'&&t.min===0),'경지 메타에 하이 차지는 점수 후보');
+    const hc=metas.find(m=>m.id==='e:high-charge');
+    assert.ok(hc&&hc.skeleton[0].s==='하이 차지【번개】'&&hc.skeleton[0].min===2&&hc.extra[0].s==='체력 증강'&&hc.extra[0].min===0);
+    assert.ok(!get('abmCandidates')(ls,{mode:'cycle'}).some(m=>m.id==='e:high-charge'),'물속성 하이 차지는 Lv1뿐');
+    // 컨셉 메타: 조건에 맞는 것만, 앉아쏘기 통상탄 컨셉은 첫째 탄 반복·탄 운용 조건 없음.
+    const ids=b=>Array.from(get('abmConcepts')(b,{mode:'cycle'}).map(m=>m.id));
+    assert.deepStrictEqual(ids(ls),['c:break-chase','c:sp-roar','c:bloodlust','c:laceration-crit']);
+    const crouch={...get('bdNewBuild')(),w:'jyur',wt:'heavy-gun',st:2,style20:true};
+    assert.ok(ids(crouch).includes('c:laceration-normal'));
+    assert.ok(!ids({...crouch,st:1}).includes('c:laceration-normal'),'가드리로드는 제외');
+    const cfg=get('abmConfig')(get('abmConcepts')(crouch,{mode:'cycle'}).find(m=>m.id==='c:laceration-normal'),{b:crouch,gun:{mode:'cycle'},targets:[]});
+    assert.strictEqual(cfg.gun.mode,'repeat'); assert.strictEqual(cfg.gun.slot,0); assert.strictEqual(cfg.styleGuide,false); }
   // 역회심 무기 (CONCEPTS W2, 2026-10-21): 흉회심 메타가 아니어도 흉회심을 보충 후보로, 흉회심 메타는 1/3/5.
   const bdiab=p=>({...get('bdNewBuild')(),w:'b-diab',wt:'insect-glaive',style20:true,params:[p,p,p]});
   assert.ok(get('abPolicy')(bdiab('atk'),'manual',[{s:'연격·경지',min:2,max:2}]).fillers.includes('흉회심'),'역회심 무기 단일 메타에서도 흉회심 보충');

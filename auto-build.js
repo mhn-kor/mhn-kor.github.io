@@ -222,7 +222,7 @@ const AB_TRAITS = {
 const AB_ASSUME = {
   monster: ['완전 충전','용맹','무심','추격','약점 특효'],
   off: ['그룹 사냥 강화【공격】','불굴','재난대처능력'],
-  candidate: ['앙심','힘의 해방'],
+  candidate: ['앙심','힘의 해방','견인불발'],
   sp: ['속성 공격 증강【SP】','투기 활성'],
   actions: { '공격적인 방어':'가드', '저스트 모으기 해방':'모으기', '차지 마스터':'모으기', '변형 공격 강화':'변형', '비연':'공중',
     '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기', '연격':'연속 타격', '기습':'후방', '불퇴전':'가드·카운터 보유' },
@@ -303,6 +303,9 @@ function abBuffTier(effects) {
   return types.length && types.every(t=>t===types[0]) ? types[0] : 9;
 }
 const abEquipmentSkills = () => [...new Set(bdOrderedSets().flatMap(s => Object.values(s.pieces).flatMap(p => p.skills.map(x => x.s))))];
+// 이 무기로 올릴 수 있는 최대 레벨: 부위별 최고 방어구 + 무기 스킬. 표류석이 있으면 최대 레벨.
+const abReachLv = (b, s) => abStonePool().has(s) ? abMax(s) : Math.min(abMax(s), (bdBuildWSkills(b).find(x => x.s === s)?.lv || 0)
+  + BD_PARTS().reduce((n, { k }) => n + Math.max(0, ...bdOrderedSets().map(set => set.pieces[k]?.skills.find(x => x.s === s)?.lv || 0)), 0));
 function abSupportSkills(b, setting) {
   const c = abContext(b,setting), row = abStyleRow(b);
   // 수치는 후보 선별용 상대 효율일 뿐 최종 피해 점수에 가산하지 않는다.

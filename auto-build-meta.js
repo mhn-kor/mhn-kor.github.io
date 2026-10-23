@@ -29,6 +29,19 @@ function abmCandidates(b, gun) {
     if (guide) { Object.assign(guide, { direction:d.id, skeleton, extra, desc:'운용 지침 메타. ' + d.desc }); continue; }
     metas.push({ id:'d:'+d.id, name:d.name.replace(/^(.*?) · 추천$/, '$1'), direction:d.id, skeleton, extra, desc:d.desc });
   }
+  // 속성 메타 (CONCEPTS '메타 탐색', 2026-10-23): 경지는 속성 강화 5가 조건이라 속성 5 + 경지 1~2(점수로 결정).
+  // 하이 차지는 Lv2 이상만 쓰고(1은 안 씀) 별도 메타로 둔다. 체력 증강은 더 나은 스킬이 없을 때만 들어가는 후보.
+  const c = abContext(b, gun), charge = c.element && `하이 차지【${c.w.e}】`, hc = charge && abMax(charge) && abReachLv(b, charge) >= 2;
+  const mastery = c.element && abEquipmentSkills().find(s => s === c.element + '·경지');
+  if (mastery) {
+    const skeleton = [{ s:c.element, min:5, max:5 }, { s:mastery, min:1, max:2 }], extra = hc ? [{ s:charge, min:0, max:abMax(charge) }] : [];
+    const m = metas.find(m => m.skeleton[0].s === c.element);
+    if (m) Object.assign(m, { skeleton, extra:[...m.extra.filter(t => t.s !== mastery && t.s !== c.element), ...extra] });
+    else metas.push({ id:'e:mastery', name:`${c.w.e}속성 5 + 경지`, direction:'manual', skeleton, extra,
+      desc:`${c.element} 5와 경지 1~2를 확보합니다. 경지 레벨과 하이 차지 추가는 점수로 정합니다.` });
+  }
+  if (hc) metas.push({ id:'e:high-charge', name:'하이 차지', direction:'manual', skeleton:[{ s:charge, min:2, max:abMax(charge) }],
+    extra:[{ s:'체력 증강', min:0, max:abMax('체력 증강') }], desc:`${charge} Lv2 이상을 확보합니다. 체력 증강은 더 나은 스킬이 없을 때만 들어갑니다.` });
   const used = new Set(metas.flatMap(m => m.skeleton.map(t => t.s)));
   const buff = s => bdEffects(bdSkillDesc(s, abMax(s)) || '', s, abGunWeapon(b, gun)).some(e => ['atk','dmg','status'].includes(e.k) && !e.onCrit);
   // 경지는 기본 스킬이 켜지는 무기에서만 (예: 연격이 꺼지는 랜스의 연격·경지 제외).
@@ -43,6 +56,32 @@ function abmCandidates(b, gun) {
   return metas;
 }
 
+/* 컨셉 메타 (docs/CONCEPTS.md '컨셉 일람'과 1:1, tools/auto-build-rules-test.js 대조, 2026-10-23 사용자).
+   유저들이 만든 특수 세팅(대량발생 8성 차원변이 한방컷 등): 컨셉 스킬을 정한 레벨로 확보하고 나머지는 점수(대미지)로 채운다.
+   점수 없는 컨셉 스킬(파괴왕【특수 스킬】·특수 스킬 위력 상승)은 확보만 하고 점수에 넣지 않는다.
+   when: crit=회심이 적용되는 무기·탄 / wt·style·style20·ammo=무기군·스타일·스타일강화·첫째 탄 계열.
+   opening: 시작과 동시에 첫째 탄을 쏘는 컨셉 → 첫째 탄 반복으로 계산하고 탄 운용 조건(반동·장전)을 걸지 않는다. */
+const AB_CONCEPTS = [
+  { id:'break-chase', name:'부위파괴 + 추격', skeleton:[{ s:'파괴왕【특수 스킬】', min:5, max:5 }, { s:'추격', min:5, max:5 }], extra:[], when:{} },
+  { id:'sp-roar', name:'특수위력 + 용맹', skeleton:[{ s:'특수 스킬 위력 상승', min:3, max:5 }, { s:'용맹', min:3, max:5 }], extra:[], when:{} },
+  { id:'bloodlust', name:'흡혈 (겁혈 + 돌파구)', skeleton:[{ s:'겁혈 망토', min:1, max:3 }, { s:'돌파구', min:1, max:5 }], extra:[], when:{} },
+  { id:'laceration-crit', name:'견인불발 + 회심', skeleton:[{ s:'견인불발', min:3, max:3 }, { s:'돌파구', min:1, max:5 }],
+    extra:['간파','약점 특효','슈퍼회심'], when:{ crit:true } },
+  { id:'laceration-normal', name:'견인불발 + 통상탄', skeleton:[{ s:'견인불발', min:3, max:3 }, { s:'돌파구', min:1, max:5 }, { s:'통상탄·속성 통상탄 강화', min:3, max:3 }],
+    extra:[], when:{ wt:'heavy-gun', style:'앉아쏘기', style20:true, ammo:'통상' }, opening:true },
+];
+const abmConceptWhen = w => [w.wt && BUILD.weaponTypes.find(t => t.k === w.wt)?.n, w.style, w.style20 && '스타일강화 Lv20',
+  w.ammo && `첫째 탄 ${w.ammo}(속성 ${w.ammo} 포함)`, w.crit && '회심 적용 무기·탄'].filter(Boolean).join(' · ') || '전체';
+function abmConcepts(b, gun) {
+  const c = abContext(b, gun), info = bdStyleInfo(b);
+  const fits = w => (!w.wt || w.wt === b.wt) && (!w.style || w.style === c.style) && (!w.style20 || info.active)
+    && (!w.ammo || bdAmmoFamily(bdWeaponOf(b)?.x?.[0] || '') === w.ammo) && (!w.crit || c.critAllowed);
+  return AB_CONCEPTS.filter(x => fits(x.when)).map(x => ({ id:'c:' + x.id, name:x.name, concept:true, direction:'manual',
+    ...(x.opening ? { gun:{ mode:'repeat', slot:0 }, styleGuide:false } : {}),
+    skeleton:x.skeleton.map(t => ({ ...t })), extra:x.extra.map(s => ({ s, min:0, max:abMax(s) })),
+    desc:`컨셉 메타. ${x.skeleton.map(t => `${t.s} ${t.min === t.max ? t.min : `${t.min}~${t.max}`}`).join(' + ')}를 확보하고, 나머지는 대미지 스킬로 채웁니다.${x.opening ? ' 첫째 탄을 시작부터 쏘는 기준이라 반동·장전 조건은 걸지 않습니다.' : ''}` }));
+}
+
 /* 메타 탐색 설정: 사용자 필수 + 메타 주축 스킬 + 방향의 투자 후보. 같은 스킬은 큰 최소로 합친다. */
 function abmConfig(meta, base) {
   const merged = new Map();
@@ -50,8 +89,8 @@ function abmConfig(meta, base) {
     const old = merged.get(t.s);
     merged.set(t.s, old ? { ...old, min:Math.max(old.min, t.min), max:Math.max(old.max, t.max) } : { ...t });
   }
-  return { b:base.b, gun:base.gun, direction:meta.direction, targets:[...merged.values()], drift:base.drift, lockon:base.lockon,
-    styleGuide:true, exclude:base.exclude, assumeOn:base.assumeOn, assumeOff:base.assumeOff };
+  return { b:base.b, gun:meta.gun || base.gun, direction:meta.direction, targets:[...merged.values()], drift:base.drift, lockon:base.lockon,
+    styleGuide:meta.styleGuide ?? true, exclude:base.exclude, assumeOn:base.assumeOn, assumeOff:base.assumeOff };
 }
 
 /* 탐색 한도를 잠시 바꿔 돌린다. AB_LIMIT은 auto-build.js의 공유 상수라 끝나면 반드시 되돌린다. */
@@ -108,7 +147,8 @@ async function abmSearch(metas, base, progress = () => {}, cancelled = () => fal
 }
 
 /* ── 화면 ─────────────────────────────────────────────────────── */
-const abmState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, gun:{ mode:'cycle' }, drift:true, lockon:true,
+// kind: 'skill'(스킬 메타, 기본) / 'concept'(컨셉 메타). 둘 중 하나만 보인다.
+const abmState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, gun:{ mode:'cycle' }, drift:true, lockon:true, kind:'skill',
   targets:[], exclude:[], assumeOn:[], assumeOff:[], adding:null, chip:null,
   metas:null, estimated:0, selected:[], picked:false, results:null, busy:'', run:0, notice:'', scroll:0, active:false };
 
@@ -120,7 +160,7 @@ async function abmRefresh() {
   const s = abmState, run = ++s.run;
   s.results = null; s.metas = null; s.estimated = 0; s.busy = 'estimate'; s.notice = '';
   const excluded = new Set(s.exclude.map(x => x.s));
-  const metas = abmCandidates(s.b, s.gun).filter(m => !m.skeleton.some(t => excluded.has(t.s)));
+  const metas = (s.kind === 'concept' ? abmConcepts : abmCandidates)(s.b, s.gun).filter(m => !m.skeleton.some(t => excluded.has(t.s)));
   abmRender();
   try {
     const out = await abmEstimate(metas, abmBase(), () => run !== s.run, (n, total) => {
@@ -169,10 +209,11 @@ function abmWeaponUI(b) {
       <label class="ab-check"><input type="checkbox" data-abm="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
       <label>스타일<select data-abm="st"${info.stylePick ? '' : ' disabled'}>${abOptions([[0, '기본 스타일'], ...bdStylesOf(b.wt).map((n, i) => [i + 1, n])], b.st)}</select></label>
     </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-abm-param="${i}"${info.active ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
-    ${modes.some(r => r.mode) || g ? `<div class="ab-config abm-extra">
+    <div class="ab-config abm-extra">
+      <label>메타 종류<select data-abm="kind">${abOptions([['skill', '스킬 메타'], ['concept', '컨셉 메타']], abmState.kind)}</select></label>
       ${modes.some(r => r.mode) ? `<label>운용 성향<select data-abm="mode">${abOptions(modes.map(r => [r.mode || '', r.name]), abStyleRow(b)?.mode || '')}</select></label>` : ''}
       ${g ? `<label>탄 운용<select data-abm="gunMode">${abOptions(g.modes, g.mode)}</select></label>
-        ${g.mode !== 'cycle' ? `<label>반복할 탄<select data-abm="gunSlot">${abOptions(g.choices.map(a => [a.i, `${a.i + 1}번 · ${a.name}`]), g.slot)}</select></label>` : ''}` : ''}</div>` : ''}
+        ${g.mode !== 'cycle' ? `<label>반복할 탄<select data-abm="gunSlot">${abOptions(g.choices.map(a => [a.i, `${a.i + 1}번 · ${a.name}`]), g.slot)}</select></label>` : ''}` : ''}</div>
     <p class="ab-base">${esc(w.name)} · 공격력 <b>${base.atk}</b>${w.e ? ` · ${esc(w.e)} <b>${base.ele}</b>` : ''} · 회심 <b>${base.crit}%</b></p></div>`;
 }
 
@@ -218,7 +259,9 @@ function abmMetaUI() {
       <small>${m.score == null ? '빠른 계산에서 구성 못 찾음' : `예상 ${m.score.toLocaleString()}점${m.refined ? '' : ' (빠른 계산)'}`}</small></button>`; };
   return `<div class="ab-box"><h3>④ 메타 선택 <small>최대 ${ABM.maxMetas}개 · 예상 점수순</small></h3>
     <div class="abm-metas" role="group" aria-label="메타 후보">${s.metas.map(chip).join('')}</div>
-    <p class="ab-muted">메타 주축 스킬 Lv${ABM.coreMin}+ 확보, 나머지는 점수순 · 예상 점수는 짧은 탐색 후 상위 메타를 다시 계산한 값</p>
+    ${s.metas.length ? '' : '<p class="ab-notice">이 무기·스타일·탄에 맞는 컨셉 메타가 없습니다. 스킬 메타로 바꿔 보세요.</p>'}
+    <p class="ab-muted">${s.kind === 'concept' ? '컨셉 스킬을 정한 레벨로 확보, 나머지는 대미지 점수순 · 점수 없는 컨셉 스킬(파괴왕【특수 스킬】·특수 스킬 위력 상승)은 확보만'
+      : `메타 주축 스킬 Lv${ABM.coreMin}+ 확보, 나머지는 점수순`} · 예상 점수는 짧은 탐색 후 상위 메타를 다시 계산한 값</p>
     <p class="ab-notice">메타당 최대 ${ABM.perMetaMs / 1000}초 · 많이 고를수록 오래 걸림</p>
     <div class="ab-actions"><button class="btn primary" data-abm-search${!n || abmBlocked() ? ' disabled' : ''}>${s.busy === 'search' ? '빌드 찾는 중…' : `메타 ${n}개로 빌드 찾기 (최대 ${n * ABM.perMetaMs / 1000}초)`}</button>
     ${s.busy === 'search' ? '<button class="btn ghost" data-abm-cancel>중지</button>' : ''}</div>
@@ -242,7 +285,7 @@ function abmReasonUI(r, meta, lv) {
   const means = [...lv].filter(([s, n]) => n && !meta.skeleton.some(t => t.s === s) && s !== '록온').sort((a, b) => b[1] - a[1]);
   const on = Object.entries(r.b.cond).filter(([, x]) => x).map(([n]) => n);
   return `<details class="abm-reason"><summary>근거</summary><ul>
-    <li>메타 주축 스킬: ${meta.skeleton.map(t => `${esc(t.s)} Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)} (기준 ${t.min}+)`).join(' · ')}</li>
+    <li>${meta.concept ? '컨셉 스킬' : '메타 주축 스킬'}: ${meta.skeleton.map(t => `${esc(t.s)} Lv${Math.min(abMax(t.s), lv.get(t.s) || 0)} (기준 ${t.min}+)`).join(' · ')}</li>
     <li>수단: ${means.slice(0, 4).map(([s, n]) => `${esc(s)} ${n}`).join(' · ') || '없음'}${means.length > 4 ? ` 외 ${means.length - 4}` : ''}</li>
     <li>발동 가정: ${on.map(esc).join(' · ') || '없음'}</li>
     <li>조건 OFF ${r.baseScore.toLocaleString()}점 · 비교 점수(실제 DPS 아님)</li></ul></details>`;
@@ -333,6 +376,7 @@ $('#abm-screen').addEventListener('change', e => {
   if (k === 'style20') { s.b.style20 = el.checked; if (!el.checked) s.b.st = 0; } // 스타일 선택은 Lv20 기준
   if (k === 'mode') { if (el.value) s.b.snsMode = el.value; else delete s.b.snsMode; }
   if (k === 'drift') s.drift = el.checked;
+  if (k === 'kind') s.kind = el.value;
   if (k === 'gunMode') s.gun = { ...s.gun, mode:el.value, slot:undefined };
   if (k === 'gunSlot') s.gun.slot = +el.value;
   if (['st', 'gunMode', 'gunSlot'].includes(k) && abGun(s.b)) s.gun = abGunInfo(s.b, s.gun).settings;

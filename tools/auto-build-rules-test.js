@@ -5,7 +5,7 @@ const ctx=vm.createContext({console,performance,structuredClone,setTimeout,
   $:()=>({hidden:true,dataset:{},addEventListener(){},setAttribute(){},close(){}}),
   location:{hash:'#build'},window:{},requestAnimationFrame(){},document:{querySelector(){return null;}},
   esc:String,closeOnBackdrop(){},nickAuto(){},localStorage:{getItem(){return null;},setItem(){}}});
-for(const f of ['smelt-data.js','skill-desc.js','skill-desc-overrides.js','build-data.js','build-styles.js','build-style-data.js','build.js','build-bowgun-data.js','auto-build.js'])
+for(const f of ['smelt-data.js','skill-desc.js','skill-desc-overrides.js','build-data.js','build-styles.js','build-style-data.js','build.js','build-bowgun-data.js','auto-build.js','auto-build-meta.js'])
   vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx);
 const get=s=>vm.runInContext(s,ctx), rules=get('AB_RULES'), abMax=get('abMax');
 const dir=path.join(root,'docs','weapons'), rows=new Map();
@@ -91,4 +91,16 @@ const docRates=Object.fromEntries(rateRows.map(c=>{
 }));
 same(JSON.parse(JSON.stringify(get('BD_RATE'))),docRates,'발동률 표 ↔ BD_RATE 불일치');
 for(const s of Object.keys(docRates)) assert.ok(skills.some(c=>c[0]===s),`발동률 표의 스킬이 스킬 사전에 없음: ${s}`);
-console.log(`운용 가이드 ↔ AB_RULES 일치 (${data.length}개 규칙) · 무기 특성 ${traitRows}행 · 기본 가정 일치 · 발동률 ${rateRows.length}종 일치`);
+// 빌드 컨셉 '컨셉 일람' 표 ↔ AB_CONCEPTS (auto-build-meta.js).
+const conceptDoc=fs.readFileSync(path.join(root,'docs','CONCEPTS.md'),'utf8').split('## 컨셉 일람')[1].split('\n## ')[0];
+const conceptRows=tableRows(conceptDoc).filter(c=>/^`.+`$/.test(c[0])), concepts=get('AB_CONCEPTS');
+same(conceptRows.map(c=>c[0].slice(1,-1)),concepts.map(c=>c.id),'컨셉 ID 불일치');
+for(const [row,c] of conceptRows.map((r,i)=>[r,concepts[i]])) {
+  assert.strictEqual(row[1],c.name,`컨셉 이름: ${c.id}`);
+  assert.strictEqual(row[2],fmt(c.skeleton),`컨셉 스킬: ${c.id}`);
+  assert.strictEqual(row[3],names(c.extra),`컨셉 후보: ${c.id}`);
+  assert.strictEqual(row[4],get('abmConceptWhen')(c.when),`컨셉 적용 조건: ${c.id}`);
+  assert.ok(row[5].startsWith('구현'),`컨셉 상태: ${c.id}`);
+  for(const t of [...c.skeleton,...c.extra.map(s=>({s,min:0,max:0}))]) { assert.ok(known.has(t.s),`없는 스킬: ${c.id}/${t.s}`); assert.ok(t.max<=abMax(t.s),`레벨 범위: ${c.id}/${t.s}`); }
+}
+console.log(`운용 가이드 ↔ AB_RULES 일치 (${data.length}개 규칙) · 무기 특성 ${traitRows}행 · 기본 가정 일치 · 발동률 ${rateRows.length}종 일치 · 컨셉 ${concepts.length}개 일치`);

@@ -219,6 +219,9 @@ function bdCombineEffects(effects) {
 }
 
 function bdEffects(desc, name = '', weapon = null) {
+  // 'LvN의 효과와 더불어'는 LvN 효과를 물려받는다 (예: 견인불발 3 = Lv2 회심 +50% + 자체 열상).
+  const inherit = name && /^Lv(\d)의 효과와 더불어\s*/.exec(desc);
+  if (inherit) return [...bdEffects(bdSkillDesc(name, +inherit[1]) || '', name, weapon), ...bdEffects(desc.slice(inherit[0].length), name, weapon)];
   const gun = ['light-gun', 'heavy-gun'].includes(weapon?.t);
   const families = gun ? (weapon.x || []).map(bdAmmoFamily) : [];
   // 차지액스 포술은 병 공격에만 들어가고 다른 빌드를 넘지 못해 점수에서 뺀다 (2026-10-19 사용자, weapons/charge-blade.md).
