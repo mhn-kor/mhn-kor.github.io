@@ -136,9 +136,9 @@ const get = s => vm.runInContext(s, ctx);
   assert.deepStrictEqual(Array.from(get('abStatusMetas')(poison)),['추가 공격【독】','상태 이상 축적 시 위력 UP']);
   assert.deepStrictEqual(Array.from(get('abStatusMetas')({...get('bdNewBuild')(),w:'rado',wt:'hammer'})),['상태 이상 축적 시 위력 UP']);
   assert.deepStrictEqual(Array.from(get('abStatusMetas')({...get('bdNewBuild')(),w:'mizu',wt:'shield-sword'})),[]);
-  // 슬래시액스 기본·비상용검: 변형 공격 강화 지침 메타 (2026-10-20). 변형 회심 방향의 약점 특효 메타 주축을 이어받는다.
+  // 슬래시액스 기본: 변형 공격 강화 지침 메타 (2026-10-20). 변형 회심 방향의 약점 특효 메타 주축을 이어받는다. 비상용검은 권장 (2026-10-24).
   const waterSa=get('abMonsters("switch-axe").find(s=>s.weapons.find(w=>w.t==="switch-axe").e==="물").key');
-  for (const st of [0,1]) {
+  for (const st of [0]) {
     const sa={...get('bdNewBuild')(),w:waterSa,wt:'switch-axe',st,style20:st>0}, metas=get('abmCandidates')(sa,{mode:'cycle'});
     const morph=metas.find(m=>m.name==='변형 공격 강화');
     assert.ok(morph&&morph.guide,`슬래시액스 ${st} 변형 공격 강화 지침 메타`);
@@ -195,7 +195,11 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('bdRateFor')(ratha,'변형 공격 강화',get('bdWeaponOf')(ratha)),50);
     assert.strictEqual(get('bdStats')(ratha).now.atk,Math.round(get('bdWeaponOf')(ratha).atk*(1+0.15*0.6)),'강격병 공격 +15% × 60%');
     assert.strictEqual(get('bdStats')(lago).now.ele,Math.round(get('bdWeaponOf')(lago).ele*(1+0.25*0.6)),'강속성병 속성 +25% × 60%');
-    assert.strictEqual(get('bdStats')(sa('ratha',1)).phial,null,'비상용검은 검 모드 비중 미정이라 병 없음');
+    const em=sa('ratha',1); assert.strictEqual(get('bdStats')(em).now.atk,Math.round(get('bdWeaponBase')(em).atk*(1+0.15*0.8)),'비상용검 병 비중 80%');
+    assert.strictEqual(get('bdRateFor')(em,'변형 공격 강화',get('bdWeaponOf')(em)),40);
+    assert.strictEqual(get('abAssumed')('변형 공격 강화',em),true,'비상용검 변형 공격 강화 권장 = 처음부터 켬');
+    assert.ok(!get('abmCandidates')(em,{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'비상용검은 지침 메타 아님');
+    assert.strictEqual(get('abStyleRow')(sa('b-diab',1)).id,'sa-emergency-brutal');
     const brutal=sa('b-diab'); assert.strictEqual(get('abStyleRow')(brutal).id,'sa-base-brutal');
     assert.ok(!get('abmCandidates')(brutal,{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'역회심 무기는 변형 지침 메타 없음');
     assert.ok(get('abPolicy')(brutal,'manual',[]).avoid.includes('변형 공격 강화'));

@@ -472,11 +472,11 @@ function bdStats(b, group = null) {
       if (BD_ELE_MUL.has(e.sk)) E *= 1 + v; else C += v;
     }
   }
-  // 슬래시액스 병: 검 모드에서 강격병 공격 +15%·강속성병 속성 +25%. 나우칼처럼 무기 공격·속성의 % 합산에 넣고, 검 모드 비중(운용 규칙 swordMode)만큼 기대값으로 더한다.
-  const swordMode = w?.t === 'switch-axe' ? bdStyleRule(b)?.swordMode || 0 : 0;
-  const phial = swordMode && (w.x || []).find(x => x === '강격병' || x === '강속성병');
-  if (phial === '강격병') B += 0.15 * swordMode / 100;
-  if (phial === '강속성병') C += 0.25 * swordMode / 100;
+  // 슬래시액스 병: 병이 터지는 공격에 강격병 공격 +15%·강속성병 속성 +25%. 나우칼처럼 무기 공격·속성의 % 합산에 넣고, 병 비중(운용 규칙 phialShare)만큼 기대값으로 더한다.
+  const phialShare = w?.t === 'switch-axe' ? bdStyleRule(b)?.phialShare || 0 : 0;
+  const phial = phialShare && (w.x || []).find(x => x === '강격병' || x === '강속성병');
+  if (phial === '강격병') B += 0.15 * phialShare / 100;
+  if (phial === '강속성병') C += 0.25 * phialShare / 100;
   const attack = ((base.atk - P) * B + A + P) * T;
   const normalEle = base.ele ? (base.ele * C + D) * E : 0;
   const criticalEle = base.ele ? (base.ele * (C + R) + D) * E : 0;
@@ -497,7 +497,7 @@ function bdStats(b, group = null) {
   const score = b.bowEfficiency && bowCycle?.multiplier ? Math.round(baseScore * bowCycle.multiplier) : baseScore;
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
   return { base, now, score, baseScore, bowCycle, hp, conds, ammo, critApplies, statusWeapon, buildup, branches: { normal, critical, p, normalEle, criticalEle },
-    phial: phial ? { name: phial, swordMode } : null,
+    phial: phial ? { name: phial, share: phialShare } : null,
     effects: eff, damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null,
     co: { A, B, C, D, E, F, G, P, S, T, R, critX, negCritX } };
 }
@@ -1180,7 +1180,7 @@ function bdCalc(b) {
     rows.push(`<span>회심 공격</span><i>대미지 배율 · 회심 ×${f(co.critX)} 반영 = ${f(stats.branches.critical)}</i>`);
   }
   rows.push(`<span>점수</span><i>${bdScoreFormula(stats)}</i>`);
-  if (stats.phial) rows.push(`<span>슬래시액스 병</span><i>${esc(stats.phial.name)} 검 모드 ${stats.phial.name === '강격병' ? '공격 +15%' : '속성 +25%'} × 검 모드 비중 ${stats.phial.swordMode}% (무기 ${stats.phial.name === '강격병' ? '공격' : '속성'} % 합산)</i>`);
+  if (stats.phial) rows.push(`<span>슬래시액스 병</span><i>${esc(stats.phial.name)} ${stats.phial.name === '강격병' ? '공격 +15%' : '속성 +25%'} × 병 비중 ${stats.phial.share}% (무기 ${stats.phial.name === '강격병' ? '공격' : '속성'} % 합산)</i>`);
   if (stats.charge) rows.push(`<span>차지 묶음</span><i>${stats.charge.skills.map(esc).join(' · ')} 함께 적용 ${stats.charge.on} × ${stats.charge.rate}% + 미적용 ${stats.charge.off} × ${100 - stats.charge.rate}% ≈ <b>${stats.score}</b></i>`);
 
   return `<div class="bd-calc">
