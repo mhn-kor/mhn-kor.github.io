@@ -102,7 +102,7 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
 
 /* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
-   styles: style ''=기본 스타일. mode=같은 스타일 안의 운용 성향. when=무기 조건 (element/raw, brutal=무기 기본 회심 음수: 같은 스타일의 일반 행보다 우선).
+   styles: style ''=기본 스타일. mode=같은 스타일 안의 운용 성향. when=무기 조건 (element/raw=속성·상태이상 유무, attr/noattr=불·물·번개·얼음·용 속성 유무(상태이상·병 제외), brutal=무기 기본 회심 음수: 같은 스타일의 일반 행보다 우선).
    phialShare=슬래시액스 병이 터지는 공격 비중 % (강격병 공격 +15%·강속성병 속성 +25%를 이 비중만큼, build.js bdStats). max 'MAX'=스킬 최대.
    metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). rates=스타일별 발동률 {스킬: %} (BD_RATE 덮어쓰기). charge=차지 묶음 {rate, skills}: 같은 차지 공격에 함께 붙는 스킬을 묶어 비중으로 계산 (build.js bdChargeGroup). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
 const abT = (s, min, max = min) => ({ s, min, max });
@@ -128,6 +128,12 @@ const AB_RULES = {
       desc:'도끼 강화 후 도끼에도 병이 터집니다(병 비중 80%). 변형 공격 강화는 검 게이지를 빨리 모으는 권장 스킬입니다(발동률 40%).' },
     { id:'sa-emergency-brutal', wt:'switch-axe', style:'비상용검', when:'brutal', name:'비상용검 · 역회심 무기', required:[], recommended:[], avoid:['변형 공격 강화'],
       phialShare:80, desc:'역회심 무기는 변형 공격 강화를 채용하지 않습니다.' },
+    { id:'sa-counter-raw', wt:'switch-axe', style:'속성충전 카운터', when:'noattr', name:'속성충전 카운터 · 무속성 무기', required:[abT('앙갚음',5)], recommended:[],
+      avoid:['변형 공격 강화'], phialShare:70,
+      desc:'앙갚음 5 (카운터 성공률 + 무기 공격력 비례 대미지). 변형 공격은 도끼로 끝나 변형 공격 강화가 발동하지 않습니다.' },
+    { id:'sa-counter-element', wt:'switch-axe', style:'속성충전 카운터', when:'attr', name:'속성충전 카운터 · 속성 무기', required:[abT('앙갚음',1)], recommended:[],
+      avoid:['변형 공격 강화'], phialShare:70,
+      desc:'앙갚음 1 (카운터 성공률). 앙갚음 대미지는 속성을 쓰지 않아 속성 무기는 성공률용 1만 둡니다.' },
     { id:'hammer-base', wt:'hammer', style:'', name:'기본 · 쿵쿵따 연계', required:[],
       recommended:[abT('속성 공격 증강【SP】',0,'MAX')], avoid:['유타·향음 강화','차지 마스터','저스트 모으기 해방','차지 스톡'],
       desc:'일반 공격 파생(쿵-쿵-따)이 주력이라 모으기 계열 스킬을 쓰지 않고 다른 근접 무기처럼 세팅합니다. 용맹·속성 공격 증강【SP】 발동을 베이스로 속성 강화를 맞춥니다.' },
@@ -276,7 +282,8 @@ function abAssumed(s, b, { fill = false, lv = null, row = abStyleRow(b) } = {}) 
 }
 function abStyleRow(b) {
   const style = bdStylesOf(b.wt)[b.st - 1] || '', elemental = () => !!(abElementSkill(b) || bdBuildupApplies(bdWeaponOf(b)));
-  const brutal = r => r.when === 'brutal', fits = r => !r.when || (brutal(r) ? (bdWeaponOf(b)?.crit || 0) < 0 : (r.when === 'element') === elemental());
+  const brutal = r => r.when === 'brutal', attr = r => ['attr','noattr'].includes(r.when);
+  const fits = r => !r.when || (brutal(r) ? (bdWeaponOf(b)?.crit || 0) < 0 : attr(r) ? (r.when === 'attr') === !!abElementSkill(b) : (r.when === 'element') === elemental());
   const rows = AB_RULES.styles.filter(r => r.wt === b.wt && [].concat(r.style).includes(style) && fits(r));
   const pick = list => list.find(r => r.mode && r.mode === b.snsMode) || list.find(r => !r.mode);
   return pick(rows.filter(brutal)) || pick(rows.filter(r => !brutal(r))) || null;

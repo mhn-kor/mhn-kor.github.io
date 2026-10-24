@@ -200,6 +200,12 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abAssumed')('변형 공격 강화',em),true,'비상용검 변형 공격 강화 권장 = 처음부터 켬');
     assert.ok(!get('abmCandidates')(em,{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'비상용검은 지침 메타 아님');
     assert.strictEqual(get('abStyleRow')(sa('b-diab',1)).id,'sa-emergency-brutal');
+    // 속성충전 카운터: 불·물·번개·얼음·용 속성 무기는 앙갚음 1, 무속성·상태이상 무기(병 포함)는 5. 병 비중 70%.
+    const ctr=w=>{ const x=sa(w,2); return [get('abStyleRow')(x).id, get('abSearchTargets')({b:x,targets:[],gun:{mode:'cycle'},styleGuide:true}).find(t=>t.s==='앙갚음')?.min]; };
+    assert.deepStrictEqual(Array.from(ctr('mizu')),['sa-counter-element',1]);
+    assert.deepStrictEqual(Array.from(ctr('ore')),['sa-counter-raw',5],'무속성 + 독병');
+    assert.deepStrictEqual(Array.from(ctr('puke')),['sa-counter-raw',5],'상태이상 무기');
+    assert.strictEqual(get('bdStats')(sa('ratha',2)).phial.share,70);
     const brutal=sa('b-diab'); assert.strictEqual(get('abStyleRow')(brutal).id,'sa-base-brutal');
     assert.ok(!get('abmCandidates')(brutal,{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'역회심 무기는 변형 지침 메타 없음');
     assert.ok(get('abPolicy')(brutal,'manual',[]).avoid.includes('변형 공격 강화'));
