@@ -102,7 +102,8 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
 
 /* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
-   styles: style ''=기본 스타일. mode=같은 스타일 안의 운용 성향. when=무기 조건. max 'MAX'=스킬 최대.
+   styles: style ''=기본 스타일. mode=같은 스타일 안의 운용 성향. when=무기 조건 (element/raw, brutal=무기 기본 회심 음수: 같은 스타일의 일반 행보다 우선).
+   swordMode=슬래시액스 검 모드 비중 % (병 효과: 강격병 공격 +15%·강속성병 속성 +25%를 이 비중만큼, build.js bdStats). max 'MAX'=스킬 최대.
    metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). rates=스타일별 발동률 {스킬: %} (BD_RATE 덮어쓰기). charge=차지 묶음 {rate, skills}: 같은 차지 공격에 함께 붙는 스킬을 묶어 비중으로 계산 (build.js bdChargeGroup). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
 const abT = (s, min, max = min) => ({ s, min, max });
 const AB_RULES = {
@@ -118,7 +119,10 @@ const AB_RULES = {
       desc:'가드 성능 5 · 반사 1 이상 · 불퇴전 4~5. 돌진 중 가드를 활용합니다.',
       note:'반사 효과는 임의 피해 점수로 더하지 않습니다.' },
     { id:'sa-base', wt:'switch-axe', style:'', name:'기본 · 검/도끼 변형', required:[], recommended:[], avoid:[], metas:['변형 공격 강화'],
-      desc:'변형 공격 강화가 가장 유용한 스타일입니다. 점수는 변형 공격 비중(발동률 10%)만 반영해 낮게 나오므로 지침 메타로 항상 제안합니다.' },
+      rates:{ '변형 공격 강화':50 }, swordMode:60,
+      desc:'변형 공격·검 변환·도끼 변환에 변형 공격 강화가 적용됩니다(발동률 50%). 변형 회심 80%에 약점 특효로 100%를 맞추고 슈퍼회심·회심격을 살립니다.' },
+    { id:'sa-base-brutal', wt:'switch-axe', style:'', when:'brutal', name:'기본 · 역회심 무기', required:[], recommended:[], avoid:['변형 공격 강화'], metas:[],
+      swordMode:60, desc:'역회심 무기는 변형 공격 강화를 채용하지 않습니다.' },
     { id:'sa-emergency', wt:'switch-axe', style:'비상용검', name:'비상용검 · 도끼 중심', required:[], recommended:[], avoid:[], metas:['변형 공격 강화'],
       desc:'도끼 중심 일반 투자. 변형 공격 강화는 적용되지만 기본 스타일보다 효율이 낮습니다. 점수가 낮게 나와 지침 메타로 함께 제안합니다.' },
     { id:'hammer-base', wt:'hammer', style:'', name:'기본 · 쿵쿵따 연계', required:[],
@@ -269,9 +273,10 @@ function abAssumed(s, b, { fill = false, lv = null, row = abStyleRow(b) } = {}) 
 }
 function abStyleRow(b) {
   const style = bdStylesOf(b.wt)[b.st - 1] || '', elemental = () => !!(abElementSkill(b) || bdBuildupApplies(bdWeaponOf(b)));
-  const rows = AB_RULES.styles.filter(r => r.wt === b.wt && [].concat(r.style).includes(style)
-    && (!r.when || (r.when === 'element') === elemental()));
-  return rows.find(r => r.mode && r.mode === b.snsMode) || rows.find(r => !r.mode) || null;
+  const brutal = r => r.when === 'brutal', fits = r => !r.when || (brutal(r) ? (bdWeaponOf(b)?.crit || 0) < 0 : (r.when === 'element') === elemental());
+  const rows = AB_RULES.styles.filter(r => r.wt === b.wt && [].concat(r.style).includes(style) && fits(r));
+  const pick = list => list.find(r => r.mode && r.mode === b.snsMode) || list.find(r => !r.mode);
+  return pick(rows.filter(brutal)) || pick(rows.filter(r => !brutal(r))) || null;
 }
 function abStyleRule(b) {
   const r = abStyleRow(b), style = bdStylesOf(b.wt)[b.st - 1];

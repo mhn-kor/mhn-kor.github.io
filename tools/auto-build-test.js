@@ -190,6 +190,17 @@ const get = s => vm.runInContext(s, ctx);
       assert.strictEqual(get('bdEffects')(get('bdSkillDesc')(s,lv),s,null).length,0,`${s} 점수 없음`);
     assert.ok(get('abReachLv')({...get('bdNewBuild')(),w:'mizu',wt:'long-sword'},'하이 차지【물】')>=2,'아마츠 다리로 물 하이 차지 Lv2 가능');
   }
+  // 슬래시액스 기본 재설명 (2026-10-24): 변형 공격 강화 50%·검 모드 60% 병(나우칼과 같은 위치)·역회심은 변형 비권장·상태이상 병은 추가 공격 먼저.
+  { const sa=(w,st=0)=>({...get('bdNewBuild')(),w,wt:'switch-axe',st,style20:st>0}), ratha=sa('ratha'), lago=sa('lago');
+    assert.strictEqual(get('bdRateFor')(ratha,'변형 공격 강화',get('bdWeaponOf')(ratha)),50);
+    assert.strictEqual(get('bdStats')(ratha).now.atk,Math.round(get('bdWeaponOf')(ratha).atk*(1+0.15*0.6)),'강격병 공격 +15% × 60%');
+    assert.strictEqual(get('bdStats')(lago).now.ele,Math.round(get('bdWeaponOf')(lago).ele*(1+0.25*0.6)),'강속성병 속성 +25% × 60%');
+    assert.strictEqual(get('bdStats')(sa('ratha',1)).phial,null,'비상용검은 검 모드 비중 미정이라 병 없음');
+    const brutal=sa('b-diab'); assert.strictEqual(get('abStyleRow')(brutal).id,'sa-base-brutal');
+    assert.ok(!get('abmCandidates')(brutal,{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'역회심 무기는 변형 지침 메타 없음');
+    assert.ok(get('abPolicy')(brutal,'manual',[]).avoid.includes('변형 공격 강화'));
+    assert.strictEqual(get('abDirections')(sa('barr'),{mode:'cycle'})[0].id,'status','마비병은 추가 공격 방향 먼저');
+    assert.strictEqual(get('abDirections')(ratha,{mode:'cycle'})[0].id,'morph-critical','일반 무기는 변형 회심 먼저'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
