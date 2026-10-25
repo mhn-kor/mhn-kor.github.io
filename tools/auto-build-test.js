@@ -223,6 +223,11 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(get('abPolicy')(brutal,'manual',[]).avoid.includes('변형 공격 강화'));
     assert.strictEqual(get('abDirections')(sa('barr'),{mode:'cycle'})[0].id,'status','마비병은 추가 공격 방향 먼저');
     assert.strictEqual(get('abDirections')(ratha,{mode:'cycle'})[0].id,'morph-critical','일반 무기는 변형 회심 먼저'); }
+  // 차지액스 도끼 강화 (2026-10-25): 무속성·상태이상 무기는 연격 지침 메타, 속성 무기는 점수로만.
+  { const cb=w=>({...get('bdNewBuild')(),w,wt:'charge-blade',st:2,style20:true}), guide=b=>Array.from(get('abmCandidates')(b,{mode:'cycle'}).filter(m=>m.guide).map(m=>m.name));
+    assert.strictEqual(get('bdStylesOf')('charge-blade')[1],'도끼 강화');
+    for (const w of ['barr','basa']) { assert.ok(guide(cb(w)).includes('연격'),`${w} 연격 지침`); assert.strictEqual(get('abStyleRow')(cb(w)).id,'cb-axe-raw'); }
+    assert.ok(!guide(cb('tobi')).includes('연격')&&guide(cb('tobi')).includes('속전속결'),'속성 무기는 연격 지침 아님'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
