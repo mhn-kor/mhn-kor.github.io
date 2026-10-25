@@ -271,10 +271,11 @@ check('조건부 스킬은 켜면 발동률만큼 반영한다 (나우칼 기본
   // 무기별 값: 비연은 쌍검 20%, 한손검 80%
   close(calcSkills([['비연', 5]], { t: 'dual-blades' }, { '비연': true }).stats.co.F, 1 + 40 * 20 / 100 / 100, '비연 쌍검');
   close(calcSkills([['비연', 5]], { t: 'shield-sword' }, { '비연': true }).stats.co.F, 1 + 40 * 80 / 100 / 100, '비연 한손검');
-  // 변형 공격 강화도 10% (변형 공격 비중, 2026-10-20): 대미지 80% × 10%, 회심 80% × 10%
+  // 변형 공격 강화는 평균내지 않고 변형 공격 타격을 10%(나우칼 비중)로 따로 계산한다 (2026-10-25): 그 타격은 대미지 +80%·회심 +80%, 나머지는 없음.
   const morph = calcSkills([['변형 공격 강화', 3]], { t: 'switch-axe' }, { '변형 공격 강화': true }).stats;
-  close(morph.co.F, 1 + 80 * 10 / 100 / 100, '변형 공격 강화 대미지');
-  assert.strictEqual(morph.now.crit, 8);
+  assert.ok(morph.branch && morph.branch.rate === 10 && morph.branch.onCrit === 80 && morph.branch.offCrit === 0);
+  assert.strictEqual(morph.score, Math.round(morph.branch.on * 0.1 + morph.branch.off * 0.9));
+  assert.strictEqual(morph.now.crit, 0, '표시 회심은 나머지 공격 쪽');
   // 표에 없는 조건부 스킬은 100%
   assert.strictEqual(vm.runInContext("bdRate('통상탄·속성 통상탄 강화', { t: 'light-gun' })", ctx), 100);
   // 선행 스킬에 묶인 경지는 선행 스킬의 발동률 (연격 90%)

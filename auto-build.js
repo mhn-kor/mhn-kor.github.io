@@ -104,7 +104,7 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
    styles: style ''=기본 스타일. mode=같은 스타일 안의 운용 성향. when=무기 조건 (element/raw=속성·상태이상 유무, attr/noattr=불·물·번개·얼음·용 속성 유무(상태이상·병 제외), brutal=무기 기본 회심 음수: 같은 스타일의 일반 행보다 우선).
    phialShare=슬래시액스 병이 터지는 공격 비중 % (강격병 공격 +15%·강속성병 속성 +25%를 이 비중만큼, build.js bdStats). max 'MAX'=스킬 최대.
-   metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). rates=스타일별 발동률 {스킬: %} (BD_RATE 덮어쓰기). charge=차지 묶음 {rate, skills}: 같은 차지 공격에 함께 붙는 스킬을 묶어 비중으로 계산 (build.js bdChargeGroup). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
+   metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). rates=스타일별 발동률 {스킬: %} (BD_RATE 덮어쓰기). charge=차지 묶음 {rate, skills}: 같은 차지 공격에 함께 붙는 스킬을 묶어 비중으로 계산 (build.js bdBranch, 변형 공격 강화 무기는 자동으로 변형 공격 묶음). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
 const abT = (s, min, max = min) => ({ s, min, max });
 const AB_RULES = {
   styles: [
@@ -154,7 +154,7 @@ const AB_RULES = {
       recommended:[abT('불퇴전',0,5)], avoid:['매진'],
       desc:'가드 성능 최소3·목표5. 가드 후 카운터 고출력·초고출력으로 반격하며 불퇴전을 권장 후보로 비교합니다. 매진은 불퇴전을 꺼서 쓰지 않습니다.' },
     { id:'cb-sword', wt:'charge-blade', style:'검 강화', name:'검 강화 · 엑스호퍼', required:[abT('변형 공격 강화',3)],
-      recommended:[abT('불퇴전',0,5)], avoid:['가드 성능','매진'],
+      recommended:[abT('불퇴전',0,5)], avoid:['가드 성능','매진'], rates:{ '변형 공격 강화':35 },
       desc:'변형 공격 강화3 확보. 격침 후 엑스호퍼로 병·격침 대미지를 터뜨립니다. 가드는 위험할 때만 써서 가드 성능에 투자하지 않고, 제자리 운용이라 불퇴전을 권장 후보로 비교합니다.',
       note:'병 폭발은 속성 공격력, 격침 폭발은 조건 없는 공격력·대미지·속성 버프만 받고 회심·흉회심·상황 버프는 받지 않습니다. 점수는 공격을 나누지 않아 이 차이를 반영하지 못합니다.' },
     { id:'cb-axe', wt:'charge-blade', style:'도끼 강화', name:'도끼 강화 · 다단 연타', required:[], metas:['속전속결'],
@@ -328,8 +328,8 @@ function abSupportSkills(b, setting) {
   // 방어구 스킬과 연성 전용 스킬(불퇴전 등)을 같은 기준으로 비교한다. 레벨은 강제하지 않고 칸마다 점수로 채운다.
   return [...new Set([...abEquipmentSkills(), ...abStonePool().keys()])].filter(s => abAssumed(s, b, { fill:true, row })
     && (s !== '상태 이상 축적 시 위력 UP' || bdBuildupApplies(c.w))).map(s => {
-    // 조건부 효과는 발동률 기대값 (BD_RATE, 차지 묶음 스킬은 묶음 비중)
-    const weapon = abGunWeapon(b,setting), rate = (bdChargeGroup(b)?.skills.includes(s) ? bdChargeGroup(b).rate : bdRateFor(b, s, weapon)) / 100;
+    // 조건부 효과는 발동률 기대값 (BD_RATE, 공격 묶음 스킬은 묶음 비중)
+    const weapon = abGunWeapon(b,setting), branch = bdBranch(b, weapon), rate = (branch?.skills.includes(s) ? branch.rate : bdRateFor(b, s, weapon)) / 100;
     const effects = bdEffects(bdSkillDesc(s, abMax(s)) || '', s, weapon).map(e => e.cond && e.k !== 'hp' ? { ...e, v: e.v * rate } : e);
     const value = effects.reduce((n, e) => {
       if (e.el && e.el !== c.w?.e) return n;

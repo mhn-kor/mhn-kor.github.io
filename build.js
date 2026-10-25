@@ -162,9 +162,11 @@ const BD_RATE = {
   '추가 공격【독】': 27, '추가 공격【마비】': 20, '추가 공격【폭파】': 10,
 };
 const bdRate = (name, w) => { const r = BD_RATE[name]; return r == null ? 100 : typeof r === 'number' ? r : r.w[w?.t] ?? r.d; };
-/* 차지 묶음: 같은 차지 공격에서 함께 터지는 스킬(예: 해머 수면 치기의 유타·향음 강화 + 차지 마스터).
-   운용 규칙 행의 charge {rate, skills}가 정한다 (auto-build.js AB_RULES, 2026-10-22 사용자).
-   점수 = 차지 비중 × (묶음 스킬 모두 적용) + (1 − 비중) × (묶음 스킬 없음). 따로 평균내면 두 효과가 곱해지는 몫이 빠진다. */
+/* 공격 묶음: 특정 공격에서만 터지는 스킬은 그 공격의 비중으로 따로 계산한다.
+   점수 = 비중 × (묶음 스킬 100% 적용) + (1 − 비중) × (묶음 스킬 없음). 효과를 평균내면 두 효과가 곱해지는 몫과 회심 100% 상한이 틀어진다.
+   - 차지 묶음: 운용 규칙 행의 charge {rate, skills} (예: 해머 수면 치기의 유타·향음 강화 + 차지 마스터, 2026-10-22 사용자).
+   - 변형 공격: 변형 공격 강화를 쓰는 무기는 변형 공격 타격만 발동률 비중으로 따로 계산한다. 그 타격의 회심은 100%에서 멈추고
+     나머지 공격은 남은 회심으로 계산한다. 변형 공격 강화가 붙는 타격에는 체인지 부스트가 항상 붙는다(also) (2026-10-25 사용자). */
 const bdRuleCache = new Map();
 function bdStyleRule(b) {
   if (typeof abStyleRow !== 'function') return null;
@@ -172,7 +174,13 @@ function bdStyleRule(b) {
   if (!bdRuleCache.has(key)) { if (bdRuleCache.size >= 512) bdRuleCache.clear(); bdRuleCache.set(key, abStyleRow(b) || null); }
   return bdRuleCache.get(key);
 }
-const bdChargeGroup = b => bdStyleRule(b)?.charge || null;
+function bdBranch(b, w = bdWeaponOf(b)) {
+  const charge = bdStyleRule(b)?.charge;
+  if (charge) return { label: '차지 묶음', rate: charge.rate, skills: charge.skills, also: [] };
+  if (BD_SKILL_WEAPONS['변형 공격 강화'].includes(b.wt))
+    return { label: '변형 공격', rate: bdRateFor(b, '변형 공격 강화', w), skills: ['변형 공격 강화'], also: ['체인지 부스트'] };
+  return null;
+}
 /* 스타일별 발동률: 운용 규칙 행의 rates가 BD_RATE를 덮어쓴다 (예: 해머 임팩트 크레이터 비연 60%, 2026-10-22 사용자). */
 const bdRateFor = (b, name, w) => bdStyleRule(b)?.rates?.[name] ?? bdRate(name, w);
 /* 축적 확률 = (100 + 가산) ÷ 3, 최대 100% (나우칼 '상태 이상 발동률', 정면 기준). 기습【상태 이상】은 후방 조건이라 넣지 않는다. */
@@ -394,16 +402,16 @@ function bdCondNames(b) {
    회심격은 회심 분기에만 C로 가산. 일반/회심 대미지를 구한 후 확률로 평균한다.
    모션치·육질은 1. 상태이상 스킬은 나우칼 기본 발동률로 기대값을 내고 S(⑪ 상태 이상 보정)에 곱한다. */
 function bdStats(b, group = null) {
-  // group: 차지 묶음 계산의 'on'(묶음 스킬 100%) / 'off'(묶음 스킬 제외). 바깥 호출은 두 경우를 차지 비중으로 섞는다.
-  const charge = bdChargeGroup(b);
-  if (charge && !group && charge.skills.some(s => b.cond?.[s] && !b.ignore?.includes(s) && bdTotals(b).some(([n, lv]) => n === s && lv > 0))) {
-    const withCharge = bdStats(b, 'on'), without = bdStats(b, 'off'), p = charge.rate / 100;
-    const mix = k => Math.round(withCharge[k] * p + without[k] * (1 - p));
-    return { ...withCharge, score: mix('score'), baseScore: mix('baseScore'),
-      charge: { rate: charge.rate, skills: charge.skills, on: withCharge.score, off: without.score } };
+  // group: 공격 묶음 계산의 'on'(묶음 스킬 100%) / 'off'(묶음 스킬 제외). 바깥 호출은 두 경우를 묶음 비중으로 섞는다.
+  const w = bdScoreWeapon(b), branch = bdBranch(b, w);
+  if (branch && !group && branch.skills.some(s => b.cond?.[s] && !b.ignore?.includes(s) && bdTotals(b).some(([n, lv]) => n === s && lv > 0))) {
+    const withB = bdStats(b, 'on'), without = bdStats(b, 'off'), p = branch.rate / 100;
+    const mix = k => Math.round(withB[k] * p + without[k] * (1 - p));
+    // 표시 수치(공격력·회심 등)는 비중이 큰 쪽을 보여 준다 (변형 공격은 나머지 공격 쪽).
+    return { ...(p > 0.5 ? withB : without), score: mix('score'), baseScore: mix('baseScore'),
+      branch: { label: branch.label, rate: branch.rate, skills: branch.skills, also: branch.also, on: withB.score, off: without.score, onCrit: withB.now.crit, offCrit: without.now.crit } };
   }
-  const chargeSkills = new Set(group ? charge.skills : []);
-  const w = bdScoreWeapon(b);
+  const groupSkills = new Set(group ? branch.skills : []), alsoOn = new Set(group === 'on' ? branch.also : []);
   const base = bdWeaponBase(b);
   const info = bdStyleInfo(b), P = info.active ? info.params.reduce((n, x) => n + (x?.stat === 'atk' ? x.value : 0), 0) : 0;
   let A = 0, B = 1, C = 1, D = 0, E = 1, F = 1, S = 1, T = 1, R = 0, critX = BD_CRIT_UP, negCritX = null, crit = base.crit;
@@ -420,7 +428,7 @@ function bdStats(b, group = null) {
   const conditional = new Map();
   for (const { name, lv, list } of entries) {
     const active = list.filter(e => e.cond && eligible(e));
-    if (active.length) conditional.set(name, { sk: name, rate: charge?.skills.includes(name) ? charge.rate : bdRateFor(b, name, w),
+    if (active.length) conditional.set(name, { sk: name, rate: branch?.skills.includes(name) ? branch.rate : bdRateFor(b, name, w),
       lv: Math.min(lv, bdSkillLevels(name)?.at(-1)[0] ?? lv), list: active, applied: [] });
   }
   for (const { name, list } of entries) {
@@ -434,8 +442,8 @@ function bdStats(b, group = null) {
       if ((parent || e.cond) && !on[parent ? parent.sk : name]) continue;
       // 켜진 조건부 효과는 발동률 기대값 (BD_RATE). 선행 스킬에 묶인 효과(경지 등)는 선행 스킬의 발동률, 체력은 그대로.
       const owner = parent ? parent.sk : name;
-      if (group === 'off' && chargeSkills.has(owner)) continue;
-      const rate = (parent || e.cond) && e.k !== 'hp' && !chargeSkills.has(owner) ? bdRateFor(b, owner, w) : 100;
+      if (group === 'off' && groupSkills.has(owner)) continue;
+      const rate = (parent || e.cond) && e.k !== 'hp' && !groupSkills.has(owner) && !alsoOn.has(owner) ? bdRateFor(b, owner, w) : 100;
       eff.push({ ...e, sk: name, ...(rate !== 100 ? { v: e.v * rate / 100, rate } : {}) });
     }
   }
@@ -1181,7 +1189,9 @@ function bdCalc(b) {
   }
   rows.push(`<span>점수</span><i>${bdScoreFormula(stats)}</i>`);
   if (stats.phial) rows.push(`<span>슬래시액스 병</span><i>${esc(stats.phial.name)} ${stats.phial.name === '강격병' ? '공격 +15%' : '속성 +25%'} × 병 비중 ${stats.phial.share}% (무기 ${stats.phial.name === '강격병' ? '공격' : '속성'} % 합산)</i>`);
-  if (stats.charge) rows.push(`<span>차지 묶음</span><i>${stats.charge.skills.map(esc).join(' · ')} 함께 적용 ${stats.charge.on} × ${stats.charge.rate}% + 미적용 ${stats.charge.off} × ${100 - stats.charge.rate}% ≈ <b>${stats.score}</b></i>`);
+  if (stats.branch) { const x = stats.branch, on = [...x.skills, ...x.also].map(esc).join(' · ');
+    rows.push(`<span>${esc(x.label)}</span><i>${x.label === '변형 공격' ? `변형 공격 타격(${on} 적용, 회심 ${Math.min(100, x.onCrit)}%) ${x.on} × ${x.rate}% + 나머지 공격(회심 ${x.offCrit}%) ${x.off}`
+      : `${on} 함께 적용 ${x.on} × ${x.rate}% + 미적용 ${x.off}`} × ${100 - x.rate}% ≈ <b>${stats.score}</b></i>`); }
 
   return `<div class="bd-calc">
     ${bdScoreContextUI(b)}

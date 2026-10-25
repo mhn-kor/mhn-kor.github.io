@@ -158,10 +158,10 @@ const get = s => vm.runInContext(s, ctx);
     get('BUILD.sets').push({key:'charge-test',name:'검수',weapons:[],weaponSkills:[],pieces:{helm:{name:'검수',skills:[{s:'유타·향음 강화',lv:5},{s:'차지 마스터',lv:5}],slot:0}}});
     try {
       const b={...hb,helm:'charge-test',cond:{'유타·향음 강화':true,'차지 마스터':true}}, st=get('bdStats')(b);
-      assert.ok(st.charge&&st.charge.rate===80,'차지 묶음 적용');
-      assert.strictEqual(st.score,Math.round(st.charge.on*.8+st.charge.off*.2));
-      assert.strictEqual(st.charge.off,get('bdStats')({...b,cond:{}}).score,'묶음 미적용 = 두 스킬 없음');
-      assert.ok(!get('bdStats')({...b,st:0}).charge,'기본 스타일은 묶음 없음');
+      assert.ok(st.branch&&st.branch.label==='차지 묶음'&&st.branch.rate===80,'차지 묶음 적용');
+      assert.strictEqual(st.score,Math.round(st.branch.on*.8+st.branch.off*.2));
+      assert.strictEqual(st.branch.off,get('bdStats')({...b,cond:{}}).score,'묶음 미적용 = 두 스킬 없음');
+      assert.ok(!get('bdStats')({...b,st:0}).branch,'기본 스타일은 묶음 없음');
     } finally { get('BUILD.sets').pop(); } }
   // 해머 임팩트 크레이터 (2026-10-22): 비연 필수 1 · 발동률 60% 덮어쓰기 · 비연 단일 메타 없음 · SP 증강 켬.
   { const hi={...get('bdNewBuild')(),w:'zino',wt:'hammer',st:2};
@@ -200,6 +200,18 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abAssumed')('변형 공격 강화',em),true,'비상용검 변형 공격 강화 권장 = 처음부터 켬');
     assert.ok(!get('abmCandidates')(em,{mode:'cycle'}).some(m=>m.guide&&m.name==='변형 공격 강화'),'비상용검은 지침 메타 아님');
     assert.strictEqual(get('abStyleRow')(sa('b-diab',1)).id,'sa-emergency-brutal');
+    // 변형 공격 묶음 (2026-10-25): 변형 공격 타격만 발동률 비중으로 따로 계산. 그 타격은 회심 100% 상한·체인지 부스트 100%.
+    { const stone=s=>({s,c:get('abStonePool')().get(s)});
+      const mb={...sa('mizu',1),helm:'goss',mail:'carnival-24',gloves:'nami',belt:'goss',greaves:'s-ratha',
+        ds:{helm:[stone('슈퍼회심')],mail:[stone('슈퍼회심')],gloves:[stone('슈퍼회심')],belt:[stone('슈퍼회심')],greaves:[stone('추격')]}};
+      const st=get('abScoreStats')(structuredClone(mb)), x=st.branch;
+      assert.ok(x&&x.label==='변형 공격'&&x.rate===40);
+      assert.strictEqual(st.score,Math.round(x.on*.4+x.off*.6));
+      assert.ok(x.onCrit>=100&&x.offCrit<100,'변형 타격만 회심 100%');
+      const withB=get('bdStats')({...structuredClone(mb),cond:Object.fromEntries(st.conds.map(c=>[c.sk,true]))},'on');
+      assert.ok(withB.effects.filter(e=>e.sk==='체인지 부스트').every(e=>!e.rate),'변형 타격에는 체인지 부스트 100%');
+      const noKanpa=get('abScoreStats')(structuredClone({...mb,ignore:['간파']}));
+      assert.ok(st.score-noKanpa.score<(st.branch.off-noKanpa.branch.off)*0.61,'간파는 나머지 공격 비중만큼만'); }
     // 속성충전 카운터: 불·물·번개·얼음·용 속성 무기는 앙갚음 1, 무속성·상태이상 무기(병 포함)는 5. 병 비중 70%.
     const ctr=w=>{ const x=sa(w,2); return [get('abStyleRow')(x).id, get('abSearchTargets')({b:x,targets:[],gun:{mode:'cycle'},styleGuide:true}).find(t=>t.s==='앙갚음')?.min]; };
     assert.deepStrictEqual(Array.from(ctr('mizu')),['sa-counter-element',1]);
