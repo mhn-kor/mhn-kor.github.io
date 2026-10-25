@@ -228,6 +228,11 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('bdStylesOf')('charge-blade')[1],'도끼 강화');
     for (const w of ['barr','basa']) { assert.ok(guide(cb(w)).includes('연격'),`${w} 연격 지침`); assert.strictEqual(get('abStyleRow')(cb(w)).id,'cb-axe-raw'); }
     assert.ok(!guide(cb('tobi')).includes('연격')&&guide(cb('tobi')).includes('속전속결'),'속성 무기는 연격 지침 아님'); }
+  // 차지액스 검 강화 비연 (2026-10-25): 엑스호퍼 타격에만 → 변형 공격 묶음(35%)에 함께. 묶음 안 100%, 나머지 0.
+  { const sw={...get('bdNewBuild')(),w:'tobi',wt:'charge-blade',st:1,style20:true,helm:'bari'}, br=get('bdBranch')(sw);
+    assert.deepStrictEqual(Array.from(br.skills),['변형 공격 강화','비연']); assert.strictEqual(br.rate,35);
+    const cond={'비연':true}, off=get('bdStats')({...sw,cond},'off'), on=get('bdStats')({...sw,cond},'on');
+    assert.ok(!off.effects.some(e=>e.sk==='비연')&&on.effects.some(e=>e.sk==='비연'&&!e.rate),'나머지 공격엔 비연 없음, 엑스호퍼 타격엔 100%'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
