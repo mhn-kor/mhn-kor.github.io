@@ -85,7 +85,7 @@
 | 한손검 | [weapons/shield-sword.md](weapons/shield-sword.md) | 작성 |
 | 대검 | [weapons/great-sword.md](weapons/great-sword.md) | 작성 |
 | 태도 | [weapons/long-sword.md](weapons/long-sword.md) | 지침 없음 |
-| 쌍검 | [weapons/dual-blades.md](weapons/dual-blades.md) | 지침 없음 |
+| 쌍검 | [weapons/dual-blades.md](weapons/dual-blades.md) | 기본 반영 (2026-10-25), 귀인화[짐승]·나선참 지침 없음 |
 | 해머 | [weapons/hammer.md](weapons/hammer.md) | 작성 (세 스타일) |
 | 수렵피리 | [weapons/hunting-horn.md](weapons/hunting-horn.md) | 지침 없음 |
 | 랜스 | [weapons/lance.md](weapons/lance.md) | 작성 |

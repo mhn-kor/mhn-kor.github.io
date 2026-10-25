@@ -37,10 +37,11 @@ function rules() {
   assert.strictEqual(tier([{k:'atk',pct:1,v:10},{k:'ele',v:100}]),9);
   // 무기 동작 조건: 무기 특성에 그 동작이 있는 스타일에서만 ON (WEAPONS.md, AB_ASSUME.actions).
   const assumed=(s,b)=>get('abAssumed')(s,b);
-  for(const wt of ['long-sword','dual-blades','shield-sword']) {
-    assert.strictEqual(assumed('차지 스톡',{wt}),false);
-    assert.strictEqual(assumed('비연',{wt}),false);
+  for(const [wt,st] of [['long-sword',0],['dual-blades',1],['shield-sword',0]]) {
+    assert.strictEqual(assumed('차지 스톡',{wt,st}),false);
+    assert.strictEqual(assumed('비연',{wt,st}),false);
   }
+  assert.strictEqual(assumed('비연',{wt:'dual-blades',st:0,w:'kulu'}),true,'쌍검 기본은 SP 공중 공격으로 비연 1 필수 (2026-10-25)');
   assert.strictEqual(assumed('비연',fall),true);
   assert.strictEqual(assumed('비연',{wt:'charge-blade',st:1}),true,'차지액스 검 강화 엑스호퍼는 공중 공격');
   for(const [wt,st,valid] of [['switch-axe',0,true],['switch-axe',1,true],['switch-axe',2,false],['charge-blade',0,false],['charge-blade',1,true],['charge-blade',2,false]])
