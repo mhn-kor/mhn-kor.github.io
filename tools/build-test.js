@@ -132,9 +132,10 @@ check('용맹은 첫 포효 조건 체크 시 공격력 정액만 더한다', fu
     const off = calcSkills([[name, lv]], { t: type });
     const on = calcSkills([[name, lv]], { t: type }, { [name]: true });
     assert.strictEqual(off.stats.now.atk, 1000);
-    assert.strictEqual(off.stats.score, 1500);
+    const K = type === 'bow' ? 1.25 : 1; // 활 3차지 보정 (2026-10-25)
+    assert.strictEqual(off.stats.score, 1500 * K);
     assert.strictEqual(on.stats.now.atk, 1000 + values[lv - 1]);
-    assert.strictEqual(on.stats.score, 1500 + values[lv - 1]);
+    assert.strictEqual(on.stats.score, Math.round((1500 + values[lv - 1]) * K));
     assert.strictEqual(on.stats.co.A, values[lv - 1]);
     assert.strictEqual(on.stats.co.B, 1);
     assert.strictEqual(on.stats.co.F, 1);
@@ -1054,7 +1055,7 @@ check('스킬 표시를 끄면 같은 목록이 아이콘 격자가 된다', () 
   assert.ok(on.includes('bd-gh') && !off.includes('bd-gh'), '격자에 소재 머리글이 남아 있습니다');
 });
 
-check('활 보정은 첫 Lv4와 집중을 별도로 계산하고 저장·공유한다', () => {
+check('활 보정은 첫 Lv4와 집중을 별도로 계산하고 저장·공유한다 (3차지 ×1.25)', () => {
   const state = vm.runInContext('bdState', ctx);
   const set = { key: 'bow-eff-test', name: '활 테스트', pieces: {}, weaponSkills: [],
     weapons: [{ t: 'bow', atk: 3000, ele: 0, crit: 0, e: null,
@@ -1064,47 +1065,47 @@ check('활 보정은 첫 Lv4와 집중을 별도로 계산하고 저장·공유�
   const stats = () => vm.runInContext('bdStats(bowTestBuild)', ctx);
   try {
     assert.strictEqual(b.bowEfficiency, false);
-    assert.strictEqual(stats().score, 3000);
+    assert.strictEqual(stats().score, 3750, '활 점수는 3차지 기준 ×1.25');
     assert.strictEqual(stats().bowCycle.charge, 2);
     assert.strictEqual(stats().bowCycle.current, 9);
-    assert.strictEqual(stats().bowCycle.multiplier, 12 / 9);
+    assert.strictEqual(stats().bowCycle.multiplier, 12 / 9 / 1.25, '2차지 사격은 3차지 보정이 빠짐');
     b.bowEfficiency = true;
     const rates = [0, .05, .1, .15, .2, .3];
     for (let lv = 0; lv <= 6; lv++) {
       set.weaponSkills = lv ? [{ s: '집중', lv }] : [];
       const s = stats(), rate = rates[Math.min(5, lv)];
       assert.strictEqual(s.bowCycle.current, 6 * (1 - rate) + 3);
-      assert.strictEqual(s.score, Math.round(3000 * 12 / s.bowCycle.current));
+      assert.strictEqual(s.score, Math.round(3750 * 12 / s.bowCycle.current / 1.25));
       assert.strictEqual(s.co.F, 1);
       assert.ok(!s.conds.some(c => c.sk === '집중'));
     }
     const html = vm.runInContext('bdCalc(bowTestBuild)', ctx);
     assert.ok(html.includes('<details><summary>') && html.includes('계산 근거</span>') && !html.includes('<details open'));
     assert.ok(html.includes('스타일:</strong> 강연사') && html.includes('2차지 · 연사 Lv4'));
-    assert.ok(html.includes('×1.667') && html.includes('3000 → 5000점'));
+    assert.ok(html.includes('×1.333') && html.includes('3750 → 5000점') && html.includes('3차지 보정 없음'));
     assert.strictEqual(bdParse(bdShareParam(b)).bowEfficiency, true);
     b.bowEfficiency = false;
     assert.strictEqual(bdParse(bdShareParam(b)).bowEfficiency, false);
-    assert.strictEqual(stats().score, 3000);
+    assert.strictEqual(stats().score, 3750);
     assert.ok(!vm.runInContext('bdCalc(bowTestBuild)', ctx).includes('<details>'));
     b.bowEfficiency = true; b.st = 0; set.weaponSkills = [];
     assert.strictEqual(stats().bowCycle.reference, 5.5);
     set.weapons[0].x = ['Lv1 연사', 'Lv2 연사', 'Lv3 연사', 'Lv4 확산'];
     assert.strictEqual(stats().bowCycle.charge, 3);
-    assert.strictEqual(stats().score, 3000);
+    assert.strictEqual(stats().score, 3750);
     b.st = 2;
     assert.strictEqual(stats().bowCycle.current, 12);
-    assert.strictEqual(stats().score, 3000);
+    assert.strictEqual(stats().score, 3750);
     set.weapons[0].x = ['Lv4 확산', 'Lv4 확산', 'Lv4 확산', 'Lv4 확산'];
     assert.strictEqual(stats().bowCycle.charge, 0);
     assert.strictEqual(stats().bowCycle.current, 3);
     b.st = 1;
     assert.ok(stats().bowCycle.reason);
-    assert.strictEqual(stats().score, 3000);
+    assert.strictEqual(stats().score, 3750);
     assert.ok(vm.runInContext('bdCalc(bowTestBuild)', ctx).includes(' disabled'));
     b.st = 2; set.weapons[0].x = ['Lv1 연사', 'Lv2 연사', 'Lv3 연사', 'Lv3 연사'];
     assert.ok(stats().bowCycle.reason);
-    assert.strictEqual(stats().score, 3000);
+    assert.strictEqual(stats().score, 3750);
     delete set.weapons[0].x;
     assert.ok(stats().bowCycle.reason);
     b.wt = 'hammer'; set.weapons[0].t = 'hammer';

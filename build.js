@@ -351,6 +351,9 @@ function bdCachedEffects(desc, name, weapon) {
   return bdEffectCache.get(key);
 }
 
+/* 활 3차지 보정: 3차지 사격은 대미지 ×1.25 (나우칼 bowReference charge_adjust, 강사 포함·전 스타일, 2026-10-25 사용자).
+   화살 Lv가 아니라 차지 단계 기준이다 (크샬다오라 활 2차지 확산 Lv4는 ×1, 3차지 관통 Lv4만 ×1.25). 점수는 3차지 사격을 기준으로 한다. */
+const BD_BOW_CHARGE3 = 1.25;
 /* 첫 칸은 0차지. 일반은 과거 60fps 실측, 강연사는 사용자 실측 3차지 9초.
    스타일별 집중0·3차지가 비교 기준이며, 공격 동작은 각각 1초로 가정한다. */
 function bdBowCycle(b, lvOf) {
@@ -366,8 +369,10 @@ function bdBowCycle(b, lvOf) {
   const step = style === '강연사' ? 3 : 70 / 60, actions = style === '강연사' ? 3 : 2;
   const chargeTime = step * charge, current = chargeTime * (1 - reduction) + actions;
   const reference = step * 3 + actions;
+  // 기준(3차지)보다 앞 차지에서 쏘면 3차지 보정이 빠진다.
+  const bonus = charge < 3 ? 1 / BD_BOW_CHARGE3 : 1;
   return { style, charge, arrow: arrows[charge].replace(/^Lv4\s+/, '') + ' Lv4', focus,
-    reduction, chargeTime, actions, current, reference, multiplier: reference / current };
+    reduction, chargeTime, actions, current, reference, bonus, multiplier: reference / current * bonus };
 }
 
 /* 스킬 설명은 레벨별로 값이 달라, 합산된 레벨의 문장을 씁니다.
@@ -500,7 +505,8 @@ function bdStats(b, group = null) {
   const G = !critApplies ? 1 : q >= 0 ? 1 + q * (critX - 1) : negCritX == null ? 1 + r * (BD_CRIT_DOWN - 1)
     : r * BD_BRUTAL_RATE * negCritX + r * (1 - BD_BRUTAL_RATE) * BD_CRIT_DOWN + (1 - r);
   const statusWeapon=['독','마비','수면','폭파'].includes(w?.e);
-  const normal = (attack + (statusWeapon ? 0 : normalEle)) * F * S, critical = (attack + (statusWeapon ? 0 : criticalEle)) * F * S * critX;
+  const K = w?.t === 'bow' ? BD_BOW_CHARGE3 : 1; // 활 3차지 보정
+  const normal = (attack + (statusWeapon ? 0 : normalEle)) * F * S * K, critical = (attack + (statusWeapon ? 0 : criticalEle)) * F * S * K * critX;
   const baseScore = Math.round(R && p > 0 ? normal * (1 - p) + critical * p : normal * G);
   const bowCycle = bdBowCycle(b, lvOf);
   const score = b.bowEfficiency && bowCycle?.multiplier ? Math.round(baseScore * bowCycle.multiplier) : baseScore;
@@ -508,7 +514,7 @@ function bdStats(b, group = null) {
   return { base, now, score, baseScore, bowCycle, hp, conds, ammo, critApplies, statusWeapon, buildup, branches: { normal, critical, p, normalEle, criticalEle },
     phial: phial ? { name: phial, share: phialShare } : null,
     effects: eff, damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null,
-    co: { A, B, C, D, E, F, G, P, S, T, R, critX, negCritX } };
+    co: { A, B, C, D, E, F, G, K, P, S, T, R, critX, negCritX } };
 }
 
 const bdKoCompare = new Intl.Collator('ko').compare; // localeCompare(…, 'ko')와 같은 순서, 매번 콜레이터를 만들지 않는다
@@ -617,7 +623,7 @@ function bdBowEfficiency(b, stats) {
       <p>모으기: ${f(c.chargeTime)}초 × ${f(1 - c.reduction)} = ${f(c.chargeTime * (1 - c.reduction))}초</p>
       <p>공격 동작: 발사 1초＋강사 1초${c.style === '강연사' ? '＋강연사 1초' : ''} = ${c.actions}초</p>
       <p>현재 사이클: ${f(c.current)}초 / 기준: 같은 스타일의 집중 0 · 3차지 ${f(c.reference)}초</p>
-      <p>보정배율: ${f(c.reference)} ÷ ${f(c.current)} = <b>×${f(c.multiplier)}</b></p>
+      <p>보정배율: ${f(c.reference)} ÷ ${f(c.current)}${c.bonus !== 1 ? ` ÷ ${f(BD_BOW_CHARGE3)} (${c.charge}차지라 3차지 보정 없음)` : ''} = <b>×${f(c.multiplier)}</b></p>
       <p>기존 점수 ${stats.baseScore} × 보정배율 = <b>${stats.score}점</b></p>
       <p class="bd-bow-note">첫 번째 Lv4 화살을 사용하고 공격을 끊임없이 한다는 가정입니다.<br>
         공격 동작은 각각 1초로 가정합니다.<br>
@@ -1153,7 +1159,7 @@ function bdScoreFormula(stats) {
   const { now, co, branches: x, baseScore } = stats, f = bdCalcNumber;
   return co.R && x.p > 0
     ? `${f(x.normal)} × ${f(1 - x.p)} + ${f(x.critical)} × ${f(x.p)} ≈ ${baseScore}`
-    : `(${now.atk}${stats.base.ele && !stats.statusWeapon ? ` + ${now.ele}` : ''}) × ${f(co.F)}${co.S !== 1 ? ` × ${f(co.S)}` : ''} × ${f(co.G)} ≈ ${baseScore}`;
+    : `(${now.atk}${stats.base.ele && !stats.statusWeapon ? ` + ${now.ele}` : ''}) × ${f(co.F)}${co.S !== 1 ? ` × ${f(co.S)}` : ''}${co.K !== 1 ? ` × ${f(co.K)} (3차지)` : ''} × ${f(co.G)} ≈ ${baseScore}`;
 }
 function bdCalc(b) {
   const w = bdWeaponOf(b);

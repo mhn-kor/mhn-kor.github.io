@@ -22,7 +22,8 @@ const path = require('path'), { pathToFileURL } = require('url');
       assert.strictEqual(await page.locator('.bd-bow-eff details').count(), 0);
       await first.locator('[data-bow-eff]').check();
       assert.strictEqual(await first.locator('details').getAttribute('open'), null);
-      assert.ok((await first.locator('.bd-bow-check').innerText()).includes('×1.333'));
+      // 2차지 사격이라 3차지 보정(×1.25)이 빠진다: 12/9 ÷ 1.25 (2026-10-25)
+      assert.ok((await first.locator('.bd-bow-check').innerText()).includes('×1.067'));
       await first.locator('summary').click();
       assert.ok((await first.locator('details').innerText()).includes('주 사용 화살: 2차지 · 연사 Lv4'));
       assert.ok((await first.locator('details').innerText()).includes('스타일: 강연사'));
