@@ -869,7 +869,7 @@ node tools/build-test.js
 원본 키 `brac`·`a-somn`은 사이트 키 `brachy`·`a-somna`로 연결해 기존 저장 빌드와 공유 링크를 유지합니다.
 공식 설명으로 옮긴 스킬은 `skill-desc-overrides.js`에서도 제거하고, 변경 파일의 `index.html` 캐시 버전을 올립니다.
 
-가디언(`guardian`)과 트로피컬캐논(`summer-26`)은 수동 등록을 유지합니다.
+가디언(`guardian`)·트로피컬캐논(`summer-26`)·아마츠마가즈치(`amat`)는 수동 등록을 유지합니다.
 `HAND_SETS`의 값이 최신 원본보다 우선하므로 전체·부분 갱신에서도 이름·스킬·수치가 유지됩니다.
 공식 전환을 승인한 경우에만 해당 수동 항목을 제거합니다.
 생성기를 수정할 때는 `node tools/build-generator-test.js`로 수동 세트 보호도 검사하세요.

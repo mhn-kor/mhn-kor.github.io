@@ -87,8 +87,9 @@ const HAND_SETS = [
   },
   {
     /* 아마츠마가즈치 (Tempest 세트, 2026-10-23 사용자 등록). 출처: 공식 인스타그램 mh_now_en 공지 이미지
-       (등급 8 이상 스킬). 공식 사이트·mhn.quest 공개 전이라 무기 공격력·속성치·회심은 비워 두고(자동빌드 제외),
-       표류 칸은 비슷한 고룡 세트처럼 1로 가정, 이름은 이벤트 장비 규칙(소재명 + 종류)의 임시 표기.
+       (등급 8 이상 스킬). 무기 공격력 2200·물 1380·회심 -20%(전 무기 공통)와 신규 스킬 한국어 이름(폭풍룡의 취천·
+       폭풍룡의 폭풍 칼날)은 디시인사이드 추가 장비 정보 표 (2026-10-28 사용자 제공, 스타일 강화 미적용 값).
+       공식 사이트·mhn.quest 공개 전이라 표류 칸은 비슷한 고룡 세트처럼 1로 가정, 장비 이름은 이벤트 장비 규칙(소재명 + 종류)의 임시 표기.
        영문: Tempest Crown/Rode/Sleeves/Obi/Hakama, 무기 Ominous Treasure·Stormwind Fans·Roilcloud Sword·
        Ominous Spring·Incubus Hammer·Autumn Lute·Ominous Cloud·Ominous Monsoon·Cloudburst Axe·Altostratus Blade·
        Stratus Arc(사냥벌레 Foliacath)·Wicked Needle·Ill Omen·Tempest Nightbow.
@@ -96,13 +97,13 @@ const HAND_SETS = [
        공식 데이터가 나오면 이 항목을 지우고 생성기 값으로 바꾼다(키 amat 유지 또는 SET_KEYS로 연결). */
     key: 'amat', name: '아마츠마가즈치', en: 'Amatsu', u: 6, id: 101, g: 0, o: 999,
     pieces: {
-      helm: { name: '아마츠마가즈치 머리', skills: [{ s: '아마츠 스콜', lv: 1 }, { s: '힘의 해방·경지', lv: 1 }, { s: '무심', lv: 2 }], slot: 1 },
-      mail: { name: '아마츠마가즈치 몸', skills: [{ s: '아마츠 스콜', lv: 1 }, { s: '흉회심', lv: 2 }], slot: 1 },
-      gloves: { name: '아마츠마가즈치 팔', skills: [{ s: '아마츠 스콜', lv: 1 }, { s: '힘의 해방·경지', lv: 1 }, { s: '공격 활성', lv: 1 }, { s: '록온', lv: 1 }], slot: 1 },
-      belt: { name: '아마츠마가즈치 허리', skills: [{ s: '아마츠 스콜', lv: 1 }, { s: '힘의 해방·경지', lv: 1 }, { s: '힘의 해방', lv: 2 }], slot: 1 },
-      greaves: { name: '아마츠마가즈치 다리', skills: [{ s: '아마츠 스콜', lv: 1 }, { s: '힘의 해방·경지', lv: 1 }, { s: '하이 차지【물】', lv: 2 }], slot: 1 },
+      helm: { name: '아마츠마가즈치 머리', skills: [{ s: '폭풍룡의 취천', lv: 1 }, { s: '힘의 해방·경지', lv: 1 }, { s: '무심', lv: 2 }], slot: 1 },
+      mail: { name: '아마츠마가즈치 몸', skills: [{ s: '폭풍룡의 취천', lv: 1 }, { s: '흉회심', lv: 2 }], slot: 1 },
+      gloves: { name: '아마츠마가즈치 팔', skills: [{ s: '폭풍룡의 취천', lv: 1 }, { s: '힘의 해방·경지', lv: 1 }, { s: '공격 활성', lv: 1 }, { s: '록온', lv: 1 }], slot: 1 },
+      belt: { name: '아마츠마가즈치 허리', skills: [{ s: '폭풍룡의 취천', lv: 1 }, { s: '힘의 해방·경지', lv: 1 }, { s: '힘의 해방', lv: 2 }], slot: 1 },
+      greaves: { name: '아마츠마가즈치 다리', skills: [{ s: '폭풍룡의 취천', lv: 1 }, { s: '힘의 해방·경지', lv: 1 }, { s: '하이 차지【물】', lv: 2 }], slot: 1 },
     },
-    weaponSkills: [{ s: '아마츠 스톰블레이드', lv: 1 }, { s: '사냥꾼의 결속', lv: 1 }],
+    weaponSkills: [{ s: '폭풍룡의 폭풍 칼날', lv: 1 }, { s: '사냥꾼의 결속', lv: 1 }],
     weapons: [
       ['shield-sword', '한손검'], ['dual-blades', '쌍검'], ['great-sword', '대검'], ['long-sword', '태도'], ['hammer', '해머'],
       ['hunting-horn', '수렵피리', ['방어력UP', 'SP게이지 가속【대】', '공격력UP【대】']], ['lance', '랜스'],
@@ -110,7 +111,7 @@ const HAND_SETS = [
       ['insect-glaive', '조충곤', ['비상형', '절단', '파워', '공중 제압']],
       ['light-gun', '라이트보우건', ['관통수냉탄 4', '참렬수냉탄 3']], ['heavy-gun', '헤비보우건', ['관통수냉탄 6', '관통수냉탄 8']],
       ['bow', '활', ['Lv1 연사', 'Lv2 관통', 'Lv4 관통', 'Lv4 연사']],
-    ].map(([t, tn, x = null]) => ({ t, tn, name: `아마츠마가즈치 ${tn}`, e: '물', atk: null, ele: null, crit: null, x })),
+    ].map(([t, tn, x = null]) => ({ t, tn, name: `아마츠마가즈치 ${tn}`, e: '물', atk: 2200, ele: 1380, crit: -20, x })),
   },
 ];
 

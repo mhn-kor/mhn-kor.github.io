@@ -22,7 +22,7 @@
     "counts": {
       "supported": 278,
       "unsupported": 470,
-      "unknown": 17
+      "unknown": 31
     },
     "nowcalc": {
       "source": "https://mhnowcalc.com/calc/build_editor_simple.php?lang=ko",
@@ -15558,9 +15558,9 @@
       "name": "아마츠마가즈치 한손검",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15575,9 +15575,9 @@
       "name": "아마츠마가즈치 쌍검",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15592,9 +15592,9 @@
       "name": "아마츠마가즈치 대검",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15609,9 +15609,9 @@
       "name": "아마츠마가즈치 태도",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15626,9 +15626,9 @@
       "name": "아마츠마가즈치 해머",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15643,9 +15643,9 @@
       "name": "아마츠마가즈치 수렵피리",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15660,9 +15660,9 @@
       "name": "아마츠마가즈치 랜스",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15677,9 +15677,9 @@
       "name": "아마츠마가즈치 건랜스",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15694,9 +15694,9 @@
       "name": "아마츠마가즈치 슬래시액스",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15711,9 +15711,9 @@
       "name": "아마츠마가즈치 차지액스",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15728,9 +15728,9 @@
       "name": "아마츠마가즈치 조충곤",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15745,9 +15745,9 @@
       "name": "아마츠마가즈치 라이트보우건",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15762,9 +15762,9 @@
       "name": "아마츠마가즈치 헤비보우건",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -15779,9 +15779,9 @@
       "name": "아마츠마가즈치 활",
       "element": "물",
       "base": {
-        "atk": null,
-        "ele": 0,
-        "crit": 0
+        "atk": 2200,
+        "ele": 1380,
+        "crit": -20
       },
       "baseSource": "build-data.js",
       "style": {
@@ -16290,6 +16290,244 @@
         }
       },
       "siteBaseMatches": true
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "shield-sword",
+      "name": "카니발26 한손검",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "great-sword",
+      "name": "카니발26 대검",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "long-sword",
+      "name": "카니발26 태도",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "dual-blades",
+      "name": "카니발26 쌍검",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "hammer",
+      "name": "카니발26 해머",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "hunting-horn",
+      "name": "카니발26 수렵피리",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "lance",
+      "name": "카니발26 랜스",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "gunlance",
+      "name": "카니발26 건랜스",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "switch-axe",
+      "name": "카니발26 슬래시액스",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "charge-blade",
+      "name": "카니발26 차지액스",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "insect-glaive",
+      "name": "카니발26 조충곤",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "light-gun",
+      "name": "카니발26 라이트보우건",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "heavy-gun",
+      "name": "카니발26 헤비보우건",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
+    },
+    {
+      "set": "carnival-26",
+      "sourceSet": "carnival-26",
+      "type": "bow",
+      "name": "카니발26 활",
+      "element": null,
+      "base": {
+        "atk": 2026,
+        "ele": 0,
+        "crit": 30
+      },
+      "baseSource": "build-data.js",
+      "style": {
+        "status": "unknown",
+        "reason": "원본 소재 정보 없음"
+      }
     },
     {
       "set": "summer-26",
@@ -16884,6 +17122,76 @@
       "set": "carnival-24",
       "type": "insect-glaive",
       "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
+    },
+    {
+      "set": "carnival-26",
+      "type": "shield-sword",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "great-sword",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "long-sword",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "dual-blades",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "hammer",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "hunting-horn",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "lance",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "gunlance",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "switch-axe",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "charge-blade",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "insect-glaive",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "light-gun",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "heavy-gun",
+      "reason": "원본 소재 정보 없음"
+    },
+    {
+      "set": "carnival-26",
+      "type": "bow",
+      "reason": "원본 소재 정보 없음"
     }
   ],
   "comparisons": [

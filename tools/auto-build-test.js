@@ -182,11 +182,11 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(inert.has('얼음 내성')&&!inert.has('반사')&&!inert.has('공격'),'내성은 흐림, 반사(운용)·공격(점수)은 그대로');
     assert.ok(!get('abInertSkills')(b,new Set(['얼음 내성'])).has('얼음 내성'),'지정 스킬은 흐리지 않음');
   } finally { get('BUILD.sets').pop(); }
-  // 아마츠마가즈치 수동 선등록 (2026-10-23): 공격력 미공개 무기는 자동빌드 무기 목록에서 빼고, 방어구는 후보로 쓴다. 신규 스킬은 점수 없음.
+  // 아마츠마가즈치 수동 등록 (2026-10-23, 무기 수치 2026-10-28): 전 무기 2200·물 1380·회심 -20%로 자동빌드 무기 목록에 든다. 신규 스킬은 점수 없음.
   { const amat=get('BUILD.sets').find(s=>s.key==='amat');
-    assert.ok(amat&&amat.weapons.length===14&&amat.weapons.every(w=>w.atk==null)&&Object.keys(amat.pieces).length===5);
-    assert.ok(!get('abMonsters')('long-sword').some(s=>s.key==='amat'),'공격력 미공개 무기 제외');
-    for (const [s,lv] of [['아마츠 스콜',5],['힘의 해방·경지',4],['아마츠 스톰블레이드',1]])
+    assert.ok(amat&&amat.weapons.length===14&&amat.weapons.every(w=>w.atk===2200&&w.ele===1380&&w.crit===-20)&&Object.keys(amat.pieces).length===5);
+    assert.ok(get('abMonsters')('long-sword').some(s=>s.key==='amat'),'수치가 들어온 무기는 후보');
+    for (const [s,lv] of [['폭풍룡의 취천',5],['힘의 해방·경지',4],['폭풍룡의 폭풍 칼날',1]])
       assert.strictEqual(get('bdEffects')(get('bdSkillDesc')(s,lv),s,null).length,0,`${s} 점수 없음`);
     assert.ok(get('abReachLv')({...get('bdNewBuild')(),w:'mizu',wt:'long-sword'},'하이 차지【물】')>=2,'아마츠 다리로 물 하이 차지 Lv2 가능');
   }
