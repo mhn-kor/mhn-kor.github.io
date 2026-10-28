@@ -820,7 +820,7 @@ node tools/update.js          # 이거 하나면 됩니다
 
 **사용자 제작 아이콘:** 출처에 아직 없는 몬스터는 직접 만든 아이콘을 `assets/monster/{키}.png`(64px)로 미리 두고,
 원본은 `tools/data/icon-src/`에 보관합니다. `fetch-icons.js`는 이미 있는 파일을 건너뛰므로 출처가 생겨도 덮어쓰지 않습니다.
-- `amat` 아마츠마가즈치 (2026-10-23 사용자 제작). 장비 데이터가 들어올 때 mhn.quest의 실제 세트 키가 `amat`가 아니면
+- `amat` 아마츠마가츠치 (2026-10-23 사용자 제작). 장비 데이터가 들어올 때 mhn.quest의 실제 세트 키가 `amat`가 아니면
   파일 이름을 그 키로 바꿉니다.
 
 `tools/data/wextra.json` 만 손으로 관리합니다 — 탄·병·포격·사냥벌레 이름표라 게임
@@ -869,7 +869,7 @@ node tools/build-test.js
 원본 키 `brac`·`a-somn`은 사이트 키 `brachy`·`a-somna`로 연결해 기존 저장 빌드와 공유 링크를 유지합니다.
 공식 설명으로 옮긴 스킬은 `skill-desc-overrides.js`에서도 제거하고, 변경 파일의 `index.html` 캐시 버전을 올립니다.
 
-가디언(`guardian`)·트로피컬캐논(`summer-26`)·아마츠마가즈치(`amat`)는 수동 등록을 유지합니다.
+가디언(`guardian`)·트로피컬캐논(`summer-26`)·아마츠마가츠치(`amat`)는 수동 등록을 유지합니다.
 `HAND_SETS`의 값이 최신 원본보다 우선하므로 전체·부분 갱신에서도 이름·스킬·수치가 유지됩니다.
 공식 전환을 승인한 경우에만 해당 수동 항목을 제거합니다.
 생성기를 수정할 때는 `node tools/build-generator-test.js`로 수동 세트 보호도 검사하세요.

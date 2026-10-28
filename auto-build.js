@@ -31,7 +31,7 @@ function abCurve(s, b) {
 }
 const abTargets = names => names.map(s => ({ s, min: 0, max: abMax(s) }));
 const abMelee = wt => !['light-gun', 'heavy-gun', 'bow'].includes(wt);
-// 공격력 미공개 무기(수동 선등록, 예: 아마츠마가즈치)는 점수를 낼 수 없어 자동빌드 무기 목록에서 뺀다. 방어구는 그대로 후보.
+// 공격력 미공개 무기(공식 수치 전에 수동 선등록한 장비)는 점수를 낼 수 없어 자동빌드 무기 목록에서 뺀다. 방어구는 그대로 후보.
 const abMonsters = wt => bdOrderedSets().filter(s => s.weapons.some(w => w.t === wt && w.atk != null));
 const abElementSkill = b => {
   const element = bdWeaponOf(b)?.e;

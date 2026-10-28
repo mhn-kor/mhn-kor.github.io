@@ -15555,7 +15555,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "shield-sword",
-      "name": "아마츠마가즈치 한손검",
+      "name": "아마츠마가츠치 한손검",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15572,7 +15572,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "dual-blades",
-      "name": "아마츠마가즈치 쌍검",
+      "name": "아마츠마가츠치 쌍검",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15589,7 +15589,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "great-sword",
-      "name": "아마츠마가즈치 대검",
+      "name": "아마츠마가츠치 대검",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15606,7 +15606,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "long-sword",
-      "name": "아마츠마가즈치 태도",
+      "name": "아마츠마가츠치 태도",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15623,7 +15623,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "hammer",
-      "name": "아마츠마가즈치 해머",
+      "name": "아마츠마가츠치 해머",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15640,7 +15640,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "hunting-horn",
-      "name": "아마츠마가즈치 수렵피리",
+      "name": "아마츠마가츠치 수렵피리",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15657,7 +15657,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "lance",
-      "name": "아마츠마가즈치 랜스",
+      "name": "아마츠마가츠치 랜스",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15674,7 +15674,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "gunlance",
-      "name": "아마츠마가즈치 건랜스",
+      "name": "아마츠마가츠치 건랜스",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15691,7 +15691,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "switch-axe",
-      "name": "아마츠마가즈치 슬래시액스",
+      "name": "아마츠마가츠치 슬래시액스",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15708,7 +15708,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "charge-blade",
-      "name": "아마츠마가즈치 차지액스",
+      "name": "아마츠마가츠치 차지액스",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15725,7 +15725,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "insect-glaive",
-      "name": "아마츠마가즈치 조충곤",
+      "name": "아마츠마가츠치 조충곤",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15742,7 +15742,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "light-gun",
-      "name": "아마츠마가즈치 라이트보우건",
+      "name": "아마츠마가츠치 라이트보우건",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15759,7 +15759,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "heavy-gun",
-      "name": "아마츠마가즈치 헤비보우건",
+      "name": "아마츠마가츠치 헤비보우건",
       "element": "물",
       "base": {
         "atk": 2200,
@@ -15776,7 +15776,7 @@
       "set": "amat",
       "sourceSet": "amat",
       "type": "bow",
-      "name": "아마츠마가즈치 활",
+      "name": "아마츠마가츠치 활",
       "element": "물",
       "base": {
         "atk": 2200,
