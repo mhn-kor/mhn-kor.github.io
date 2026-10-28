@@ -39,9 +39,10 @@ function rules() {
   const assumed=(s,b)=>get('abAssumed')(s,b);
   for(const [wt,st] of [['long-sword',0],['dual-blades',1],['shield-sword',0]]) {
     assert.strictEqual(assumed('차지 스톡',{wt,st}),false);
-    assert.strictEqual(assumed('비연',{wt,st}),false);
+    if(wt!=='dual-blades') assert.strictEqual(assumed('비연',{wt,st}),false);
   }
   assert.strictEqual(assumed('비연',{wt:'dual-blades',st:0,w:'kulu'}),true,'쌍검 기본은 SP 공중 공격으로 비연 1 필수 (2026-10-25)');
+  assert.strictEqual(assumed('비연',{wt:'dual-blades',st:1,w:'kulu'}),true,'쌍검 귀인화[짐승]도 비연 1 필수 (2026-10-28)');
   assert.strictEqual(assumed('비연',fall),true);
   assert.strictEqual(assumed('비연',{wt:'charge-blade',st:1}),true,'차지액스 검 강화 엑스호퍼는 공중 공격');
   for(const [wt,st,valid] of [['switch-axe',0,true],['switch-axe',1,true],['switch-axe',2,false],['charge-blade',0,false],['charge-blade',1,true],['charge-blade',2,false]])

@@ -238,7 +238,15 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abStyleRow')(db('kulu')).id,'db-base-raw'); assert.ok(req(db('kulu')).includes('연격5')&&req(db('kulu')).includes('비연1'));
     assert.strictEqual(get('abStyleRow')(db('mizu')).id,'db-base-element'); assert.ok(!req(db('mizu')).includes('연격5')&&req(db('mizu')).includes('비연1'));
     assert.strictEqual(get('abAssumed')('비연',db('mizu')),true,'규칙 스킬이라 비연 켬'); assert.strictEqual(get('bdRateFor')(db('mizu'),'비연',get('bdWeaponOf')(db('mizu'))),20);
-    assert.deepStrictEqual(Array.from(get('abDirections')(db('b-diab'),{mode:'cycle'}).filter(d=>/^brutal/.test(d.id)).map(d=>d.id)),['brutal-low','brutal-3','brutal-5'],'쌍검 흉회심 1/3/5, 저투자 먼저'); }
+    assert.deepStrictEqual(Array.from(get('abDirections')(db('b-diab'),{mode:'cycle'}).filter(d=>/^brutal/.test(d.id)).map(d=>d.id)),['brutal-low','brutal-3','brutal-5'],'쌍검 흉회심 1/3/5, 저투자 먼저');
+    // 기본은 체인지 부스트 70%·강화 지속 권장, 귀인화[짐승] (2026-10-28)은 체인지 부스트 5 필수·95%, 속성 무기는 연격 지침 메타.
+    const rate=b=>get('bdRateFor')(b,'체인지 부스트',get('bdWeaponOf')(b)), rec=b=>Array.from(get('abStyleRule')(b).recommended.map(t=>t.s));
+    assert.strictEqual(rate(db('kulu')),70); assert.ok(rec(db('mizu')).includes('강화 지속')&&rec(db('mizu')).includes('체인지 부스트'));
+    const beast=w=>({...db(w),st:1,style20:true}), guide=b=>Array.from(get('abmCandidates')(b,{mode:'cycle'}).filter(m=>m.guide).map(m=>m.name));
+    assert.strictEqual(get('bdStylesOf')('dual-blades')[0],'귀인화[짐승]');
+    assert.strictEqual(get('abStyleRow')(beast('kulu')).id,'db-beast-raw'); assert.ok(['연격5','체인지 부스트5','비연1'].every(t=>req(beast('kulu')).includes(t)));
+    assert.strictEqual(get('abStyleRow')(beast('mizu')).id,'db-beast-element'); assert.ok(!req(beast('mizu')).includes('연격5')&&req(beast('mizu')).includes('체인지 부스트5'));
+    assert.ok(guide(beast('mizu')).includes('연격'),'속성 무기는 연격 지침 메타'); assert.strictEqual(rate(beast('mizu')),95); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
