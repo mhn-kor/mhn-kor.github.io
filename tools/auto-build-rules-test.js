@@ -17,7 +17,7 @@ for(const file of fs.readdirSync(dir).filter(f=>f.endsWith('.md'))) {
     const id=cells[0]?.match(/^`(.+)`$/)?.[1];
     if(!id||!cols) continue;
     assert.ok(!rows.has(id),'문서 ID 중복: '+id);
-    rows.set(id,{file,required:cells[cols['필수 최소']],recommended:cells[cols['권장']],avoid:cells[cols['비권장']],metas:cells[cols['지침 메타']],charge:cols['차지 묶음']==null?'—':cells[cols['차지 묶음']],rates:cols['발동률']==null?'—':cells[cols['발동률']],phial:cols['병 비중']==null?'—':cells[cols['병 비중']],morph:cols['변형 묶음']==null?'—':cells[cols['변형 묶음']],brutal:cols['흉회심 상한']==null?'—':cells[cols['흉회심 상한']],status:cells[cols['상태 · 근거']]});
+    rows.set(id,{file,required:cells[cols['필수 최소']],recommended:cells[cols['권장']],avoid:cells[cols['비권장']],metas:cells[cols['지침 메타']],charge:cols['차지 묶음']==null?'—':cells[cols['차지 묶음']],rates:cols['발동률']==null?'—':cells[cols['발동률']],phial:cols['병 비중']==null?'—':cells[cols['병 비중']],morph:cols['변형 묶음']==null?'—':cells[cols['변형 묶음']],status:cells[cols['상태 · 근거']]});
   }
 }
 const fmt=list=>list.map(t=>t.min===t.max?`${t.s} ${t.min}`:`${t.s} ${t.min}~${t.max}`).join(' · ')||'—';
@@ -40,7 +40,6 @@ for(const [id,r] of data) {
   for(const s of Object.keys(r.rates||{})) assert.ok(known.has(s),`없는 스킬: ${id}/${s}`);
   assert.strictEqual(row.phial,r.phialShare?`${r.phialShare}%`:'—',`병 비중 불일치: ${id}`);
   assert.strictEqual(row.morph,names(r.morphWith||[]),`변형 묶음 불일치: ${id}`);
-  assert.strictEqual(row.brutal,r.brutalCap?String(r.brutalCap):'—',`흉회심 상한 불일치: ${id}`);
   for(const s of r.morphWith||[]) assert.ok(known.has(s),`없는 스킬: ${id}/${s}`);
   for(const t of [...r.required,...r.recommended]) {
     assert.ok(known.has(t.s),`없는 스킬: ${id}/${t.s}`);

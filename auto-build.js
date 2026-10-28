@@ -103,7 +103,7 @@ let abState = { b: { ...bdNewBuild(), w: 'mizu', wt: 'shield-sword' }, direction
 /* 자동세팅 규칙 데이터. docs/weapons/*.md 운용 규칙 표와 1:1 (tools/auto-build-rules-test.js가 대조).
    지침 변경은 해당 행을 고친다. 함수에 무기·스타일 조건을 따로 하드코딩하지 않는다.
    styles: style ''=기본 스타일. mode=같은 스타일 안의 운용 성향. when=무기 조건 (element/raw=속성·상태이상 유무, attr/noattr=불·물·번개·얼음·용 속성 유무(상태이상·병 제외), brutal=무기 기본 회심 음수: 같은 스타일의 일반 행보다 우선).
-   morphWith=변형 공격 타격에만 붙어 변형 공격 묶음에 함께 넣는 스킬 (build.js bdBranch). brutalCap=역회심 무기의 흉회심 방향 상한 레벨 (1이면 저투자 방향만). phialShare=슬래시액스 병이 터지는 공격 비중 % (강격병 공격 +15%·강속성병 속성 +25%를 이 비중만큼, build.js bdStats). max 'MAX'=스킬 최대.
+   morphWith=변형 공격 타격에만 붙어 변형 공격 묶음에 함께 넣는 스킬 (build.js bdBranch). phialShare=슬래시액스 병이 터지는 공격 비중 % (강격병 공격 +15%·강속성병 속성 +25%를 이 비중만큼, build.js bdStats). max 'MAX'=스킬 최대.
    metas=지침 메타(점수와 무관하게 메타 후보에 항상 보이는 주축 스킬). rates=스타일별 발동률 {스킬: %} (BD_RATE 덮어쓰기). charge=차지 묶음 {rate, skills}: 같은 차지 공격에 함께 붙는 스킬을 묶어 비중으로 계산 (build.js bdBranch, 변형 공격 강화 무기는 자동으로 변형 공격 묶음). label=방향 이름 접두. coreSlot=권장 첫 스킬이 방향 핵심에 없으면 넣을 칸. modes=허용 보우건 탄 운용. note=근거 추가 설명. */
 const abT = (s, min, max = min) => ({ s, min, max });
 const AB_RULES = {
@@ -135,10 +135,10 @@ const AB_RULES = {
       avoid:['변형 공격 강화'], phialShare:70,
       desc:'앙갚음 1 (카운터 성공률). 앙갚음 대미지는 속성을 쓰지 않아 속성 무기는 성공률용 1만 둡니다.' },
     { id:'db-base-raw', wt:'dual-blades', style:'', when:'noattr', name:'기본 · 귀인화 (무속성)', required:[abT('연격',5),abT('비연',1)],
-      recommended:[abT('연격·경지',0,'MAX'),abT('체인지 부스트',0,'MAX')], avoid:[], brutalCap:1,
-      desc:'귀인화를 켜고 끄며 빠른 연타로 싸웁니다. 연격 5(연격·경지 조건) · SP 공중 공격용 비연 1, 체인지 부스트는 권장. 역회심 무기도 흉회심은 1까지만 봅니다.' },
+      recommended:[abT('연격·경지',0,'MAX'),abT('체인지 부스트',0,'MAX')], avoid:[],
+      desc:'귀인화를 켜고 끄며 빠른 연타로 싸웁니다. 연격 5(연격·경지 조건) · SP 공중 공격용 비연 1, 체인지 부스트는 권장입니다.' },
     { id:'db-base-element', wt:'dual-blades', style:'', when:'attr', name:'기본 · 귀인화 (속성)', required:[abT('비연',1)],
-      recommended:[abT('체인지 부스트',0,'MAX')], avoid:[], brutalCap:1,
+      recommended:[abT('체인지 부스트',0,'MAX')], avoid:[],
       desc:'속성 무기는 연격 대신 속성 투자도 좋아 연격을 점수로 비교합니다. SP 공중 공격용 비연 1, 체인지 부스트는 권장입니다.' },
     { id:'hammer-base', wt:'hammer', style:'', name:'기본 · 쿵쿵따 연계', required:[],
       recommended:[abT('속성 공격 증강【SP】',0,'MAX')], avoid:['유타·향음 강화','차지 마스터','저스트 모으기 해방','차지 스톡'],
@@ -377,15 +377,13 @@ function abInvestmentDirections(b, setting) {
     const low = make('brutal-low', '흉회심 · 저투자', ['흉회심', second, third],
       '흉회심 1의 손실 보완과 미채용 대안을 비교하고 다른 피해 스킬에 투자합니다. 전심전력은 필수로 묶지 않습니다.');
     low.targets[0] = { s: '흉회심', min: 0, max: 1 };
-    // 운용 규칙의 흉회심 상한(brutalCap): 연타 무기는 흉회심이 기대값에 수렴해 고투자 방향을 내지 않는다 (예: 쌍검 기본 1, CONCEPTS W2).
-    const cap = abStyleRow(b)?.brutalCap ?? 5;
-    const high = [3, 5].filter(lv => lv <= cap).map(lv => {
+    const high = [3, 5].map(lv => {
       const d = make('brutal-' + lv, `흉회심 · Lv${lv}${lv === 5 ? ' 고점' : ' 균형'}`,
         ['흉회심', second, third],
         `흉회심을 미채용부터 ${lv}까지 비교합니다. ${b.wt === 'great-sword' ? '대검의 한방 고점 선호를 반영하되 평균 점수에 보너스를 더하지 않습니다.' : '다른 피해 스킬과 평균 기대값을 비교합니다.'}`);
       d.targets[0] = { s: '흉회심', min: 0, max: lv }; return d;
     });
-    return b.wt === 'great-sword' && c.style !== '수류베기' && high.length === 2 ? [high[1], high[0], low] : [low, ...high];
+    return b.wt === 'great-sword' && c.style !== '수류베기' ? [high[1], high[0], low] : [low, ...high];
   }
   if (c.status) {
     const status = BD_STATUS_BOOST[c.status], elder = { 독: '하룡의 독 안개', 폭파: '염왕룡의 폭발가루' }[status];

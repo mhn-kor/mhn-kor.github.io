@@ -233,12 +233,12 @@ const get = s => vm.runInContext(s, ctx);
     assert.deepStrictEqual(Array.from(br.skills),['변형 공격 강화','비연']); assert.strictEqual(br.rate,35);
     const cond={'비연':true}, off=get('bdStats')({...sw,cond},'off'), on=get('bdStats')({...sw,cond},'on');
     assert.ok(!off.effects.some(e=>e.sk==='비연')&&on.effects.some(e=>e.sk==='비연'&&!e.rate),'나머지 공격엔 비연 없음, 엑스호퍼 타격엔 100%'); }
-  // 쌍검 기본 (2026-10-25): 무속성은 연격 5 필수·연격·경지 권장, 속성은 연격 점수 비교. 비연 1 필수(20%). 역회심도 흉회심 Lv1 방향만.
+  // 쌍검 기본 (2026-10-25): 무속성은 연격 5 필수·연격·경지 권장, 속성은 연격 점수 비교. 비연 1 필수(20%). 흉회심은 저투자 먼저, 3·5도 비교 (2026-10-28).
   { const db=w=>({...get('bdNewBuild')(),w,wt:'dual-blades'}), req=b=>Array.from(get('abSearchTargets')({b,targets:[],gun:{mode:'cycle'},styleGuide:true}).map(t=>`${t.s}${t.min}`));
     assert.strictEqual(get('abStyleRow')(db('kulu')).id,'db-base-raw'); assert.ok(req(db('kulu')).includes('연격5')&&req(db('kulu')).includes('비연1'));
     assert.strictEqual(get('abStyleRow')(db('mizu')).id,'db-base-element'); assert.ok(!req(db('mizu')).includes('연격5')&&req(db('mizu')).includes('비연1'));
     assert.strictEqual(get('abAssumed')('비연',db('mizu')),true,'규칙 스킬이라 비연 켬'); assert.strictEqual(get('bdRateFor')(db('mizu'),'비연',get('bdWeaponOf')(db('mizu'))),20);
-    assert.deepStrictEqual(Array.from(get('abDirections')(db('b-diab'),{mode:'cycle'}).filter(d=>/^brutal/.test(d.id)).map(d=>d.id)),['brutal-low'],'쌍검 흉회심은 저투자만'); }
+    assert.deepStrictEqual(Array.from(get('abDirections')(db('b-diab'),{mode:'cycle'}).filter(d=>/^brutal/.test(d.id)).map(d=>d.id)),['brutal-low','brutal-3','brutal-5'],'쌍검 흉회심 1/3/5, 저투자 먼저'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
