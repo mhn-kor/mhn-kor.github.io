@@ -255,7 +255,8 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abStyleRow')(spiral('mizu')).id,'db-spiral-element'); assert.ok(!req(spiral('mizu')).includes('연격5'));
     for (const b of [spiral('kulu'),spiral('mizu')]) { const t=flying(b);
       assert.ok(t.min===1&&t.max===5,'비연 1~5'); assert.strictEqual(get('bdRateFor')(b,'비연',get('bdWeaponOf')(b)),40); assert.strictEqual(rate(b),70); }
-    assert.ok(get('abTrait')(spiral('mizu'),'공중')&&!get('abTrait')(db('mizu'),'공중'),'나선참만 공중 동작'); }
+    assert.ok(get('abTrait')(spiral('mizu'),'공중')&&!get('abTrait')(db('mizu'),'공중'),'나선참만 공중 동작');
+    for (const b of [spiral('kulu'),spiral('mizu')]) assert.ok(guide(b).includes('비연'),'점수로는 1에 머물기 쉬워 비연 지침 메타'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
