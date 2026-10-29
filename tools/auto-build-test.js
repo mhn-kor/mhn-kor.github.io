@@ -247,7 +247,15 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abStyleRow')(beast('kulu')).id,'db-beast-raw'); assert.ok(['연격5','체인지 부스트5','비연1'].every(t=>req(beast('kulu')).includes(t)));
     assert.strictEqual(get('abStyleRow')(beast('mizu')).id,'db-beast-element'); assert.ok(!req(beast('mizu')).includes('연격5')&&req(beast('mizu')).includes('체인지 부스트5'));
     for (const b of [db('mizu'),beast('mizu')]) assert.ok(!guide(b).includes('연격')&&!rec(b).some(s=>/^연격/.test(s)),'속성 무기는 연격 권장 없음');
-    assert.ok(rec(beast('kulu')).includes('연격·경지')); assert.strictEqual(rate(beast('mizu')),95); }
+    assert.ok(rec(beast('kulu')).includes('연격·경지')); assert.strictEqual(rate(beast('mizu')),95);
+    // 나선참 (2026-10-29): 기본과 같고, (강화) 나선참·SP가 공중 공격이라 비연 1 필수·5까지 점수 비교(40%).
+    const spiral=w=>({...db(w),st:2,style20:true}), flying=b=>get('abSearchTargets')({b,targets:[],gun:{mode:'cycle'},styleGuide:true}).find(t=>t.s==='비연');
+    assert.strictEqual(get('bdStylesOf')('dual-blades')[1],'나선참');
+    assert.strictEqual(get('abStyleRow')(spiral('kulu')).id,'db-spiral-raw'); assert.ok(req(spiral('kulu')).includes('연격5'));
+    assert.strictEqual(get('abStyleRow')(spiral('mizu')).id,'db-spiral-element'); assert.ok(!req(spiral('mizu')).includes('연격5'));
+    for (const b of [spiral('kulu'),spiral('mizu')]) { const t=flying(b);
+      assert.ok(t.min===1&&t.max===5,'비연 1~5'); assert.strictEqual(get('bdRateFor')(b,'비연',get('bdWeaponOf')(b)),40); assert.strictEqual(rate(b),70); }
+    assert.ok(get('abTrait')(spiral('mizu'),'공중')&&!get('abTrait')(db('mizu'),'공중'),'나선참만 공중 동작'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
