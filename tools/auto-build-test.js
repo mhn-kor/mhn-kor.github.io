@@ -257,14 +257,16 @@ const get = s => vm.runInContext(s, ctx);
       assert.ok(t.min===1&&t.max===5,'비연 1~5'); assert.strictEqual(get('bdRateFor')(b,'비연',get('bdWeaponOf')(b)),40); assert.strictEqual(rate(b),70); }
     assert.ok(get('abTrait')(spiral('mizu'),'공중')&&!get('abTrait')(db('mizu'),'공중'),'나선참만 공중 동작');
     for (const b of [spiral('kulu'),spiral('mizu')]) assert.ok(guide(b).includes('비연'),'점수로는 1에 머물기 쉬워 비연 지침 메타'); }
-  // 수렵피리 기본 (2026-10-30): 유타·향음 강화 4 이상 필수, 향음 묶음 50%(묶음 안 100%·밖 0), 무속성만 연격 권장.
+  // 수렵피리 기본 (2026-10-30): 향음 묶음 50%(묶음 안 100%·밖 0), 유타·향음 강화는 강제하지 않고 지침 메타, 무속성만 연격 권장. 더블임팩트 + KO술 컨셉은 피리 한정.
   { const hh=w=>({...get('bdNewBuild')(),w,wt:'hunting-horn'}), yuta=b=>get('abSearchTargets')({b,targets:[],gun:{mode:'cycle'},styleGuide:true}).find(t=>t.s==='유타·향음 강화');
     assert.strictEqual(get('abStyleRow')(hh('kulu')).id,'hh-base-raw'); assert.strictEqual(get('abStyleRow')(hh('mizu')).id,'hh-base-element');
-    for (const w of ['kulu','mizu']) { const t=yuta(hh(w)), br=get('bdBranch')(hh(w));
-      assert.ok(t.min===4&&t.max===5,'유타 4~5'); assert.strictEqual(br.label,'향음 묶음'); assert.strictEqual(br.rate,50); assert.deepStrictEqual(Array.from(br.skills),['유타·향음 강화']); }
+    const guide=b=>Array.from(get('abmCandidates')(b,{mode:'cycle'}).filter(m=>m.guide).map(m=>m.name)), concepts=b=>Array.from(get('abmConcepts')(b,{mode:'cycle'}).map(m=>m.id));
+    for (const w of ['kulu','mizu']) { const br=get('bdBranch')(hh(w));
+      assert.ok(!yuta(hh(w)),'유타 강제 없음'); assert.ok(guide(hh(w)).includes('유타·향음 강화'),'유타 지침 메타'); assert.ok(concepts(hh(w)).includes('c:double-impact')); assert.strictEqual(br.label,'향음 묶음'); assert.strictEqual(br.rate,50); assert.deepStrictEqual(Array.from(br.skills),['유타·향음 강화']); }
     const rec=b=>Array.from(get('abStyleRule')(b).recommended.map(t=>t.s));
     assert.ok(rec(hh('kulu')).includes('연격')&&!rec(hh('mizu')).includes('연격'),'무속성만 연격 권장');
-    assert.ok(!get('bdBranch')({...hh('kulu'),st:1}),'다른 스타일은 지침 없음'); }
+    assert.ok(!get('bdBranch')({...hh('kulu'),st:1}),'다른 스타일은 지침 없음');
+    assert.ok(!concepts({...hh('kulu'),wt:'hammer'}).includes('c:double-impact'),'더블임팩트 컨셉은 피리 한정'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
