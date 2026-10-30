@@ -164,7 +164,8 @@ const BD_RATE = {
 const bdRate = (name, w) => { const r = BD_RATE[name]; return r == null ? 100 : typeof r === 'number' ? r : r.w[w?.t] ?? r.d; };
 /* 공격 묶음: 특정 공격에서만 터지는 스킬은 그 공격의 비중으로 따로 계산한다.
    점수 = 비중 × (묶음 스킬 100% 적용) + (1 − 비중) × (묶음 스킬 없음). 효과를 평균내면 두 효과가 곱해지는 몫과 회심 100% 상한이 틀어진다.
-   - 차지 묶음: 운용 규칙 행의 charge {rate, skills} (예: 해머 수면 치기의 유타·향음 강화 + 차지 마스터, 2026-10-22 사용자).
+   - 차지 묶음: 운용 규칙 행의 charge {rate, skills, label} (예: 해머 수면 치기의 유타·향음 강화 + 차지 마스터, 2026-10-22 사용자,
+     수렵피리 기본의 향음 묶음 = 향음 공격 비중, 2026-10-30 사용자).
    - 변형 공격: 변형 공격 강화를 쓰는 무기는 변형 공격 타격만 발동률 비중으로 따로 계산한다. 그 타격의 회심은 100%에서 멈추고
      나머지 공격은 남은 회심으로 계산한다. 변형 공격 강화가 붙는 타격에는 체인지 부스트가 항상 붙는다(also) (2026-10-25 사용자).
      운용 규칙 행의 morphWith 스킬은 그 타격에만 붙어 묶음에 함께 넣는다 (예: 차지액스 검 강화 비연 = 엑스호퍼 타격만, 2026-10-25 사용자). */
@@ -177,7 +178,7 @@ function bdStyleRule(b) {
 }
 function bdBranch(b, w = bdWeaponOf(b)) {
   const charge = bdStyleRule(b)?.charge;
-  if (charge) return { label: '차지 묶음', rate: charge.rate, skills: charge.skills, also: [] };
+  if (charge) return { label: charge.label || '차지 묶음', rate: charge.rate, skills: charge.skills, also: [] };
   if (BD_SKILL_WEAPONS['변형 공격 강화'].includes(b.wt))
     return { label: '변형 공격', rate: bdRateFor(b, '변형 공격 강화', w), skills: ['변형 공격 강화', ...(bdStyleRule(b)?.morphWith || [])], also: ['체인지 부스트'] };
   return null;

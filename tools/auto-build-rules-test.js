@@ -17,7 +17,7 @@ for(const file of fs.readdirSync(dir).filter(f=>f.endsWith('.md'))) {
     const id=cells[0]?.match(/^`(.+)`$/)?.[1];
     if(!id||!cols) continue;
     assert.ok(!rows.has(id),'문서 ID 중복: '+id);
-    rows.set(id,{file,required:cells[cols['필수 최소']],recommended:cells[cols['권장']],avoid:cells[cols['비권장']],metas:cells[cols['지침 메타']],charge:cols['차지 묶음']==null?'—':cells[cols['차지 묶음']],rates:cols['발동률']==null?'—':cells[cols['발동률']],phial:cols['병 비중']==null?'—':cells[cols['병 비중']],morph:cols['변형 묶음']==null?'—':cells[cols['변형 묶음']],status:cells[cols['상태 · 근거']]});
+    rows.set(id,{file,required:cells[cols['필수 최소']],recommended:cells[cols['권장']],avoid:cells[cols['비권장']],metas:cells[cols['지침 메타']],charge:(cols['차지 묶음']??cols['향음 묶음'])==null?'—':cells[cols['차지 묶음']??cols['향음 묶음']],rates:cols['발동률']==null?'—':cells[cols['발동률']],phial:cols['병 비중']==null?'—':cells[cols['병 비중']],morph:cols['변형 묶음']==null?'—':cells[cols['변형 묶음']],status:cells[cols['상태 · 근거']]});
   }
 }
 const fmt=list=>list.map(t=>t.min===t.max?`${t.s} ${t.min}`:`${t.s} ${t.min}~${t.max}`).join(' · ')||'—';
