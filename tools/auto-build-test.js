@@ -284,6 +284,11 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abAssumed')('불퇴전',{...get('bdNewBuild')(),w:'kulu',wt:'shield-sword'}),false,'한손검 기본 불퇴전 비권장');
     assert.strictEqual(get('abAssumed')('불퇴전',{...get('bdNewBuild')(),w:'kulu',wt:'heavy-gun'}),true,'헤비 기본은 가드로 불퇴전 유지');
     assert.strictEqual(get('abAssumed')('과감',{...get('bdNewBuild')(),w:'kulu',wt:'dual-blades',_abAssume:{on:['과감']}}),true,'직접 넣으면 켬'); }
+  // 완전 충전 (2026-10-31): 연속 사냥에서 풀 체력 전투가 많지 않아 조건부 후보. 칩으로 켜거나 직접 넣으면 100%.
+  { const b={...get('bdNewBuild')(),w:'kulu',wt:'great-sword'};
+    assert.strictEqual(get('abAssumed')('완전 충전',b),false,'기본 OFF');
+    assert.strictEqual(get('abAssumed')('완전 충전',{...b,_abAssume:{on:['완전 충전']}}),true,'켜면 ON');
+    assert.ok(!get('AB_ASSUME').monster.includes('완전 충전')&&get('AB_ASSUME').candidate.includes('완전 충전')); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
