@@ -275,6 +275,15 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(Math.abs(stats({'멸진룡의 갈망':true}).score/stats({}).score-1.1)<0.01,'켜면 대미지 +10%');
     const mushin=cond=>stats(cond).conds.find(x=>x.sk==='무심').rate;
     assert.strictEqual(mushin({'무심':true}),80); assert.strictEqual(mushin({'무심':true,'멸진룡의 갈망':true}),55,'멸진룡을 켜면 무심 55%'); }
+  // 과감 (2026-10-31): 저스트 회피 대신 가드·카운터로 버티는 스타일(불퇴전과 같은 '가드·카운터 보유')에서만 켠다. 한손검은 저스트러시만.
+  { const on=(wt,st,extra={})=>get('abAssumed')('과감',{...get('bdNewBuild')(),w:'kulu',wt,st,style20:st>0,...extra});
+    for (const [wt,st] of [['long-sword',0],['long-sword',2],['lance',1],['heavy-gun',0],['heavy-gun',1],['switch-axe',2],['hammer',1],['great-sword',2],['shield-sword',2],['charge-blade',0],['charge-blade',1]])
+      assert.strictEqual(on(wt,st),true,`과감 ON: ${wt}/${st}`);
+    for (const [wt,st,extra] of [['shield-sword',0],['shield-sword',0,{snsMode:'fallbash'}],['shield-sword',1],['dual-blades',0],['hunting-horn',0],['bow',0],['light-gun',0],['hammer',0]])
+      assert.strictEqual(on(wt,st,extra),false,`과감 OFF: ${wt}/${st}`);
+    assert.strictEqual(get('abAssumed')('불퇴전',{...get('bdNewBuild')(),w:'kulu',wt:'shield-sword'}),false,'한손검 기본 불퇴전 비권장');
+    assert.strictEqual(get('abAssumed')('불퇴전',{...get('bdNewBuild')(),w:'kulu',wt:'heavy-gun'}),true,'헤비 기본은 가드로 불퇴전 유지');
+    assert.strictEqual(get('abAssumed')('과감',{...get('bdNewBuild')(),w:'kulu',wt:'dual-blades',_abAssume:{on:['과감']}}),true,'직접 넣으면 켬'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
