@@ -267,8 +267,8 @@ const AB_ASSUME = {
   sp: ['속성 공격 증강【SP】','투기 활성'],
   actions: { '공격적인 방어':'가드', '저스트 모으기 해방':'모으기', '차지 마스터':'모으기', '변형 공격 강화':'변형', '비연':'공중',
     '저스트 교격【지속】':'저스트 회피', '적정 거리 위력 UP':'탄·화살', '차지 스톡':'모으기', '연격':'연속 타격', '기습':'후방', '불퇴전':'가드·카운터 보유', '과감':'회피 대체' },
-  // 무기 특성에 이 동작이 있으면 OFF (매진의 앞회피는 불퇴전을 끈다).
-  blockedBy: { '매진':'가드·카운터 보유' },
+  // 이 스킬을 켜는 빌드에서는 OFF (매진의 앞회피는 불퇴전을 끈다. 불퇴전을 비권장한 한손검 기본·파고들어베기는 막지 않음, 2026-10-31).
+  blockedBy: { '매진':'불퇴전' },
   // 컨트롤에 따라 유지가 갈리는 무기 동작 스킬: 켜지는 무기에서는 고수 기준으로 켠 채 시작하고, 발동 가정 칩으로 끌 수 있다.
   control: ['연격','기습','불퇴전'],
   linked: { skills:['돌파구','전화위복'], by:['거품의 춤','견인불발','겁혈 망토','귀화 망토'] },
@@ -296,7 +296,7 @@ function abAssumed(s, b, { fill = false, lv = null, row = abStyleRow(b) } = {}) 
   if (abSP(s) || a.off?.includes(s)) return false;
   if (a.on?.includes(s)) return true;
   if (AB_ASSUME.off.includes(s) || row?.avoid.includes(s)) return false;
-  if (AB_ASSUME.blockedBy[s] && abTrait(b, AB_ASSUME.blockedBy[s]) === 'yes') return false;
+  if (AB_ASSUME.blockedBy[s] && abAssumed(AB_ASSUME.blockedBy[s], b, { row })) return false;
   if (AB_ASSUME.sp.includes(s)) return abAutoCandidate(s, b);
   if (AB_ASSUME.candidate.includes(s)) return abAutoCandidate(s, b);
   if (AB_ASSUME.linked.skills.includes(s)) {

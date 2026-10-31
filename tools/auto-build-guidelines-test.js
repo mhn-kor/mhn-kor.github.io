@@ -100,8 +100,8 @@ function rules() {
     assert.strictEqual(assumed('불퇴전',seed('mizu',wt,st)),on,`불퇴전 ${wt}/${st}`);
     assert.strictEqual(assumed('매진',seed('mizu',wt,st)),!on,`매진 ${wt}/${st}`);
   }
-  // 한손검 기본·파고들어베기는 가드가 있어도 폴배시 저스트 회피 운용이라 불퇴전 비권장 (2026-10-31 사용자). 매진은 무기 특성대로 OFF.
-  for(const st of [0,1]) assert.ok(!assumed('불퇴전',seed('mizu','shield-sword',st))&&!assumed('매진',seed('mizu','shield-sword',st)),`한손검 ${st} 불퇴전·매진`);
+  // 한손검 기본·파고들어베기는 가드가 있어도 폴배시 저스트 회피 운용이라 불퇴전 비권장 → 매진은 막지 않는다 (2026-10-31 사용자).
+  for(const st of [0,1]) assert.ok(!assumed('불퇴전',seed('mizu','shield-sword',st))&&assumed('매진',seed('mizu','shield-sword',st)),`한손검 ${st} 불퇴전·매진`);
   const ls=withBoth('charge-blade',0), ln=withBoth('lance',2), us={...ls};
   assert.ok(ls['매진']===false&&ls['불퇴전']===true,'가드·카운터 보유 무기는 매진 OFF·불퇴전 유지');
   assert.ok(ln['매진']===false&&ln['불퇴전']===true,'랜스는 매진 비권장이라 불퇴전 유지');
