@@ -267,6 +267,14 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(rec(hh('kulu')).includes('연격')&&!rec(hh('mizu')).includes('연격'),'무속성만 연격 권장');
     assert.ok(!get('bdBranch')({...hh('kulu'),st:1}),'다른 스타일은 지침 없음');
     assert.ok(!concepts({...hh('kulu'),wt:'hammer'}).includes('c:double-impact'),'더블임팩트 컨셉은 피리 한정'); }
+  // 멸진룡의 갈망 (2026-10-31): 대가(SP 손실)가 점수에 없어 조건부 후보로. 켜면 대미지 +10%, 무심 발동률 80 → 55%.
+  { const nergi=get('BUILD.sets').find(s=>s.pieces.belt?.skills.some(x=>x.s==='멸진룡의 갈망')).key;
+    const b={...get('bdNewBuild')(),w:'kulu',wt:'long-sword',belt:nergi,mail:'velk'}, stats=cond=>get('bdStats')({...b,cond});
+    assert.strictEqual(get('abAssumed')('멸진룡의 갈망',b),false,'기본 OFF');
+    assert.strictEqual(get('abAssumed')('멸진룡의 갈망',{...b,_abAssume:{on:['멸진룡의 갈망']}}),true,'칩으로 켬');
+    assert.ok(Math.abs(stats({'멸진룡의 갈망':true}).score/stats({}).score-1.1)<0.01,'켜면 대미지 +10%');
+    const mushin=cond=>stats(cond).conds.find(x=>x.sk==='무심').rate;
+    assert.strictEqual(mushin({'무심':true}),80); assert.strictEqual(mushin({'무심':true,'멸진룡의 갈망':true}),55,'멸진룡을 켜면 무심 55%'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};

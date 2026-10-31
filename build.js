@@ -135,7 +135,7 @@ const BD_COND = /때|하면|되면|중에는|동안|이하|뒤|그룹 사냥|사
 const BD_DAMAGE_SCOPE = {
   '비연': '공중 공격 기준', '추격': '몬스터 부위 파괴 후', '불퇴전': '회피 없이 10초 경과',
   '특수 스킬 위력 상승': 'SP 특수 스킬 공격 기준', '적정 거리 위력 UP': '적정 거리의 탄·화살 기준',
-  '차지 스톡': '모으기 공격 기준',
+  '차지 스톡': '모으기 공격 기준', '멸진룡의 갈망': 'SP 대신 대미지를 고를 때 (공격으로 특수 게이지가 안 참)',
   '통상탄·속성 통상탄 강화': '지정된 통상탄·속성탄 기준',
   '참렬탄/속성 참렬탄 강화': '지정된 참렬탄·속성 참렬탄 기준',
 };
@@ -161,6 +161,9 @@ const BD_RATE = {
   '유타·향음 강화': 20, '저스트 교격': 10, '변형 공격 강화': 10,
   '추가 공격【독】': 27, '추가 공격【마비】': 20, '추가 공격【폭파】': 10,
 };
+/* 다른 스킬을 켜면 바뀌는 발동률 (2026-10-31 사용자): 멸진룡의 갈망을 쓰면 전투 시작 때 채운 SP를 위험할 때 회피기로
+   중간쯤 한 번 쓰고 다시 차지 않아, 그 뒤에만 무심이 발동한다(50~60%). 멸진룡이 없으면 SP를 초반에 써서 무심을 오래 받는다. */
+const BD_RATE_WITH = { '무심': { with: '멸진룡의 갈망', rate: 55 } };
 const bdRate = (name, w) => { const r = BD_RATE[name]; return r == null ? 100 : typeof r === 'number' ? r : r.w[w?.t] ?? r.d; };
 /* 공격 묶음: 특정 공격에서만 터지는 스킬은 그 공격의 비중으로 따로 계산한다.
    점수 = 비중 × (묶음 스킬 100% 적용) + (1 − 비중) × (묶음 스킬 없음). 효과를 평균내면 두 효과가 곱해지는 몫과 회심 100% 상한이 틀어진다.
@@ -433,9 +436,11 @@ function bdStats(b, group = null) {
   const entries = [...lvOf].filter(([name]) => !b.ignore?.includes(name)).map(([name, lv]) => ({ name, lv, list: bdCachedEffects(bdSkillDesc(name, lv) || '', name, w) }));
   const eligible = e => !e.need || (lvOf.get(e.need.s) || 0) >= e.need.lv;
   const conditional = new Map();
+  const rateOf = name => { const x = BD_RATE_WITH[name];
+    return x && on[x.with] && lvOf.get(x.with) > 0 && !b.ignore?.includes(x.with) ? x.rate : bdRateFor(b, name, w); };
   for (const { name, lv, list } of entries) {
     const active = list.filter(e => e.cond && eligible(e));
-    if (active.length) conditional.set(name, { sk: name, rate: branch?.skills.includes(name) ? branch.rate : bdRateFor(b, name, w),
+    if (active.length) conditional.set(name, { sk: name, rate: branch?.skills.includes(name) ? branch.rate : rateOf(name),
       lv: Math.min(lv, bdSkillLevels(name)?.at(-1)[0] ?? lv), list: active, applied: [] });
   }
   for (const { name, list } of entries) {
@@ -450,7 +455,7 @@ function bdStats(b, group = null) {
       // 켜진 조건부 효과는 발동률 기대값 (BD_RATE). 선행 스킬에 묶인 효과(경지 등)는 선행 스킬의 발동률, 체력은 그대로.
       const owner = parent ? parent.sk : name;
       if (group === 'off' && groupSkills.has(owner)) continue;
-      const rate = (parent || e.cond) && e.k !== 'hp' && !groupSkills.has(owner) && !alsoOn.has(owner) ? bdRateFor(b, owner, w) : 100;
+      const rate = (parent || e.cond) && e.k !== 'hp' && !groupSkills.has(owner) && !alsoOn.has(owner) ? rateOf(owner) : 100;
       eff.push({ ...e, sk: name, ...(rate !== 100 ? { v: e.v * rate / 100, rate } : {}) });
     }
   }
