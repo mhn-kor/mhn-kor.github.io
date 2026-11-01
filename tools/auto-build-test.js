@@ -289,6 +289,13 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abAssumed')('완전 충전',b),false,'기본 OFF');
     assert.strictEqual(get('abAssumed')('완전 충전',{...b,_abAssume:{on:['완전 충전']}}),true,'켜면 ON');
     assert.ok(!get('AB_ASSUME').monster.includes('완전 충전')&&get('AB_ASSUME').candidate.includes('완전 충전')); }
+  // 수렵피리 민첩의 선율 (2026-11-01): 향음 공격 없음 → 유타 비권장(직접 넣으면 12%), 연격 없음, 컨셉 '유타·향음 + 강화 지속'은 이 스타일만.
+  { const ag={...get('bdNewBuild')(),w:'kulu',wt:'hunting-horn',st:1,style20:true}, ids=b=>Array.from(get('abmConcepts')(b,{mode:'cycle'}).map(m=>m.id));
+    assert.strictEqual(get('bdStylesOf')('hunting-horn')[0],'민첩의 선율'); assert.strictEqual(get('abStyleRow')(ag).id,'hh-agile');
+    assert.strictEqual(get('abAssumed')('유타·향음 강화',ag),false,'유타 비권장'); assert.strictEqual(get('abAssumed')('연격',ag),false,'연격 없음');
+    assert.strictEqual(get('abAssumed')('유타·향음 강화',{...ag,_abAssume:{on:['유타·향음 강화']}}),true,'직접 넣으면 켬');
+    assert.strictEqual(get('bdRateFor')(ag,'유타·향음 강화',get('bdWeaponOf')(ag)),12); assert.ok(!get('bdBranch')(ag),'향음 묶음 없음');
+    assert.ok(ids(ag).includes('c:agile-yuta')&&!ids({...ag,st:0}).includes('c:agile-yuta'),'컨셉은 민첩의 선율만'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};

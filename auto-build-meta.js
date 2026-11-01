@@ -70,6 +70,7 @@ const AB_CONCEPTS = [
   { id:'laceration-normal', name:'견인불발 + 통상탄', skeleton:[{ s:'견인불발', min:3, max:3 }, { s:'돌파구', min:1, max:5 }, { s:'통상탄·속성 통상탄 강화', min:3, max:3 }],
     extra:[], when:{ wt:'heavy-gun', style:'앉아쏘기', style20:true, ammo:'통상' }, opening:true },
   { id:'double-impact', name:'더블임팩트 + KO술', skeleton:[{ s:'더블임팩트', min:5, max:5 }, { s:'KO술', min:5, max:5 }], extra:[], when:{ wt:'hunting-horn' } },
+  { id:'agile-yuta', name:'유타·향음 + 강화 지속', skeleton:[{ s:'유타·향음 강화', min:4, max:5 }, { s:'강화 지속', min:2, max:3 }], extra:[], when:{ wt:'hunting-horn', style:'민첩의 선율' } },
 ];
 const abmConceptWhen = w => [w.wt && BUILD.weaponTypes.find(t => t.k === w.wt)?.n, w.style, w.style20 && '스타일강화 Lv20',
   w.ammo && `첫째 탄 ${w.ammo}(속성 ${w.ammo} 포함)`, w.crit && '회심 적용 무기·탄'].filter(Boolean).join(' · ') || '전체';

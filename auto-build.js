@@ -174,6 +174,8 @@ const AB_RULES = {
     { id:'hh-base-element', wt:'hunting-horn', style:'', when:'attr', name:'기본 · 향음 공격 (속성)', required:[],
       recommended:[], avoid:[], metas:['유타·향음 강화'], charge:{ label:'향음 묶음', rate:50, skills:['유타·향음 강화'] },
       desc:'머리 위주로 치며 악보를 완성하고, 향음 공격(돌돌이)으로 버프를 공유하며 대미지를 줍니다. 유타·향음 강화는 지침 메타로 제안하고, 나머지는 속성 대미지로 맞춥니다.' },
+    { id:'hh-agile', wt:'hunting-horn', style:'민첩의 선율', name:'민첩의 선율 · 강화 상태 진타', required:[], recommended:[], avoid:['유타·향음 강화'], rates:{ '유타·향음 강화':12 },
+      desc:'공격으로 20칸 스택을 채워 강화 상태에 들어가고, 강화 중 고배율 진타를 2~3번 넣습니다. 향음 공격이 없어 유타·향음 강화는 진타에만 붙어 비권장이고(직접 넣으면 발동률 12%), 속성·공격력·전체 대미지로 스펙을 올리면 진타도 같이 오릅니다.' },
     { id:'cb-base', wt:'charge-blade', style:'', name:'기본 · 가드 카운터', required:[abT('가드 성능',3,5)],
       recommended:[abT('불퇴전',0,5)], avoid:['매진'],
       desc:'가드 성능 최소3·목표5. 가드 후 카운터 고출력·초고출력으로 반격하며 불퇴전을 권장 후보로 비교합니다. 매진은 불퇴전을 꺼서 쓰지 않습니다.' },
