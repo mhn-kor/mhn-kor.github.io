@@ -296,6 +296,13 @@ const get = s => vm.runInContext(s, ctx);
     assert.strictEqual(get('abAssumed')('유타·향음 강화',{...ag,_abAssume:{on:['유타·향음 강화']}}),true,'직접 넣으면 켬');
     assert.strictEqual(get('bdRateFor')(ag,'유타·향음 강화',get('bdWeaponOf')(ag)),12); assert.ok(!get('bdBranch')(ag),'향음 묶음 없음');
     assert.ok(ids(ag).includes('c:agile-yuta')&&!ids({...ag,st:0}).includes('c:agile-yuta'),'컨셉은 민첩의 선율만'); }
+  // 수렵피리 향타 (2026-11-01): 진가 발휘 권장(무속성은 연격도), 유타는 추가타에만 붙어 비권장(직접 넣으면 37%).
+  { const pc=w=>({...get('bdNewBuild')(),w,wt:'hunting-horn',st:2,style20:true}), rec=b=>Array.from(get('abStyleRule')(b).recommended.map(t=>t.s));
+    assert.strictEqual(get('bdStylesOf')('hunting-horn')[1],'향타');
+    assert.strictEqual(get('abStyleRow')(pc('kulu')).id,'hh-percuss-raw'); assert.strictEqual(get('abStyleRow')(pc('mizu')).id,'hh-percuss-element');
+    assert.ok(rec(pc('kulu')).includes('연격')&&rec(pc('kulu')).includes('진가 발휘')&&!rec(pc('mizu')).includes('연격')&&rec(pc('mizu')).includes('진가 발휘'));
+    assert.strictEqual(get('abAssumed')('유타·향음 강화',pc('kulu')),false,'유타 비권장');
+    assert.strictEqual(get('bdRateFor')(pc('mizu'),'유타·향음 강화',get('bdWeaponOf')(pc('mizu'))),37); assert.ok(!get('bdBranch')(pc('mizu')),'향음 묶음 없음'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
