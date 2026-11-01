@@ -303,6 +303,14 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(rec(pc('kulu')).includes('연격')&&rec(pc('kulu')).includes('진가 발휘')&&!rec(pc('mizu')).includes('연격')&&rec(pc('mizu')).includes('진가 발휘'));
     assert.strictEqual(get('abAssumed')('유타·향음 강화',pc('kulu')),false,'유타 비권장');
     assert.strictEqual(get('bdRateFor')(pc('mizu'),'유타·향음 강화',get('bdWeaponOf')(pc('mizu'))),37); assert.ok(!get('bdBranch')(pc('mizu')),'향음 묶음 없음'); }
+  // 조충곤 기본 (2026-11-01): 진가 발휘·용맹 권장(무속성은 연격·연격·경지도), 멸진룡 비권장, 비연은 공중 코드 없이 직접 넣으면 37%.
+  { const ig=w=>({...get('bdNewBuild')(),w,wt:'insect-glaive'}), rec=b=>Array.from(get('abStyleRule')(b).recommended.map(t=>t.s));
+    assert.strictEqual(get('abStyleRow')(ig('kulu')).id,'ig-base-raw'); assert.strictEqual(get('abStyleRow')(ig('mizu')).id,'ig-base-element');
+    assert.ok(['진가 발휘','연격','연격·경지','용맹'].every(s=>rec(ig('kulu')).includes(s)));
+    assert.ok(rec(ig('mizu')).includes('진가 발휘')&&rec(ig('mizu')).includes('용맹')&&!rec(ig('mizu')).includes('연격'));
+    assert.ok(!rec(ig('kulu')).includes('강화 지속'),'강화 지속은 사용자 선택');
+    assert.strictEqual(get('abAssumed')('비연',ig('mizu')),false,'비연 권장 안 함');
+    assert.strictEqual(get('bdRateFor')(ig('mizu'),'비연',get('bdWeaponOf')(ig('mizu'))),37); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
