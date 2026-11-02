@@ -311,6 +311,13 @@ const get = s => vm.runInContext(s, ctx);
     assert.ok(!rec(ig('kulu')).includes('강화 지속'),'강화 지속은 사용자 선택');
     assert.strictEqual(get('abAssumed')('비연',ig('mizu')),false,'비연 권장 안 함');
     assert.strictEqual(get('bdRateFor')(ig('mizu'),'비연',get('bdWeaponOf')(ig('mizu'))),37); }
+  // 조충곤 조충 베기 (2026-11-02): 기본 + 앙갚음 판정용 1 필수. 카운터로 과감(회피 대체)·불퇴전(가드·카운터 보유) ON, 매진은 막힘.
+  { const iv=w=>({...get('bdNewBuild')(),w,wt:'insect-glaive',st:1,style20:true}), req=b=>Array.from(get('abSearchTargets')({b,targets:[],gun:{mode:'cycle'},styleGuide:true}).map(t=>`${t.s}${t.min}`));
+    assert.strictEqual(get('bdStylesOf')('insect-glaive')[0],'조충 베기');
+    assert.strictEqual(get('abStyleRow')(iv('kulu')).id,'ig-vault-raw'); assert.strictEqual(get('abStyleRow')(iv('mizu')).id,'ig-vault-element');
+    for (const w of ['kulu','mizu']) { assert.ok(req(iv(w)).includes('앙갚음1'));
+      assert.ok(get('abAssumed')('과감',iv(w))&&get('abAssumed')('불퇴전',iv(w))&&!get('abAssumed')('매진',iv(w)),'카운터 스타일'); }
+    assert.ok(!get('abAssumed')('과감',{...iv('kulu'),st:0}),'기본 스타일은 과감 없음'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
