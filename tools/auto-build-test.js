@@ -318,6 +318,15 @@ const get = s => vm.runInContext(s, ctx);
     for (const w of ['kulu','mizu']) { assert.ok(req(iv(w)).includes('앙갚음1'));
       assert.ok(get('abAssumed')('과감',iv(w))&&get('abAssumed')('불퇴전',iv(w))&&!get('abAssumed')('매진',iv(w)),'카운터 스타일'); }
     assert.ok(!get('abAssumed')('과감',{...iv('kulu'),st:0}),'기본 스타일은 과감 없음'); }
+  // 조충곤 각충격 (2026-11-03): 진가 발휘·용맹 권장, 연격 없음, 멸진룡·비연 비권장(비연 직접 넣으면 37%), 강화 유지는 컨셉 메타(강화 지속 3).
+  { const ic={...get('bdNewBuild')(),w:'kulu',wt:'insect-glaive',st:2,style20:true}, rec=Array.from(get('abStyleRule')(ic).recommended.map(t=>t.s));
+    assert.strictEqual(get('bdStylesOf')('insect-glaive')[1],'각충격'); assert.strictEqual(get('abStyleRow')(ic).id,'ig-impact');
+    assert.ok(rec.includes('진가 발휘')&&rec.includes('용맹')&&!rec.includes('연격'));
+    assert.ok(!get('abAssumed')('연격',ic)&&!get('abAssumed')('비연',ic),'연격·비연 OFF');
+    assert.strictEqual(get('bdRateFor')(ic,'비연',get('bdWeaponOf')(ic)),37);
+    const c=get('abmConcepts')(ic,{mode:'cycle'}).find(m=>m.id==='c:impact-sustain');
+    assert.ok(c&&c.skeleton[0].s==='강화 지속'&&c.skeleton[0].min===3,'강화 지속 3 컨셉');
+    assert.ok(!get('abmConcepts')({...ic,st:0},{mode:'cycle'}).some(m=>m.id==='c:impact-sustain'),'각충격만'); }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};
