@@ -197,6 +197,15 @@ const AB_RULES = {
     { id:'ig-impact', wt:'insect-glaive', style:'각충격', name:'각충격 · 벌레 날리기', required:[],
       recommended:[abT('진가 발휘',0,'MAX'),abT('용맹',0,'MAX')], avoid:['멸진룡의 갈망','비연'], rates:{ '비연':37 },
       desc:'진액을 1.5배로 모아 빨리 강화하거나 많이 채운 뒤, 진액을 모두 써서 벌레를 날려 한 방에 큰 대미지를 줍니다. 벌레 날리기 특화는 따로 도움 되는 스킬이 없어 기본 스타일처럼 진가 발휘·용맹을 권장하고, 메인 딜이 지상이라 비연은 비권장입니다. 강화 유지 방식은 컨셉 메타(강화 지속 3)로 고릅니다.' },
+    { id:'gl-base-wide', wt:'gunlance', style:'', shell:'방사형', name:'기본 · 방사형 모아쏘기', required:[abT('포술',5),abT('집중',5)],
+      recommended:[abT('포술·경지',0,'MAX')], avoid:[], shellShare:100,
+      desc:'모아쏘기가 가장 센 타입입니다. 모으는 동안 가드가 올라가 안전하지만 막거나 피하면 모은 시간이 무효라 집중 5로 횟수를 늘리고, 포술 5(탄 3 → 4)를 맞춥니다. 포격은 공격력·속성 버프를 받지 않아 나머지는 대미지 증가류로 채웁니다.' },
+    { id:'gl-base-spread', wt:'gunlance', style:'', shell:'확산형', name:'기본 · 확산형 콕펑', required:[abT('포술',5)],
+      recommended:[abT('포술·경지',0,'MAX')], avoid:[], shellShare:60,
+      desc:'단발 포격이 가장 센 타입이라 선·후딜 없는 콕펑(찌르기 → 포격)으로 사냥합니다. 탄 2발(포술 5로 3발), 포술 5 외에 필수 스킬은 없습니다.' },
+    { id:'gl-base-normal', wt:'gunlance', style:'', shell:'일반형', name:'기본 · 일반형 풀버스트', required:[abT('포술',5)],
+      recommended:[abT('포술·경지',0,'MAX')], avoid:[], shellShare:60,
+      desc:'탄이 5발(포술 3 이상 6발)로 많아 저스트 회피 → 파생 참격 연속기 → 풀버스트로 전탄을 쏟아붓습니다. 저스트 회피는 컨트롤로 처리하고 탄 대미지를 올리는 포술 5가 핵심입니다.' },
     { id:'cb-base', wt:'charge-blade', style:'', name:'기본 · 가드 카운터', required:[abT('가드 성능',3,5)],
       recommended:[abT('불퇴전',0,5)], avoid:['매진'],
       desc:'가드 성능 최소3·목표5. 가드 후 카운터 고출력·초고출력으로 반격하며 불퇴전을 권장 후보로 비교합니다. 매진은 불퇴전을 꺼서 쓰지 않습니다.' },
@@ -334,7 +343,9 @@ function abStyleRow(b) {
   const style = bdStylesOf(b.wt)[b.st - 1] || '', elemental = () => !!(abElementSkill(b) || bdBuildupApplies(bdWeaponOf(b)));
   const brutal = r => r.when === 'brutal', attr = r => ['attr','noattr'].includes(r.when);
   const fits = r => !r.when || (brutal(r) ? (bdWeaponOf(b)?.crit || 0) < 0 : attr(r) ? (r.when === 'attr') === !!abElementSkill(b) : (r.when === 'element') === elemental());
-  const rows = AB_RULES.styles.filter(r => r.wt === b.wt && [].concat(r.style).includes(style) && fits(r));
+  // shell: 건랜스 포격 타입(방사형·확산형·일반형)별 규칙 (2026-11-04).
+  const rows = AB_RULES.styles.filter(r => r.wt === b.wt && [].concat(r.style).includes(style) && fits(r)
+    && (!r.shell || (bdWeaponOf(b)?.x || []).includes(r.shell + ' 포격')));
   const pick = list => list.find(r => r.mode && r.mode === b.snsMode) || list.find(r => !r.mode);
   return pick(rows.filter(brutal)) || pick(rows.filter(r => !brutal(r))) || null;
 }
@@ -381,6 +392,9 @@ function abSupportSkills(b, setting) {
     // 조건부 효과는 발동률 기대값 (BD_RATE, 공격 묶음 스킬은 묶음 비중)
     const weapon = abGunWeapon(b,setting), branch = bdBranch(b, weapon), rate = (branch?.skills.includes(s) ? branch.rate : bdRateFor(b, s, weapon)) / 100;
     const effects = bdEffects(bdSkillDesc(s, abMax(s)) || '', s, weapon).map(e => e.cond && e.k !== 'hp' ? { ...e, v: e.v * rate } : e);
+    // 건랜스 포격 묶음: 공격력·속성·회심은 참격 몫(1 − 비중)만, 대미지 %는 둘 다, 포술 계열은 포격 몫만.
+    const shell = b.wt === 'gunlance' ? (row?.shellShare || 0) / 100 : 0;
+    if (shell && ['포술','포술·경지'].includes(s)) return { s, value:shell * (s === '포술' ? .4 : .3), tier:abBuffTier([{k:'dmg',v:1}]) };
     const value = effects.reduce((n, e) => {
       if (e.el && e.el !== c.w?.e) return n;
       if (e.k === 'ele' && !c.element) return n;
@@ -392,7 +406,7 @@ function abSupportSkills(b, setting) {
         : e.pct ? (e.k === 'atk' ? c.base.atk : c.base.ele) * e.v / 100 : e.v || 0) / Math.max(1, c.base.atk + (c.element ? c.base.ele : 0));
       if (e.k === 'status') return n + e.v / 100 * (e.buildup ? 100 / 3 : e.rate) / 100;
       return n + (e.k === 'dmg' ? e.v / 100 : 0);
-    }, 0);
+    }, 0) * (shell && !effects.every(e => e.k === 'dmg') ? 1 - shell : 1);
     return { s, value, tier:abBuffTier(effects) };
   }).filter(x => x.value > 0).sort((a, b) => a.tier-b.tier || b.value-a.value).map(x => x.s);
 }

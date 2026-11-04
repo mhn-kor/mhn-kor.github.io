@@ -327,6 +327,22 @@ const get = s => vm.runInContext(s, ctx);
     const c=get('abmConcepts')(ic,{mode:'cycle'}).find(m=>m.id==='c:impact-sustain');
     assert.ok(c&&c.skeleton[0].s==='강화 지속'&&c.skeleton[0].min===3,'강화 지속 3 컨셉');
     assert.ok(!get('abmConcepts')({...ic,st:0},{mode:'cycle'}).some(m=>m.id==='c:impact-sustain'),'각충격만'); }
+  // 건랜스 기본 (2026-11-04): 포격 타입별 규칙(방사형 포술5·집중5·100%, 확산형·일반형 포술5·60%), 포격 묶음은 포술·대미지 버프만.
+  { const find=t=>get('BUILD.sets').find(s=>s.weapons.some(w=>w.t==='gunlance'&&(w.x||[]).includes(t)&&w.atk!=null)).key;
+    const gl=t=>({...get('bdNewBuild')(),w:find(t),wt:'gunlance'}), req=b=>Array.from(get('abSearchTargets')({b,targets:[],gun:{mode:'cycle'},styleGuide:true}).map(t=>`${t.s}${t.min}`));
+    const wide=gl('방사형 포격'), spread=gl('확산형 포격'), normal=gl('일반형 포격');
+    assert.deepStrictEqual([wide,spread,normal].map(b=>get('abStyleRow')(b).id),['gl-base-wide','gl-base-spread','gl-base-normal']);
+    assert.ok(req(wide).includes('포술5')&&req(wide).includes('집중5')&&req(spread).includes('포술5')&&!req(spread).includes('집중5'));
+    assert.ok(!get('abStyleRow')({...wide,st:1}),'다른 스타일은 지침 없음');
+    // 방사형(100%)은 공격력 스킬이 점수에 안 붙고 포술이 붙는다. 확산형(60%)은 공격력이 참격 몫만큼만.
+    get('BUILD.sets').push({key:'test-gl',name:'검수',weapons:[],pieces:{helm:{slot:0,skills:[{s:'공격',lv:5}]},mail:{slot:0,skills:[{s:'포술',lv:5}]}}});
+    try {
+      const sc=(b,part)=>get('bdStats')({...b,[part]:'test-gl'}).score, none=b=>get('bdStats')(b).score;
+      assert.strictEqual(sc(wide,'helm'),none(wide),'방사형: 공격 무효'); assert.ok(sc(wide,'mail')>none(wide)*1.3,'방사형: 포술 +40%');
+      const melee=get('bdStats')({...spread,helm:'test-gl'}).shell.melee, base=get('bdStats')(spread).shell.melee;
+      assert.ok(Math.abs((sc(spread,'helm')-none(spread))-(melee-base)*0.4)<2,'확산형: 공격은 참격 40%만');
+      assert.ok(get('bdStats')({...normal,mail:'test-gl'}).shell.scoreMultiplier>1.4*6/5-1e-9,'일반형 풀버스트: 포술 3 이상 장탄 +1');
+    } finally { get('BUILD.sets').pop(); } }
   // A6 #3 (2026-10-23): 조건부 목록은 점수 계산 없이 bdStats의 conds와 같고, 발동 여부와 무관하다 (차지 묶음 포함).
   for (const [w,wt,st] of [['mizu','long-sword',0],['zino','hammer',1],['jyur','heavy-gun',2],['rathi','insect-glaive',0]]) {
     const b={...get('bdNewBuild')(),w,wt,st,style20:st>0};

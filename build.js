@@ -514,12 +514,19 @@ function bdStats(b, group = null) {
   const statusWeapon=['독','마비','수면','폭파'].includes(w?.e);
   const K = w?.t === 'bow' ? BD_BOW_CHARGE3 : 1; // 활 3차지 보정
   const normal = (attack + (statusWeapon ? 0 : normalEle)) * F * S * K, critical = (attack + (statusWeapon ? 0 : criticalEle)) * F * S * K * critX;
-  const baseScore = Math.round(R && p > 0 ? normal * (1 - p) + critical * p : normal * G);
+  const meleeScore = R && p > 0 ? normal * (1 - p) + critical * p : normal * G;
+  /* 건랜스 포격 묶음 (2026-11-04 사용자): 포격 비중(운용 규칙 shellShare)만큼은 공격력·속성·회심이 아니라 포술·포술·경지·대미지 버프만 받는다.
+     포격 쪽은 스킬 없는 기본 참격 점수를 기준으로 포격 배율을 곱해 같은 눈금에 둔다(무기 간 포격 고정 대미지 비교는 아님). */
+  const shellShare = w?.t === 'gunlance' ? bdStyleRule(b)?.shellShare || 0 : 0;
+  const shell = shellShare ? bdShellBonus(b, lvOf, eff.filter(e => e.k === 'dmg')) : null;
+  const shellBase = shell ? (base.atk + (statusWeapon || !base.ele ? 0 : base.ele)) * (critApplies ? bdCritExpect(base.crit) : 1) * K : 0;
+  const baseScore = Math.round(shell ? meleeScore * (1 - shellShare / 100) + shellBase * shell.scoreMultiplier * shellShare / 100 : meleeScore);
   const bowCycle = bdBowCycle(b, lvOf);
   const score = b.bowEfficiency && bowCycle?.multiplier ? Math.round(baseScore * bowCycle.multiplier) : baseScore;
   /* 계수를 그대로 넘겨 상세 보기에서 계산 과정을 그릴 수 있게 합니다. */
   return { base, now, score, baseScore, bowCycle, hp, conds, ammo, critApplies, statusWeapon, buildup, branches: { normal, critical, p, normalEle, criticalEle },
     phial: phial ? { name: phial, share: phialShare } : null,
+    shell: shell ? { ...shell, share: shellShare, melee: Math.round(meleeScore), base: Math.round(shellBase) } : null,
     effects: eff, damageEffects: eff.filter(e => e.k === 'dmg'), el: w ? w.e : null,
     co: { A, B, C, D, E, F, G, K, P, S, T, R, critX, negCritX } };
 }
@@ -549,17 +556,19 @@ const BD_SHELL_TYPES = {
   '확산형 포격': { name: '확산형', normal: 82, charged: 114, burst: 72, ammo: 2, default: 'normal' },
 };
 const BD_SHELL_MODES = { normal: '일반 포격', charged: '모으기 포격', burst: '풀버스트' };
-function bdShellStats(b) {
-  const w = bdWeaponOf(b);
-  if (!w || b.wt !== 'gunlance') return null;
-  const type = (w.x || []).map(x => BD_SHELL_TYPES[x]).find(Boolean);
+/* 회심 기대 배율 (스킬 없이 무기 회심만). 포격 묶음의 기본 참격 점수에 쓴다. */
+const bdCritExpect = crit => { const q = Math.max(-100, Math.min(100, crit)) / 100;
+  return q >= 0 ? 1 + q * (BD_CRIT_UP - 1) : 1 + -q * (BD_CRIT_DOWN - 1); };
+/* 포격 배율: 포술·포술·경지·대미지 % 버프(회심·SP·공중·탄 전용 제외, 차지 스톡은 모으기 포격만). 빌드 탭 패널과 자동빌드 점수가 함께 쓴다.
+   scoreMultiplier는 풀버스트의 포술 Lv3 장탄 +1까지 반영한 포술 0 대비 배율. */
+function bdShellBonus(b, lvOf, dmgEffects) {
+  const w = bdWeaponOf(b), type = (w?.x || []).map(x => BD_SHELL_TYPES[x]).find(Boolean);
   if (!type) return null;
   const mode = Object.hasOwn(BD_SHELL_MODES, b.shellMode) ? b.shellMode : type.default;
-  const totals = new Map(bdTotals(b));
-  const lv = Math.max(0, Math.min(5, totals.get('포술') || 0));
-  const mastery = lv === 5 ? Math.max(0, Math.min(2, totals.get('포술·경지') || 0)) : 0;
+  const lv = b.ignore?.includes('포술') ? 0 : Math.max(0, Math.min(5, lvOf.get('포술') || 0));
+  const mastery = lv === 5 && !b.ignore?.includes('포술·경지') ? Math.max(0, Math.min(2, lvOf.get('포술·경지') || 0)) : 0;
   const artilleryBonus = [0, 10, 15, 20, 30, 40][lv], masteryBonus = mastery * 15;
-  const damageEffects = bdStats(b).damageEffects.filter(e => {
+  const damageEffects = dmgEffects.filter(e => {
     const scope = e.scope || BD_DAMAGE_SCOPE[e.need?.s || e.sk] || '';
     return !e.onCrit && !/SP|공중|탄·화살|지정된/.test(scope)
       && (e.sk !== '차지 스톡' || mode === 'charged');
@@ -567,8 +576,15 @@ function bdShellStats(b) {
   const damageBonus = damageEffects.reduce((sum, e) => sum + e.v, 0);
   const multiplier = 1 + (artilleryBonus + masteryBonus + damageBonus) / 100;
   const ammo = mode === 'burst' ? type.ammo + (lv >= 3 ? 1 : 0) : 1;
-  const coefficient = type[mode], shot = Math.ceil(1596 * coefficient / 100 * multiplier);
-  return { type: type.name, mode, lv, mastery, artilleryBonus, masteryBonus, damageEffects, damageBonus, multiplier, ammo, coefficient, shot, damage: shot * ammo };
+  return { type: type.name, mode, lv, mastery, artilleryBonus, masteryBonus, damageEffects, damageBonus, multiplier, ammo,
+    scoreMultiplier: multiplier * (mode === 'burst' ? ammo / type.ammo : 1), coefficient: type[mode] };
+}
+function bdShellStats(b) {
+  if (b.wt !== 'gunlance') return null;
+  const shell = bdShellBonus(b, new Map(bdTotals(b)), bdStats(b).damageEffects);
+  if (!shell) return null;
+  const shot = Math.ceil(1596 * shell.coefficient / 100 * shell.multiplier);
+  return { ...shell, shot, damage: shot * shell.ammo };
 }
 function bdShellUI(b) {
   const shell = bdShellStats(b);
@@ -1203,6 +1219,8 @@ function bdCalc(b) {
   }
   rows.push(`<span>점수</span><i>${bdScoreFormula(stats)}</i>`);
   if (stats.phial) rows.push(`<span>슬래시액스 병</span><i>${esc(stats.phial.name)} ${stats.phial.name === '강격병' ? '공격 +15%' : '속성 +25%'} × 병 비중 ${stats.phial.share}% (무기 ${stats.phial.name === '강격병' ? '공격' : '속성'} % 합산)</i>`);
+  if (stats.shell) { const x = stats.shell;
+    rows.push(`<span>포격 묶음</span><i>참격 ${x.melee} × ${100 - x.share}% + 포격(기본 ${x.base} × 포술·대미지 버프 ×${Math.round(x.scoreMultiplier * 1000) / 1000}) × ${x.share}% ≈ <b>${stats.score}</b></i>`); }
   if (stats.branch) { const x = stats.branch, on = [...x.skills, ...x.also].map(esc).join(' · ');
     rows.push(`<span>${esc(x.label)}</span><i>${x.label === '변형 공격' ? `변형 공격 타격(${on} 적용, 회심 ${Math.min(100, x.onCrit)}%) ${x.on} × ${x.rate}% + 나머지 공격(회심 ${x.offCrit}%) ${x.off}`
       : `${on} 함께 적용 ${x.on} × ${x.rate}% + 미적용 ${x.off}`} × ${100 - x.rate}% ≈ <b>${stats.score}</b></i>`); }
