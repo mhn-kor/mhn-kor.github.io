@@ -20,8 +20,8 @@
     "crossCheck": "completed_with_source_policy",
     "crossCheckSite": "https://mhnowcalc.com/calc/",
     "counts": {
-      "supported": 278,
-      "unsupported": 470,
+      "supported": 280,
+      "unsupported": 468,
       "unknown": 31
     },
     "nowcalc": {
@@ -37,7 +37,7 @@
     "crossCheckCounts": {
       "compared": 266,
       "inherited": 5,
-      "manual": 7,
+      "manual": 9,
       "baseMatches": 265,
       "bonus20Matches": 220,
       "parametersMatches": 265
@@ -15819,7 +15819,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:Element_2",
+        "source": "manual",
+        "checkedAt": "2026-11-05",
+        "stats20": {
+          "atk": 1543,
+          "ele": 1500,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -15938,7 +15946,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "nowcalc:Ailment_4",
+        "source": "manual",
+        "checkedAt": "2026-11-05",
+        "stats20": {
+          "atk": 2012,
+          "ele": 457,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
