@@ -46,7 +46,7 @@
 <!-- GitHub Pages 는 파일마다 max-age=600 으로 따로 캐시합니다. 새 index.html 과 옛 style.css 가
      10분간 섞일 수 있으므로 버전을 붙여 강제로 새로 받게 합니다.
      style.css / app.js 를 고칠 때마다 아래 두 곳의 v= 값을 같이 올려주세요. -->
-<link rel="stylesheet" href="style.css?v=20261011b">
+<link rel="stylesheet" href="style.css?v=20261110a">
 <link rel="stylesheet" href="auto-build.css?v=20261023a">
 <link rel="stylesheet" href="auto-build-meta.css?v=20261019c">
 </head>
@@ -80,6 +80,7 @@
   </div>
   <nav class="wrap tabs" id="tabs" aria-label="섹션">
     <a href="#notice" data-tab="notice">공지사항</a>
+    <a href="#schedule" data-tab="schedule">일정</a>
     <a href="#event" data-tab="event">이벤트</a>
     <a href="#codes" data-tab="codes">친구 코드</a>
     <a href="#smelt" data-tab="smelt">표류연성</a>
@@ -197,6 +198,20 @@
 <!-- ───────────────────────── 이벤트 ─────────────────────────
      응모 내용은 이 사이트에 남지 않습니다. 곧장 디스코드 채팅방으로 갑니다
      (supabase/functions/discord-entry). event.js 가 그립니다. -->
+<!-- ───────────────────────── 일정 ───────────────────────── -->
+<section class="wrap panel" id="panel-schedule" hidden>
+
+  <div class="hero tight">
+    <span class="kicker">일정</span>
+    <h1>파밍 이벤트를 <em>달력으로</em> 한눈에</h1>
+    <p>공식 공지에서 대연속·고룡 2배, 부위 파괴 2배, 산책 구슬, 갈무리 2회, 제니, 교환소, 표류석 이벤트만 모았습니다.<br>
+       막대나 날짜를 누르면 혜택 요약이 아래에 펼쳐지고, 공식 공지로 이어집니다.</p>
+  </div>
+
+  <div id="sch-box"></div>
+
+</section>
+
 <section class="wrap panel" id="panel-event" hidden>
 
   <div class="hero tight">
@@ -929,8 +944,11 @@
 <!-- record.js 도 app.js 의 showTab() 이 곧바로 부를 수 있으므로 먼저 읽힙니다.
      app.js 의 $ / esc / rest 는 함수 안에서만 쓰므로 순서가 앞서도 됩니다. -->
 <script src="record.js?v=20260826h"></script>
+<!-- 일정 탭도 app.js 의 showTab() 이 곧바로 부를 수 있으므로 먼저 읽힙니다 ($ / esc 는 함수 안에서만 씀). -->
+<script src="schedule-data.js?v=20261110a"></script>
+<script src="schedule.js?v=20261110a"></script>
 <script src="vendor/qrcode.min.js"></script>
-<script src="app.js?v=20261019a"></script>
+<script src="app.js?v=20261110a"></script>
 <!-- build.js 는 app.js 의 $ / esc / toast 를 씁니다. 반드시 뒤에 둡니다.
      showTab() 은 DOMContentLoaded 이후 호출되므로 순서가 늦어도 됩니다. -->
 <script src="build.js?v=20261104a"></script>

@@ -908,9 +908,10 @@ const saveNick = n => localStorage.setItem(NICK_KEY, n);
 /* ── 탭 ────────────────────────────────────────────────────────── */
 function showTab() {
   const h = location.hash.slice(1);
-  const tab = ['auto-build', 'auto-build-legacy'].includes(h) ? 'build' : ['codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend', 'event'].includes(h) ? h : 'notice';
-  for (const t of ['notice', 'codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend', 'event']) $('#panel-' + t).hidden = tab !== t;
+  const tab = ['auto-build', 'auto-build-legacy'].includes(h) ? 'build' : ['schedule', 'codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend', 'event'].includes(h) ? h : 'notice';
+  for (const t of ['notice', 'schedule', 'codes', 'smelt', 'build', 'material', 'record', 'rank', 'recommend', 'event']) $('#panel-' + t).hidden = tab !== t;
   if (tab === 'smelt') drawSmelt();
+  if (tab === 'schedule') drawSchedule();
   // build.js 는 app.js 의 $ / esc / toast 를 쓰므로 뒤에 로드됩니다.
   // 첫 호출 시점에는 아직 없을 수 있어 확인 후 부릅니다(로드 직후 스스로 한 번 그립니다).
   if (tab === 'build' && typeof drawBuild === 'function') drawBuild();
