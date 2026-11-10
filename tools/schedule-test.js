@@ -25,6 +25,7 @@ assert.deepStrictEqual(a.effects.map(e => e.cat), ['hunt2', 'break2', 'stone', '
 assert.strictEqual(a.effects[0].detail, '기본 보수 1번 및 2번 슬롯의 소재를 2개 획득');
 assert.deepStrictEqual(a.effects.filter(e => e.cat === 'exchange').map(e => e.name), ['이벤트 교환소【테스트】', '이벤트 교환소【테스트 EX】'], '퀘스트·표류석 조각 교환소 제외');
 assert.deepStrictEqual(a.unknown, []);
+assert.deepStrictEqual(parseArticle('<h3>덧입는 장비 교환소</h3>').effects, [], '덧입는 장비 교환소는 파밍이 아니라 뺌');
 assert.deepStrictEqual(parseArticle('<h3>이벤트 효과</h3><p>새로운 혜택 이름</p>').unknown, ['새로운 혜택 이름'], '모르는 효과는 알림');
 assert.strictEqual(shortTitle('차원 임계 몬스터에 도전하세요! 강화 러쉬 퀘스트 개최!'), '강화 러쉬 퀘스트');
 assert.strictEqual(shortTitle(a.title), '테스트 축제 2026');

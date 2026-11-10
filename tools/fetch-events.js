@@ -96,12 +96,13 @@ function parseArticle(html) {
     for (const n of names) add(n, detail[n] || '');
   }
   // 캠페인·교환소는 '이벤트 효과' 밖의 소제목이나 짧은 줄로 나온다.
-  // 교환소는 '교환소【이름】'만 하나씩 뽑고, 이름이 없으면 소제목 그대로. 퀘스트 소제목과 상시인 표류석 조각 교환소는 뺀다.
+  // 교환소는 '교환소【이름】'만 하나씩 뽑고, 이름이 없으면 소제목 그대로. 퀘스트 소제목, 상시인 표류석 조각 교환소,
+  // 외형만 바꾸는 덧입는 장비 교환소(파밍과 무관, 2026-11-10 사용자)는 뺀다.
   const shops = [];
   for (const l of L) {
     const t = l.replace(/^# /, '').replace(/^캠페인\s*/, '').replace(/^["“]|["”]$/g, '');
     if (/갈무리 나이프 (?:를 )?두 번 사용 가능/.test(t) && t.length < 40) add(t);
-    if (!l.startsWith('# ') || !/교환소/.test(t) || /표류석 조각 교환소|^기간 한정 퀘스트/.test(t)) continue;
+    if (!l.startsWith('# ') || !/교환소/.test(t) || /표류석 조각 교환소|^기간 한정 퀘스트|덧입는 장비/.test(t)) continue;
     const named = t.match(/교환소【[^】]+】/g);
     for (const n of named || [t]) if (!shops.includes(n)) shops.push(n);
   }
