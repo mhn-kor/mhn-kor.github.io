@@ -721,8 +721,8 @@ check('공식 전환은 임시 키를 유지하고 장비 이름·슬롯을 가�
   assert.ok(!BUILD.sets.some(s => ['brac', 'a-somn'].includes(s.key)), '원본 키가 중복 세트를 만들었습니다');
 });
 
-check('공식 공개된 세 스킬은 임시 번역 대신 공식 설명을 사용한다', () => {
-  for (const n of ['추가 공격【폭파】', '포술·경지', '차지 스톡', '특수 스킬 위력 UP·경지']) {
+check('공식 공개된 스킬은 임시 번역 대신 공식 설명을 사용한다', () => {
+  for (const n of ['추가 공격【폭파】', '포술·경지', '차지 스톡', '특수 스킬 위력 UP·경지', '폭풍룡의 취천', '힘의 해방·경지', '폭풍룡의 회오리날']) {
     assert.ok(!vm.runInContext('SKILLDESC_MANUAL', ctx)[n], `${n} 임시 설명 잔존`);
     const levels = vm.runInContext('SKILLDESC', ctx)[n];
     for (const [lv, desc] of levels) assert.strictEqual(bdSkillDesc(n, lv), desc);

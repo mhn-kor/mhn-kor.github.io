@@ -354,7 +354,12 @@
   "brachydios_chest": "브라키메일",
   "brachydios_arms": "브라키암",
   "brachydios_waist": "브라키코일",
-  "brachydios_legs": "브라키그리브"
+  "brachydios_legs": "브라키그리브",
+  "amatsu_head": "황천【관】",
+  "amatsu_chest": "황천【옷】",
+  "amatsu_arms": "황천【소매】",
+  "amatsu_waist": "황천【띠】",
+  "amatsu_legs": "황천【하의】"
  },
  "weapon": {
   "ore_swordshield": "헌터나이프",
@@ -1077,6 +1082,20 @@
   "shogunceanataur_bow": "블루블레이드보우",
   "velkhana_bow": "빙요 이베리아",
   "brachydios_bow": "디오스애로우",
-  "bone_bow": "헌터보우"
+  "bone_bow": "헌터보우",
+  "amatsu_swordshield": "흉보【취람】",
+  "amatsu_dualblades": "흉선【흑풍백우】",
+  "amatsu_greatsword": "흉검【총운】",
+  "amatsu_longsword": "흉도【최화우】",
+  "amatsu_hammer": "흉경【요운】",
+  "amatsu_huntinghorn": "흉금【추람】",
+  "amatsu_lance": "흉모【능운】",
+  "amatsu_gunlance": "흉총창【서우】",
+  "amatsu_switchaxe": "흉검부【백우】",
+  "amatsu_chargeblade": "흉화【농운】",
+  "amatsu_insectglaive": "흉륜【운예】",
+  "amatsu_lightbowgun": "흉침【수화】",
+  "amatsu_heavybowgun": "흉각【시우】",
+  "amatsu_bow": "흉궁【소야람】"
  }
 }

@@ -9299,5 +9299,231 @@
    }
   ],
   "styleSelectable": false
+ },
+ "amatsu_greatsword": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_swordshield": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_dualblades": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_longsword": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_hammer": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_huntinghorn": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_lance": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_gunlance": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "shelling": "long"
+ },
+ "amatsu_switchaxe": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_chargeblade": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false,
+  "phial": "impact"
+ },
+ "amatsu_insectglaive": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_bow": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_heavybowgun": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
+ },
+ "amatsu_lightbowgun": {
+  "atk": 2200,
+  "ele": 1380,
+  "crit": -20,
+  "sk": [
+   {
+    "s": "사냥꾼의 결속",
+    "lv": 1
+   },
+   {
+    "s": "폭풍룡의 회오리날",
+    "lv": 1
+   }
+  ],
+  "styleSelectable": false
  }
 }

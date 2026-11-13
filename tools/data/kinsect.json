@@ -316,5 +316,11 @@
   "attack": "CUT",
   "perf": "QUICK",
   "bonus": "ENHANCEMENT_HARVEST_UP"
+ },
+ "amatsu_insectglaive": {
+  "type": "PIERCE",
+  "attack": "CUT",
+  "perf": "POWER",
+  "bonus": "PIERCE_TYPE_2"
  }
 }
