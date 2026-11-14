@@ -1,0 +1,89 @@
+# 일정 탭 자동 갱신 (2026-11-14 사용자).
+#
+# 공식 파밍 공지는 거의 화요일 10:00 KST 에 올라오고(2026-03~11 파밍 기사 28건 중 25건, 나머지 3건은 금요일 10:00)
+# 이벤트는 엿새 뒤 월요일에 시작합니다. 그래서 화·금 낮 12시쯤 tools/fetch-events.js 를 돌립니다.
+#
+# - 일정 검사(tools/schedule-test.js)를 통과하고 일정 내용이 바뀌었을 때만 main 에 커밋합니다.
+#   updatedAt(실행 시각)만 바뀐 것은 변화로 보지 않습니다. 커밋은 schedule-data.js 와 index.html 의 그 캐시 버전 한 줄뿐입니다.
+# - 공식 문구가 바뀌어 분류 못 한 혜택이 나오면 이슈로 알립니다. 열린 이슈에 이미 적힌 것은 다시 올리지 않습니다.
+#   그 혜택만 일정 탭에 안 나올 뿐 나머지 일정은 그대로 갱신됩니다.
+# - 실패(공식 사이트 구조 변경 등)하면 커밋하지 않아 사이트에는 기존 일정이 남습니다.
+# - Actions 탭 → «일정 갱신» → Run workflow 로 손으로도 돌릴 수 있습니다.
+
+name: 일정 갱신
+
+on:
+  schedule:
+    - cron: '13 3 * * 2,5'     # 화·금 12:13 KST (cron 은 UTC 기준입니다)
+  workflow_dispatch:
+
+permissions:
+  contents: write      # schedule-data.js 커밋
+  issues: write        # 분류 못 한 혜택 알림
+  pages: write         # 커밋 뒤 Pages 빌드 요청
+
+concurrency:
+  group: schedule-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 공식 뉴스 읽기
+        run: |
+          set -o pipefail
+          node tools/fetch-events.js | tee fetch.log
+
+      - name: 분류 못 한 혜택 알림
+        continue-on-error: true      # 알림이 실패해도 일정 갱신은 계속합니다
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # «분류 못 한 효과 (…): 이름 (슬러그) / 이름 (슬러그)» → «- 이름 — 공식 기사 주소»
+          lines=$(grep -m1 '^분류 못 한 효과' fetch.log | sed 's/^[^:]*: //' | sed 's# / #\n#g' \
+            | sed -E 's#^(.*) \(([a-z0-9_-]+)\)$#- \1 — https://monsterhunternow.com/ko/news/\2#' || true)
+          [ -z "$lines" ] && { echo "분류 못 한 혜택 없음"; exit 0; }
+          title='일정 탭: 분류 못 한 혜택'
+          num=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          old=""
+          [ -n "$num" ] && old=$(gh issue view "$num" --json body,comments --jq '.body + "\n" + ([.comments[].body] | join("\n"))')
+          new=$(while IFS= read -r l; do grep -qxF -- "$l" <<<"$old" || echo "$l"; done <<<"$lines")
+          [ -z "$new" ] && { echo "이미 알린 혜택뿐"; exit 0; }
+          body=$(printf '공식 뉴스에 일정 탭이 분류하지 못한 혜택 이름이 있습니다. 이 혜택만 일정 탭에 안 나오고 나머지 일정은 그대로 갱신됐습니다.\n\n%s\n\n`tools/fetch-events.js` 의 `CATS`(칩) · `EXTRA`(요약만) · `IGNORE`(파밍 무관) 중 맞는 곳에 넣어 주세요.\n\n실행: %s' \
+            "$new" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          if [ -n "$num" ]; then gh issue comment "$num" --body "$body"; else gh issue create --title "$title" --body "$body"; fi
+
+      - name: 일정 검사
+        run: node tools/schedule-test.js
+
+      - name: 바뀐 일정만 커밋
+        run: |
+          set -euo pipefail
+          strip() { sed 's/"updatedAt":"[^"]*",//'; }
+          if diff -q <(git show HEAD:schedule-data.js | strip) <(strip < schedule-data.js) >/dev/null; then
+            echo "일정 변화 없음 — 커밋하지 않습니다"; git checkout -- schedule-data.js; exit 0
+          fi
+          sed -i -E "s/schedule-data\.js\?v=[0-9a-z]+/schedule-data.js?v=$(TZ=Asia/Seoul date +%Y%m%d%H%M)/" index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add schedule-data.js index.html
+          git commit -m "일정 자동 갱신 ($(TZ=Asia/Seoul date +%F))"
+          git pull --rebase origin main     # 그사이 main 에 다른 커밋이 올라왔어도 그 위에 얹습니다
+          git push origin HEAD:main
+          echo "PUSHED=1" >> "$GITHUB_ENV"
+
+      # GITHUB_TOKEN 으로 올린 커밋은 Pages 빌드를 깨우지 않을 수 있어 직접 요청합니다. 실패해도 일정 커밋은 남습니다.
+      - name: Pages 빌드 요청
+        if: env.PUSHED == '1'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds" --silent && echo "Pages 빌드 요청함"

@@ -716,10 +716,13 @@ node --use-system-ca tools/fetch-events.js   # schedule-data.js 다시 만들기
 node tools/schedule-test.js                  # 해석 규칙·데이터 형식 확인
 ```
 
-- 공식 일정이 올라오면 위 두 줄을 돌리고 `index.html`의 `schedule-data.js?v=`를 올려 커밋합니다.
+- **화·금 12:13(한국 시간)에 자동 갱신합니다** (`.github/workflows/schedule-update.yml`, 2026-11-14 사용자). 공식 파밍 공지는 거의 화요일 10:00에 올라오고
+  (2026-03~11 파밍 기사 28건 중 25건, 나머지 3건은 금요일 10:00) 이벤트는 엿새 뒤 월요일에 시작합니다.
+  위 두 줄을 돌려 검사를 통과하고 일정 내용이 바뀌었을 때만(실행 시각 `updatedAt`은 무시) `schedule-data.js`와 `index.html`의 캐시 버전 한 줄을 main에 커밋합니다.
+  급하면 Actions 탭 «일정 갱신» → Run workflow. main에 봇 커밋이 생기므로 작업 브랜치를 main에 반영할 때는 main을 먼저 합칩니다(merge, rebase·강제 푸시 없음).
 - 기사 본문은 옮기지 않습니다. 제목·기간('일시' 칸)·혜택 이름과 한 줄 요약('이벤트 효과' 목록)·공식 링크만 담습니다.
 - '(현지 시각)'은 한국 시간, '(UTC)'는 UTC로 읽습니다. 핼러윈처럼 전반·후반이 나뉘면 막대도 둘입니다.
-- 스크립트가 **분류 못 한 효과**를 알려 주면 공식 문구가 바뀐 것입니다. `tools/fetch-events.js`의 `CATS`·`EXTRA`·`IGNORE`에 넣습니다.
+- 스크립트가 **분류 못 한 효과**를 알려 주면 공식 문구가 바뀐 것입니다. 자동 실행은 이를 이슈 «일정 탭: 분류 못 한 혜택»으로 알립니다(열린 이슈에 이미 적힌 것은 다시 안 올림). `tools/fetch-events.js`의 `CATS`·`EXTRA`·`IGNORE`에 넣습니다.
 
 ## 재료 탭
 
