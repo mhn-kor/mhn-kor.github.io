@@ -806,7 +806,7 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
    height:fit-content 로도 되지만 사파리가 내용보다 짧게 잡아 표가 잘립니다(아이폰에서 확인).
    dvh 는 주소창이 접힐 때의 실제 높이입니다. 모르는 브라우저는 윗줄 vh 로 떨어집니다. */
 #bd-modal[data-view="skill"] {
-  width: min(100% - 28px, 460px);
+  width: min(100% - 28px, 560px);             /* 얻는 곳 목록이 붙어 460 → 560 (2026-11-14) */
   top: 50%; bottom: auto; height: auto; transform: translateY(-50%);
   max-height: min(84vh, 700px);
   max-height: min(84dvh, 700px);
@@ -1036,6 +1036,33 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 }
 .bd-sk:hover { border-color: rgba(233,161,59,.5); background: rgba(233,161,59,.1); }
 .bd-sk.on { background: rgba(233,161,59,.2); border-color: var(--amber); color: var(--amber-hi); }
+
+/* 스킬 사전 — 위 칩·목록 줄·.lv 표를 그대로 쓰고 모자란 것만 더합니다. */
+.bd-skmax { font-style: normal; font-size: .68rem; font-weight: 600; color: var(--muted); }
+.bd-ls em.hit { background: rgba(233,161,59,.22); color: var(--amber-hi); }
+.bd-src { cursor: default; }                    /* 얻는 곳은 보기만 합니다 */
+.bd-src:hover { background: none; border-color: transparent; }
+.bd-srp { font-size: .72rem; font-weight: 600; color: var(--muted); margin-left: 4px; }
+.bd-srs { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 9px 6px; }
+.bd-srs span {
+  font-size: .78rem; font-weight: 700; color: var(--c); padding: 5px 10px; border-radius: 8px;
+  background: color-mix(in srgb, var(--c) 12%, transparent); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+}
+.bd-srs i { font-style: normal; font-weight: 500; color: var(--muted); margin-left: 6px; }
+.bd-back {
+  font: inherit; font-size: 1.2rem; line-height: 1; color: var(--muted); background: none; border: 0;
+  padding: 0 8px 0 0; cursor: pointer;
+}
+.bd-back:hover { color: var(--amber-hi); }
+.bd-dict-go {
+  display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 8px; padding: 10px 12px;
+  font: inherit; font-size: .85rem; color: var(--bone); text-align: left; cursor: pointer;
+  background: rgba(233,161,59,.08); border: 1px solid rgba(233,161,59,.35); border-radius: 9px;
+}
+.bd-dict-go b { font-size: .72rem; color: var(--amber); letter-spacing: .04em; white-space: nowrap; }
+.bd-dict-go span { font-weight: 700; }
+.bd-dict-go i { font-style: normal; margin-left: auto; font-size: .75rem; color: var(--muted); text-align: right; }
+.bd-dict-go:hover { border-color: var(--amber); }
 
 @media (max-width: 560px) {
   .bd-cards { grid-template-columns: 1fr; }

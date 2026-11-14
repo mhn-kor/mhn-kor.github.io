@@ -721,6 +721,23 @@ check('공식 전환은 임시 키를 유지하고 장비 이름·슬롯을 가�
   assert.ok(!BUILD.sets.some(s => ['brac', 'a-somn'].includes(s.key)), '원본 키가 중복 세트를 만들었습니다');
 });
 
+check('스킬 사전: 설명 있는 스킬 전부, 이름·설명 검색, 얻는 곳', () => {
+  const [names, find, sources] = ['bdDictNames', 'bdDictFind', 'bdSkillSources'].map(n => vm.runInContext(n, ctx));
+  const all = names();
+  assert.ok(all.length >= 130 && all.every(n => bdSkillLevels(n)), '설명 없는 스킬은 빼고 다 담음');
+  assert.ok(['불퇴전', '추격', '폭풍룡의 취천'].every(n => all.includes(n)), '표류석 전용·장비·무기 스킬 모두');
+  // «회심»: 이름에 든 것과 설명에만 든 것이 겹치지 않게 나뉜다 (2026-11-14 사용자: 설명 검색 유지).
+  const hit = find('회심');
+  assert.ok(hit.name.includes('슈퍼회심') && hit.desc.includes('간파') && !hit.desc.includes('슈퍼회심'));
+  assert.deepStrictEqual(find('').name, all);
+  // 추격: 방어구는 레벨 높은 순, 무기는 소재별, 표류석 확률까지.
+  const src = sources('추격');
+  assert.ok(src.armor.length >= 5 && src.armor.every((a, i, l) => !i || l[i - 1].lv >= a.lv));
+  assert.strictEqual(src.armor[0].lv, 3);
+  assert.ok(src.weapon.some(w => w.s.key === 's-cean') && src.stones.length >= 1);
+  assert.ok(sources('폭풍룡의 회오리날').weapon.some(w => w.s.key === 'amat' && w.ws.length === 14), '세트 공통 무기 스킬은 전 무기');
+});
+
 check('공식 공개된 스킬은 임시 번역 대신 공식 설명을 사용한다', () => {
   for (const n of ['추가 공격【폭파】', '포술·경지', '차지 스톡', '특수 스킬 위력 UP·경지', '폭풍룡의 취천', '힘의 해방·경지', '폭풍룡의 회오리날']) {
     assert.ok(!vm.runInContext('SKILLDESC_MANUAL', ctx)[n], `${n} 임시 설명 잔존`);

@@ -46,7 +46,7 @@
 <!-- GitHub Pages 는 파일마다 max-age=600 으로 따로 캐시합니다. 새 index.html 과 옛 style.css 가
      10분간 섞일 수 있으므로 버전을 붙여 강제로 새로 받게 합니다.
      style.css / app.js 를 고칠 때마다 아래 두 곳의 v= 값을 같이 올려주세요. -->
-<link rel="stylesheet" href="style.css?v=20261110a">
+<link rel="stylesheet" href="style.css?v=20261114a">
 <link rel="stylesheet" href="auto-build.css?v=20261023a">
 <link rel="stylesheet" href="auto-build-meta.css?v=20261019c">
 </head>
@@ -302,6 +302,7 @@
     <button class="btn primary" id="bd-add">빌드 추가</button>
     <button class="btn ghost" id="bd-detail" aria-pressed="false">상세 수치</button>
     <button class="btn ghost" id="bd-list">빌드 목록</button>
+    <button class="btn ghost" id="bd-dict">스킬 사전</button>
     <button class="btn ghost" id="bd-auto">자동빌드 (테스트중)</button>
     <span class="count" id="bd-count"></span>
   </div>
@@ -951,7 +952,7 @@
 <script src="app.js?v=20261110a"></script>
 <!-- build.js 는 app.js 의 $ / esc / toast 를 씁니다. 반드시 뒤에 둡니다.
      showTab() 은 DOMContentLoaded 이후 호출되므로 순서가 늦어도 됩니다. -->
-<script src="build.js?v=20261104a"></script>
+<script src="build.js?v=20261114a"></script>
 <script src="build-bowgun-data.js?v=20261012b"></script>
 <script src="auto-build.js?v=20261104a"></script>
 <script src="auto-build-meta.js?v=20261103a"></script>

@@ -1332,14 +1332,114 @@ function bdOpenSkill(name, lv) {
   if (!rows) return;
   bdPick = { kind: 'skill' };          // 모달 본문 핸들러가 옛 선택을 붙들지 않게 비웁니다
   const max = rows[rows.length - 1][0];
-  const cur = Math.min(lv, max);
-  const body = rows.length === 1
+  bdOpen(`${esc(name)}<i class="bd-lvnow">Lv${lv}${lv > max ? ` <em>/${max}</em>` : ''}</i>`,
+    bdSkillBody(name, Math.min(lv, max)), false, { view: 'skill' });
+}
+
+/* 레벨표 + 얻는 곳. cur 가 있으면 그 줄을 세우고(합계), 없으면 표류연성 탭처럼 MAX 줄이 섭니다(스킬 사전). */
+function bdSkillBody(name, cur = null) {
+  const rows = bdSkillLevels(name);
+  const table = rows.length === 1
     ? `<p class="one">${esc(rows[0][1])}</p>`
     : `<table><thead><tr><th>Lv</th><th>효과</th></tr></thead><tbody>${rows.map(([n, d]) =>
         /* 레벨은 bdSkillLevels 가 숫자로 맞춰 줍니다 — esc 는 문자열만 받습니다. */
         `<tr${n === cur ? ' class="on"' : ''}><td>${n}</td><td>${esc(d)}</td></tr>`).join('')}</tbody></table>`;
-  bdOpen(`${esc(name)}<i class="bd-lvnow">Lv${lv}${lv > max ? ` <em>/${max}</em>` : ''}</i>`,
-    `<div class="lv bd-lvcur">${body}</div>`, false, { view: 'skill' });
+  const { armor, weapon, stones } = bdSkillSources(name);
+  const chips = list => list.map(x => `<em${x.s === name ? ' class="hit"' : ''}>${esc(x.s)}<b>${x.lv}</b></em>`).join('');
+  const row = (s, head, sub, list, slot = 0) => `<div class="bd-lr gear bd-src">${bdMon(s.key)}
+      <span class="bd-lt"><b>${head}</b><i>${sub}</i><span class="bd-ls">${chips(list)}</span></span>
+      ${slot ? `<span class="bd-rs" title="표류석 슬롯 ${slot}칸">${'<i></i>'.repeat(slot)}</span>` : ''}</div>`;
+  /* 얻는 곳은 보기만 합니다 — 사전에서는 어느 빌드에 넣을지 정할 수 없습니다 (2026-11-14 사용자). */
+  return `<div class="lv${cur ? ' bd-lvcur' : ''}">${table}</div>
+    ${armor.length ? `<p class="bd-gh">방어구 ${armor.length}</p>${armor.map(({ s, part, pc }) =>
+      row(s, `${esc(s.name)} <span class="bd-srp">${esc(part.n)}</span>`, esc(pc.name), pc.skills, pc.slot)).join('')}` : ''}
+    ${weapon.length ? `<p class="bd-gh">무기 ${weapon.length}</p>${weapon.map(({ s, ws, lv }) =>
+      row(s, esc(s.name), ws.length === s.weapons.length && ws.length > 1 ? `무기 전체 (${ws.length}종)` : ws.map(w => esc(w.tn)).join(' · '),
+        [{ s: name, lv }])).join('')}` : ''}
+    ${stones.length ? `<p class="bd-gh">표류석</p><div class="bd-srs">${stones.map(({ g, sk }) =>
+      `<span style="--c:${g.color}">표류석【${esc(g.group)}】<i>${esc(sk.rate)}</i></span>`).join('')}</div>` : ''}
+    ${armor.length || weapon.length || stones.length ? '' : '<p class="bd-empty">이 스킬이 붙은 장비가 없습니다.</p>'}`;
+}
+
+/* 이 스킬이 붙은 방어구(레벨 높은 순)·무기(소재·레벨별로 묶음)·표류석. */
+function bdSkillSources(name) {
+  const armor = [], weapon = [];
+  for (const s of bdOrderedSets()) {
+    for (const part of BD_PARTS()) {
+      const pc = s.pieces[part.k], hit = pc && pc.skills.find(x => x.s === name);
+      if (hit) armor.push({ s, part, pc, lv: hit.lv });
+    }
+    const byLv = new Map();
+    for (const w of s.weapons) {
+      const hit = bdWSkills(s, w).find(x => x.s === name);
+      if (hit) byLv.set(hit.lv, [...(byLv.get(hit.lv) || []), w]);
+    }
+    for (const [lv, ws] of byLv) weapon.push({ s, ws, lv });
+  }
+  const stones = bdStones().map(g => ({ g, sk: g.skills.find(k => k.name === name) })).filter(x => x.sk);
+  const byLvDesc = (a, b) => b.lv - a.lv;   // sort 는 안정 정렬이라 같은 레벨은 세트 순서를 지킵니다
+  return { armor: armor.sort(byLvDesc), weapon: weapon.sort(byLvDesc), stones };
+}
+
+/* ── 스킬 사전 (2026-11-14 사용자) ──────────────────────────────────
+   새 탭 없이 빌드 탭 도구줄 버튼으로 엽니다. 설명이 있는 스킬(장비·무기·표류석)을 초성별로 늘어놓고,
+   이름과 설명 둘 다로 찾습니다(«회심» → 간파·약점 특효…). 상세는 합계 창과 같은 bdSkillBody 입니다. */
+const BD_CHO = 'ㄱㄱㄴㄷㄷㄹㅁㅂㅂㅅㅅㅇㅈㅈㅊㅋㅌㅍㅎ';   // 된소리는 예사소리 칸에 넣습니다
+const bdCho = n => { const c = n.charCodeAt(0) - 0xAC00; return c >= 0 && c < 11172 ? BD_CHO[Math.floor(c / 588)] : '기타'; };
+const bdDictNorm = s => String(s).toLowerCase().replace(/[\s　]+/g, '');
+let bdDictBack = null;         // 상세의 ‹ 가 돌아갈 창 { kind: 'dict' | 'gear', bi, target, q }
+
+function bdDictNames() {
+  const names = new Set(bdStones().flatMap(g => g.skills.map(k => k.name)));
+  for (const s of BUILD.sets) {
+    for (const p of Object.values(s.pieces)) for (const x of p.skills) names.add(x.s);
+    for (const w of s.weapons) for (const x of bdWSkills(s, w)) names.add(x.s);
+  }
+  return [...names].filter(bdSkillLevels).sort((a, b) => a.localeCompare(b, 'ko'));
+}
+
+/* 이름에 든 것과 설명에만 든 것을 나눕니다. 빈 검색어면 전부 이름 쪽. */
+function bdDictFind(q) {
+  const needle = bdDictNorm(q), all = bdDictNames();
+  const name = all.filter(n => bdDictNorm(n).includes(needle));
+  const desc = needle ? all.filter(n => !name.includes(n) && bdSkillLevels(n).some(([, d]) => bdDictNorm(d).includes(needle))) : [];
+  return { name, desc };
+}
+
+function bdOpenDict() {
+  bdPick = { kind: 'dict' };
+  bdOpen('스킬 사전', '', true, { placeholder: '스킬 이름 · 효과 검색 (예: 회심)' });
+  bdFillDict('');
+}
+
+function bdFillDict(q) {
+  const { name, desc } = bdDictFind(q);
+  const chip = n => `<button class="bd-sk" data-sd="${esc(n)}"><span>${esc(n)} <i class="bd-skmax">Lv${bdSkillLevels(n).at(-1)[0]}</i></span></button>`;
+  const group = (head, list) => `<p class="bd-sgl">${head} <i>${list.length}</i></p><div class="bd-skgrid">${list.map(chip).join('')}</div>`;
+  const byCho = {};
+  if (!q) for (const n of name) (byCho[bdCho(n)] = byCho[bdCho(n)] || []).push(n);
+  const html = q
+    ? (name.length ? group(`이름에 «${esc(q)}»`, name) : '') + (desc.length ? group(`설명에 «${esc(q)}»`, desc) : '')
+    : Object.entries(byCho).map(([c, list]) => group(c, list)).join('');
+  $('#bd-modal-body').innerHTML = html || '<p class="bd-empty">일치하는 스킬이 없습니다.</p>';
+  $('#bd-modal-count').textContent = `${name.length + desc.length}종`;
+}
+
+/* 사전 목록이나 장비 고르기에서 왔으면 ‹ 로 그 창(검색어 포함)으로 돌아갑니다. */
+function bdOpenDictSkill(name) {
+  bdDictBack = ['dict', 'gear'].includes(bdPick?.kind) ? { ...bdPick, q: $('#bd-q').value } : null;
+  bdPick = { kind: 'skill' };
+  bdOpen(`${bdDictBack ? '<button type="button" class="bd-back" data-sd-back aria-label="이전 창으로" title="이전 창으로">‹</button>' : ''}`
+    + `${esc(name)}<i class="bd-lvnow">MAX Lv${bdSkillLevels(name).at(-1)[0]}</i>`, bdSkillBody(name), false, { view: 'skill' });
+  $('#bd-modal-body').scrollTop = 0;   // 긴 목록에서 넘어오면 스크롤이 남습니다
+}
+
+function bdDictGoBack() {
+  const back = bdDictBack;
+  if (!back) return;
+  if (back.kind === 'gear') bdOpenGear(back.bi, back.target); else bdOpenDict();
+  $('#bd-q').value = back.q;
+  (back.kind === 'gear' ? bdFillGear : bdFillDict)(back.q.trim());
 }
 
 /* 무기 종류 — 아이콘 격자 */
@@ -1507,7 +1607,11 @@ function bdFillGear(q) {
   const GNAME = ['몬스터 소재', '이벤트 소재', '기본 소재'];
   let lastG = -1;
 
-  $('#bd-modal-body').innerHTML =
+  /* 검색어가 스킬 이름이면 맨 위에 스킬 사전으로 가는 줄(같은 이름 먼저, 둘까지). */
+  const dict = needle ? bdDictNames().filter(n => bdDictNorm(n).includes(needle))
+    .sort((x, y) => (bdDictNorm(y) === needle) - (bdDictNorm(x) === needle) || x.length - y.length).slice(0, 2) : [];
+  $('#bd-modal-body').innerHTML = dict.map(n => `<button type="button" class="bd-dict-go" data-sd="${esc(n)}">
+      <b>스킬 사전</b><span>${esc(n)}</span><i>레벨별 설명 · 얻는 곳 보기 ›</i></button>`).join('') +
     `<div class="bd-list${bdGearSk ? '' : ' grid'}">
       <button class="bd-lr clear" data-v="">선택 해제</button>
       ${rows.map(s => {
@@ -1697,6 +1801,9 @@ $('#bd-cards').addEventListener('input', e => {
 /* 모달 내부 선택 */
 $('#bd-modal-body').addEventListener('click', e => {
   if (bdDlg().dataset.owner !== 'build') return;      // 리더보드가 연 모달이면 record.js 담당
+  /* 스킬 사전 칩·장비 고르기의 사전 줄. 칩이 표류석 칸과 같은 .bd-sk 라 그보다 먼저 받습니다. */
+  const sd = e.target.closest('[data-sd]');
+  if (sd) return bdOpenDictSkill(sd.dataset.sd);
   const b = bdState.builds[bdPick.bi];
   const go = e.target.closest('[data-build-go]');
   if (go && bdPick.kind === 'list') return bdFocusBuild(+go.dataset.buildGo);
@@ -1765,6 +1872,7 @@ $('#bd-q').addEventListener('input', e => {
   if (bdPick?.kind === 'gear') bdFillGear(v);
   else if (bdPick?.kind === 'ds') bdFillStone(v);
   else if (bdPick?.kind === 'bulk') bdFillBulk(v);
+  else if (bdPick?.kind === 'dict') bdFillDict(v);
 });
 
 /* 스킬 이름 자동완성. 검색은 전체 일치라 이름을 다 쳐야 하므로, 치는 동안 후보를 띄웁니다.
@@ -1830,6 +1938,9 @@ $('#bd-clear').addEventListener('click', () => {
   bdSave(); bdRender(); bdDlg().close();
 });
 $('#bd-modal-close').addEventListener('click', () => bdDlg().close());
+$('#bd-modal-title').addEventListener('click', e => {
+  if (bdDlg().dataset.owner === 'build' && e.target.closest('[data-sd-back]')) bdDictGoBack();
+});
 
 $('#bd-add').addEventListener('click', () => {
   if (bdState.builds.length >= BD_MAX) return toast(`빌드는 ${BD_MAX}개까지입니다`);
@@ -1843,6 +1954,7 @@ $('#bd-detail').addEventListener('click', () => {
   bdSave(); bdRender();
 });
 $('#bd-list').addEventListener('click', bdOpenList);
+$('#bd-dict').addEventListener('click', bdOpenDict);
 
 /* ── 추천 빌드 ─────────────────────────────────────────────────── */
 /* 등록은 recommend.js 가 아니라 여기 있습니다. 올릴 대상이 «지금 보고 있는 빌드»라
