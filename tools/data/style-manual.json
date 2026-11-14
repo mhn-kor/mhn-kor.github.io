@@ -19,5 +19,12 @@
     "source": "사용자 게임 확인 (공식·mhn.quest·나우칼 미반영 시점)",
     "bonus20": { "atk": 100, "ele": 40, "crit": 0 },
     "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "ele", "value": 50 }, { "stat": "crit", "value": 10 }]
+  },
+  "narg": {
+    "profile": "manual:narg",
+    "checkedAt": "2026-11-14",
+    "source": "사용자 게임 확인 (히든캐논 화면: 1~4·6~9·11~14·16~19강 공격력 +10/+14/+17/+21, 5강 스타일 선택). 나우칼은 무속성1(+352)로 올려 두어 게임과 다름",
+    "bonus20": { "atk": 248, "ele": 0, "crit": 0 },
+    "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "crit", "value": 10 }]
   }
 }

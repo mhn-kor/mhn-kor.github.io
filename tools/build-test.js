@@ -1229,6 +1229,20 @@ check('출처 미반영 스타일강화는 사용자 확인값(style-manual.json
   }
 });
 
+// 맞는 기존 프로필이 없는 사용자 확인값은 manual:키 프로필로 연다 (2026-11-14 나르가쿠르가, 구간마다 +10/+14/+17/+21 × 4 = +248).
+check('출처와 다른 사용자 확인 스타일강화는 전용 프로필로 열린다: 나르가쿠르가', () => {
+  for (const weapon of BUILD.sets.find(s => s.key === 'narg').weapons) {
+    assert.ok(weapon.styleSelectable, weapon.t);
+    ctx.manualStyleBuild = { ...bdNewBuild(), w: 'narg', wt: weapon.t, st: 1, style20: true, params: ['atk', 'crit', 'crit'] };
+    try {
+      const info = vm.runInContext('bdStyleInfo(manualStyleBuild)', ctx), base = vm.runInContext('bdWeaponBase(manualStyleBuild)', ctx);
+      assert.ok(info.selectable && info.active, weapon.t);
+      assert.strictEqual(base.atk, weapon.atk + 248 + 100);
+      assert.strictEqual(base.crit, weapon.crit + 20);
+    } finally { delete ctx.manualStyleBuild; }
+  }
+});
+
 check('공식 확인된 4종은 같은 몬스터 강화치로 스타일20 적용과 저장이 가능하다', () => {
   const cases = [
     ['rathi', 'great-sword', '발키리블레이드', 1817, 516],

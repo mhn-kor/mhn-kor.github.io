@@ -90,11 +90,16 @@ function applyCalc(output, calc) {
     inherited++;
   }
   // 출처보다 먼저 열린 스타일강화: 사용자 확인값이 기존 프로필과 정확히 같을 때만 연결한다. 출처가 지원하면 출처가 우선한다.
+  // 맞는 기존 프로필이 없으면 'manual:키' 프로필로 사용자 확인값을 그대로 쓴다 (2026-11-14 나르가쿠르가 +248).
   const manual = JSON.parse(fs.readFileSync(path.join(DATA, 'style-manual.json'), 'utf8'));
   for (const weapon of output.weapons) {
     const m = manual[weapon.set];
     if (!m || weapon.style.status === 'supported') continue;
+    if (m.profile.startsWith('manual:')) output.profiles[m.profile] ??= { bonus20: m.bonus20,
+      parameters: Object.fromEntries([10, 15, 20].map(lv => [lv, m.parameters])) };
     const data = output.profiles[m.profile];
+    // 사용자 확인값은 게임 기준이라 기본 수치도 사이트(공식) 값을 쓴다 (나르가쿠르가 조충곤: mhn.quest 2082 ↔ 공식 2186).
+    if (weapon.siteBase) { weapon.base = weapon.siteBase; weapon.baseSource = 'build-data.js'; }
     if (!data || JSON.stringify(data.bonus20) !== JSON.stringify(m.bonus20)
       || [10, 15, 20].some(lv => JSON.stringify(data.parameters[lv]) !== JSON.stringify(m.parameters))) throw Error(`수동 스타일 값과 프로필 불일치: ${weapon.set}`);
     weapon.style = { status: 'supported', profile: m.profile, source: 'manual', checkedAt: m.checkedAt,
@@ -163,6 +168,7 @@ function collect(build, source) {
     const base = Object.fromEntries(STATS.map(stat => [stat, source.weaponVal[curve[stat === 'atk' ? 'base' : stat]]?.[49] ?? 0]));
     if (!Number.isFinite(base.atk) || base.atk <= 0) { unknown('10-5 원본 수치 없음'); continue; }
     record.siteBaseMatches = STATS.every(stat => record.base[stat] === base[stat]);
+    if (!record.siteBaseMatches) record.siteBase = record.base;   // 사용자 확인값(manual)으로 열 때 쓴다
     record.base = base; record.baseSource = 'mhn.quest';
     if (!record.siteBaseMatches) issues.push({ set: set.key, type, reason: '현재 사이트의 기본 수치와 원본 불일치' });
     if (!source.guide[key]?.riftborne && !mon.upgradable) { record.style = { status: 'unsupported' }; continue; }

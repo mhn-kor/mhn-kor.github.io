@@ -20,8 +20,8 @@
     "crossCheck": "completed_with_source_policy",
     "crossCheckSite": "https://mhnowcalc.com/calc/",
     "counts": {
-      "supported": 280,
-      "unsupported": 468,
+      "supported": 294,
+      "unsupported": 454,
       "unknown": 31
     },
     "nowcalc": {
@@ -37,7 +37,7 @@
     "crossCheckCounts": {
       "compared": 266,
       "inherited": 5,
-      "manual": 9,
+      "manual": 23,
       "baseMatches": 265,
       "bonus20Matches": 220,
       "parametersMatches": 265
@@ -1297,6 +1297,45 @@
           {
             "stat": "atk",
             "value": 100
+          }
+        ]
+      }
+    },
+    "manual:narg": {
+      "bonus20": {
+        "atk": 248,
+        "ele": 0,
+        "crit": 0
+      },
+      "parameters": {
+        "10": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "15": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "20": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
           }
         ]
       }
@@ -11433,7 +11472,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11450,7 +11497,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11467,7 +11522,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11484,7 +11547,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11501,7 +11572,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11518,7 +11597,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11535,7 +11622,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11552,7 +11647,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11569,7 +11672,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11586,7 +11697,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11597,15 +11716,28 @@
       "name": "히든케인",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2434,
+          "ele": 0,
+          "crit": 40
+        }
       },
-      "siteBaseMatches": false
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11620,7 +11752,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11637,7 +11777,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -11654,7 +11802,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:narg",
+        "source": "manual",
+        "checkedAt": "2026-11-14",
+        "stats20": {
+          "atk": 2330,
+          "ele": 0,
+          "crit": 40
+        }
       },
       "siteBaseMatches": true
     },
@@ -17049,11 +17205,6 @@
     }
   ],
   "issues": [
-    {
-      "set": "narg",
-      "type": "insect-glaive",
-      "reason": "현재 사이트의 기본 수치와 원본 불일치"
-    },
     {
       "set": "amat",
       "type": "shield-sword",
