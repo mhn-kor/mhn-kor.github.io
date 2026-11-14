@@ -5635,7 +5635,7 @@
   "styleSelectable": false
  },
  "nargacuga_huntinghorn": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5644,7 +5644,7 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "bone_huntinghorn": {
   "atk": 1912,
@@ -5808,7 +5808,7 @@
   "styleSelectable": false
  },
  "nargacuga_greatsword": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5817,10 +5817,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_swordshield": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5829,10 +5829,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_dualblades": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5841,10 +5841,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_longsword": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5853,10 +5853,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_hammer": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5865,10 +5865,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_lance": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5877,10 +5877,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_gunlance": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5889,11 +5889,11 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false,
+  "styleSelectable": true,
   "shelling": "wide"
  },
  "nargacuga_switchaxe": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5902,10 +5902,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_chargeblade": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5914,11 +5914,11 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false,
+  "styleSelectable": true,
   "phial": "impact"
  },
  "nargacuga_bow": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5927,10 +5927,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_heavybowgun": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5939,10 +5939,10 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "nargacuga_lightbowgun": {
-  "atk": 2082,
+  "atk": 2186,
   "ele": 0,
   "crit": 40,
   "sk": [
@@ -5951,7 +5951,7 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "greatwroggi_swordshield": {
   "atk": 1973,
@@ -7937,7 +7937,7 @@
     "lv": 2
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "fulgur_anjanath_insectglaive": {
   "atk": 1434,

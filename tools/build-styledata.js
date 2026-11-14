@@ -98,7 +98,7 @@ function applyCalc(output, calc) {
     if (m.profile.startsWith('manual:')) output.profiles[m.profile] ??= { bonus20: m.bonus20,
       parameters: Object.fromEntries([10, 15, 20].map(lv => [lv, m.parameters])) };
     const data = output.profiles[m.profile];
-    // 사용자 확인값은 게임 기준이라 기본 수치도 사이트(공식) 값을 쓴다 (나르가쿠르가 조충곤: mhn.quest 2082 ↔ 공식 2186).
+    // 사용자 확인값은 게임 기준이라 기본 수치도 사이트(공식) 값을 쓴다 (나르가쿠르가: 패치로 전 무기 2186, mhn.quest 는 2082).
     if (weapon.siteBase) { weapon.base = weapon.siteBase; weapon.baseSource = 'build-data.js'; }
     if (!data || JSON.stringify(data.bonus20) !== JSON.stringify(m.bonus20)
       || [10, 15, 20].some(lv => JSON.stringify(data.parameters[lv]) !== JSON.stringify(m.parameters))) throw Error(`수동 스타일 값과 프로필 불일치: ${weapon.set}`);

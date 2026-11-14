@@ -11466,23 +11466,28 @@
       "name": "히든에지",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11491,23 +11496,28 @@
       "name": "히든블레이즈",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11516,23 +11526,28 @@
       "name": "히든사벨",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11541,23 +11556,28 @@
       "name": "히든토마호크",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11566,23 +11586,28 @@
       "name": "히든브레이커",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11591,23 +11616,28 @@
       "name": "히든톤",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11616,23 +11646,28 @@
       "name": "히든하스타",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11641,23 +11676,28 @@
       "name": "히든캐논",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11666,23 +11706,28 @@
       "name": "히든액스",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11691,23 +11736,28 @@
       "name": "히든가디언",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11746,23 +11796,28 @@
       "name": "히든불릿",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11771,23 +11826,28 @@
       "name": "히든스나이퍼",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "narg",
@@ -11796,23 +11856,28 @@
       "name": "히든보우",
       "element": null,
       "base": {
-        "atk": 2082,
+        "atk": 2186,
         "ele": 0,
         "crit": 40
       },
-      "baseSource": "mhn.quest",
+      "baseSource": "build-data.js",
       "style": {
         "status": "supported",
         "profile": "manual:narg",
         "source": "manual",
         "checkedAt": "2026-11-14",
         "stats20": {
-          "atk": 2330,
+          "atk": 2434,
           "ele": 0,
           "crit": 40
         }
       },
-      "siteBaseMatches": true
+      "siteBaseMatches": false,
+      "siteBase": {
+        "atk": 2186,
+        "ele": 0,
+        "crit": 40
+      }
     },
     {
       "set": "f-anja",
