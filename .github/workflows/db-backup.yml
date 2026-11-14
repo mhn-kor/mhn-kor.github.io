@@ -55,7 +55,7 @@ jobs:
           gpg --batch --symmetric --cipher-algo AES256 \
               --passphrase "$PASSPHRASE" -o "$NAME" dump.sql.gz
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ env.NAME }}
           path: ${{ env.NAME }}
