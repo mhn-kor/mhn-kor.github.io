@@ -20,9 +20,9 @@
     "crossCheck": "completed_with_source_policy",
     "crossCheckSite": "https://mhnowcalc.com/calc/",
     "counts": {
-      "supported": 294,
+      "supported": 308,
       "unsupported": 454,
-      "unknown": 31
+      "unknown": 17
     },
     "nowcalc": {
       "source": "https://mhnowcalc.com/calc/build_editor_simple.php?lang=ko",
@@ -37,7 +37,7 @@
     "crossCheckCounts": {
       "compared": 266,
       "inherited": 5,
-      "manual": 23,
+      "manual": 37,
       "baseMatches": 265,
       "bonus20Matches": 220,
       "parametersMatches": 265
@@ -1339,6 +1339,15 @@
           }
         ]
       }
+    },
+    "manual:carnival-26": {
+      "bonus20": {
+        "atk": 38,
+        "ele": 0,
+        "crit": 0
+      },
+      "maxLevel": 5,
+      "parameters": {}
     }
   },
   "weapons": [
@@ -16541,8 +16550,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16558,8 +16574,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16575,8 +16598,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16592,8 +16622,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16609,8 +16646,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16626,8 +16670,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16643,8 +16694,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16660,8 +16718,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16677,8 +16742,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16694,8 +16766,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16711,8 +16790,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16728,8 +16814,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16745,8 +16838,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -16762,8 +16862,15 @@
       },
       "baseSource": "build-data.js",
       "style": {
-        "status": "unknown",
-        "reason": "원본 소재 정보 없음"
+        "status": "supported",
+        "profile": "manual:carnival-26",
+        "source": "manual",
+        "checkedAt": "2026-11-18",
+        "stats20": {
+          "atk": 2064,
+          "ele": 0,
+          "crit": 30
+        }
       }
     },
     {
@@ -17354,76 +17461,6 @@
       "set": "carnival-24",
       "type": "insect-glaive",
       "reason": "원본에서 해당 소재의 무기군 존재를 확인하지 못함"
-    },
-    {
-      "set": "carnival-26",
-      "type": "shield-sword",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "great-sword",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "long-sword",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "dual-blades",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "hammer",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "hunting-horn",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "lance",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "gunlance",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "switch-axe",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "charge-blade",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "insect-glaive",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "light-gun",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "heavy-gun",
-      "reason": "원본 소재 정보 없음"
-    },
-    {
-      "set": "carnival-26",
-      "type": "bow",
-      "reason": "원본 소재 정보 없음"
     }
   ],
   "comparisons": [

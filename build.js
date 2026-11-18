@@ -64,6 +64,11 @@ const bdStylesOf = wt => (typeof BD_STYLES !== 'undefined' && BD_STYLES[wt]) || 
 const bdSpOf = wt => (typeof BD_SP !== 'undefined' && BD_SP[wt]) || null;
 
 const BD_PARAM_LEVELS = [10, 15, 20];
+/* 스타일 강화 최대 레벨. 대부분 20이고, 카니발26처럼 5까지만 열리는 무기는 프로필에 maxLevel 을 둔다 (2026-11-18 사용자).
+   그 레벨을 넘는 파라미터 칸은 선택지가 없어 꺼진다. */
+const bdStyleMax = info => info?.profile?.maxLevel || 20;
+const bdStyleLabel = info => `스타일강화 Lv${bdStyleMax(info)} 적용`;
+const bdParamOpen = (info, i) => !!info.active && !!info.profile.parameters[BD_PARAM_LEVELS[i]]?.length;
 const BD_PARAM_NAMES = { atk: '공격력', crit: '회심률', ele: '속성' };
 function bdStyleInfo(b) {
   const record = typeof BD_STYLE_DATA !== 'undefined' && BD_STYLE_DATA.weapons[b.w + ':' + b.wt];
@@ -103,7 +108,7 @@ function bdParamSlots(b, bi) {
   const info = bdStyleInfo(b);
   return `<span class="bd-params">${info.params.map((p, i) => {
     const label = `Lv${BD_PARAM_LEVELS[i]} 파라미터: ${p ? BD_PARAM_NAMES[p.stat] + ' +' + p.value + (p.stat === 'crit' ? '%' : '') : '미선택'}`;
-    return `<button class="bd-gem ${p?.stat || 'empty'}" data-param="${bi}:${i}" title="${esc(label)}" aria-label="${esc(label)}"${info.active ? '' : ' disabled'}>${p ? { atk: '+', crit: '✦', ele: '◆' }[p.stat] : ''}</button>`;
+    return `<button class="bd-gem ${p?.stat || 'empty'}" data-param="${bi}:${i}" title="${esc(label)}" aria-label="${esc(label)}"${bdParamOpen(info, i) ? '' : ' disabled'}>${p ? { atk: '+', crit: '✦', ele: '◆' }[p.stat] : ''}</button>`;
   }).join('')}</span>`;
 }
 
@@ -111,7 +116,7 @@ function bdStyleControl(b, bi) {
   if (!bdWeaponOf(b)) return '';
   const info = bdStyleInfo(b);
   const reason = !info.profile ? info.record?.status === 'unsupported' ? '강화 미지원' : '강화 정보 미확인' : '';
-  return `<span class="bd-style-controls"><label><input type="checkbox" data-style20="${bi}"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
+  return `<span class="bd-style-controls"><label><input type="checkbox" data-style20="${bi}"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>${bdStyleLabel(info)}</label>
     ${reason ? `<small>${reason}</small>` : ''}</span>`;
 }
 
@@ -1050,7 +1055,7 @@ function bdCard(b, bi) {
   const wsk = ws ? bdBuildWSkills(b) : [];
   const styleInfo = w ? bdStyleInfo(b) : null, styleSupported = !!styleInfo?.stylePick;
   const styleName = styleSupported && b.st && styles[b.st - 1] ? styles[b.st - 1] : null;
-  const styleBlocked = !styleInfo?.selectable ? '선택한 무기의 스타일 강화가 지원되지 않거나 확인되지 않았습니다.' : '스타일강화 Lv20 적용을 먼저 켜세요.';
+  const styleBlocked = !styleInfo?.selectable ? '선택한 무기의 스타일 강화가 지원되지 않거나 확인되지 않았습니다.' : `${bdStyleLabel(styleInfo)}을 먼저 켜세요.`;
   const weaponBase = bdWeaponBase(b);
   const type = BUILD.weaponTypes.find(t => t.k === b.wt);
   const D = bdState.detail;
@@ -1503,7 +1508,7 @@ function bdOpenStyle(bi) {
 
 function bdOpenParam(bi, slot) {
   const b = bdState.builds[bi], info = bdStyleInfo(b);
-  if (!info.active || !BD_PARAM_LEVELS[slot]) return;
+  if (!bdParamOpen(info, slot)) return;
   bdPick = { kind: 'param', bi, slot };
   const lv = BD_PARAM_LEVELS[slot];
   bdOpen(`Lv${lv} 파라미터 선택`, `<ul class="bd-list">

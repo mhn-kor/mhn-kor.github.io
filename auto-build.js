@@ -1154,9 +1154,9 @@ function abRender() {
     <div class="ab-box ab-form-settings ab-weapon-settings"><h3>① 무기 설정</h3><div class="ab-config">
       <label>무기군<select data-ab="wt">${abOptions(BUILD.weaponTypes.filter(t => abMonsters(t.k).length).map(t => [t.k, t.n]), b.wt)}</select></label>
       <label>몬스터·소재<select data-ab="monster">${abOptions(abMonsters(b.wt).map(s => [s.key, s.name]), b.w)}</select></label>
-      <label class="ab-check"><input type="checkbox" data-ab="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
+      <label class="ab-check"><input type="checkbox" data-ab="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>${bdStyleLabel(info)}</label>
       <label>스타일<select data-ab="st"${info.stylePick ? '' : ' disabled'}>${abOptions([[0, '기본 스타일'], ...bdStylesOf(b.wt).map((n, i) => [i + 1, n])], b.st)}</select></label>
-    </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-ab-param="${i}"${info.active ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
+    </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-ab-param="${i}"${bdParamOpen(info, i) ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
     <p class="ab-base">${esc(w.name)} · 공격력 <b>${base.atk}</b>${w.e ? ` · ${esc(w.e)} <b>${base.ele}</b>` : ''} · 회심 <b>${base.crit}%</b></p></div>
     ${abGunUI(b)}${abModeUI(b)}${abAssumeUI(b)}
     <div class="ab-box"><h3>② 세팅 제안 <small>무기 특성 × 파라미터 × 운용 지침</small></h3><div class="ab-directions" role="group" aria-label="세팅 제안">
@@ -1192,7 +1192,7 @@ function abEquipmentUI(b) {
   const w = bdWeaponOf(b), ws = bdSet(b.w), base = bdWeaponBase(b), stats = bdStats(b);
   const style = bdStylesOf(b.wt)[b.st - 1] || '기본 스타일';
   return `<div class="bd-rows ab-equipment">${row(b.wt, w.name, ws, bdBuildWSkills(b))}
-    <p class="ab-weapon-info">${esc(style)}${bdStyleInfo(b).active ? ' · 스타일강화 Lv20' : ''} · ${b.params.map(p => p ? BD_PARAM_NAMES[p] : '미선택').join(' / ')}</p>
+    <p class="ab-weapon-info">${esc(style)}${bdStyleInfo(b).active ? ` · 스타일강화 Lv${bdStyleMax(bdStyleInfo(b))}` : ''} · ${b.params.map(p => p ? BD_PARAM_NAMES[p] : '미선택').join(' / ')}</p>
     ${BD_PARTS().map(({ k }) => { const s = bdSet(b[k]); return row(k, s.pieces[k].name, s, s.pieces[k].skills, bdStoneList(b, k)); }).join('')}</div>
     <div class="ab-totals"><h4>스킬 합계 <small>강조: 핵심 스킬 · 필수 록온 · 흐림: 점수 없는 딸린 스킬</small></h4><div class="bd-inline">${chips(bdTotals(b).map(([s, lv]) => ({ s, lv })))}</div>
     <div class="bd-stats"><span>${BD_SI.atk}${base.atk} ▸ <b>${stats.now.atk}</b></span>${w.e && BD_EI[w.e] ? `<span>${bdIco(`assets/element/${BD_EI[w.e]}.png`)}${base.ele} ▸ <b>${stats.now.ele}</b></span>` : ''}<span>${BD_SI.crit}${base.crit}% ▸ <b>${stats.now.crit}%</b></span></div></div>`;

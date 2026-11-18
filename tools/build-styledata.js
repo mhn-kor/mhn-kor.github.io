@@ -95,13 +95,16 @@ function applyCalc(output, calc) {
   for (const weapon of output.weapons) {
     const m = manual[weapon.set];
     if (!m || weapon.style.status === 'supported') continue;
-    if (m.profile.startsWith('manual:')) output.profiles[m.profile] ??= { bonus20: m.bonus20,
-      parameters: Object.fromEntries([10, 15, 20].map(lv => [lv, m.parameters])) };
+    // maxLevel: 5강까지만 열리는 스타일(카니발26, 2026-11-18). bonus20 은 '최대 레벨까지의 상승'이고 그 위 파라미터 레벨은 없다.
+    const levels = [10, 15, 20].filter(lv => lv <= (m.maxLevel || 20));
+    if (m.profile.startsWith('manual:')) output.profiles[m.profile] ??= { bonus20: m.bonus20, ...(m.maxLevel ? { maxLevel: m.maxLevel } : {}),
+      parameters: Object.fromEntries(levels.map(lv => [lv, m.parameters])) };
     const data = output.profiles[m.profile];
     // 사용자 확인값은 게임 기준이라 기본 수치도 사이트(공식) 값을 쓴다 (나르가쿠르가: 패치로 전 무기 2186, mhn.quest 는 2082).
     if (weapon.siteBase) { weapon.base = weapon.siteBase; weapon.baseSource = 'build-data.js'; }
     if (!data || JSON.stringify(data.bonus20) !== JSON.stringify(m.bonus20)
-      || [10, 15, 20].some(lv => JSON.stringify(data.parameters[lv]) !== JSON.stringify(m.parameters))) throw Error(`수동 스타일 값과 프로필 불일치: ${weapon.set}`);
+      || (data.maxLevel || 20) !== (m.maxLevel || 20)
+      || levels.some(lv => JSON.stringify(data.parameters[lv]) !== JSON.stringify(m.parameters))) throw Error(`수동 스타일 값과 프로필 불일치: ${weapon.set}`);
     weapon.style = { status: 'supported', profile: m.profile, source: 'manual', checkedAt: m.checkedAt,
       stats20: Object.fromEntries(STATS.map(s => [s, weapon.base[s] + data.bonus20[s]])) };
   }

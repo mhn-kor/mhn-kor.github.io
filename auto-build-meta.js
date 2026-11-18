@@ -209,9 +209,9 @@ function abmWeaponUI(b) {
   return `<div class="ab-box ab-form-settings"><h3>① 무기 설정</h3><div class="ab-config">
       <label>무기군<select data-abm="wt">${abOptions(BUILD.weaponTypes.filter(t => abMonsters(t.k).length).map(t => [t.k, t.n]), b.wt)}</select></label>
       <label>몬스터·소재<select data-abm="monster">${abOptions(abMonsters(b.wt).map(s => [s.key, s.name]), b.w)}</select></label>
-      <label class="ab-check"><input type="checkbox" data-abm="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>스타일강화 Lv20 적용</label>
+      <label class="ab-check"><input type="checkbox" data-abm="style20"${info.active ? ' checked' : ''}${info.available ? '' : ' disabled'}>${bdStyleLabel(info)}</label>
       <label>스타일<select data-abm="st"${info.stylePick ? '' : ' disabled'}>${abOptions([[0, '기본 스타일'], ...bdStylesOf(b.wt).map((n, i) => [i + 1, n])], b.st)}</select></label>
-    </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-abm-param="${i}"${info.active ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
+    </div><div class="ab-parameter">${BD_PARAM_LEVELS.map((lv, i) => `<label>Lv${lv} 파라미터<select data-abm-param="${i}"${bdParamOpen(info, i) ? '' : ' disabled'}>${abOptions([['', '미선택'], ...(info.profile?.parameters[lv] || []).map(p => [p.stat, `${{ atk: '공', crit: '회', ele: '속' }[p.stat]} +${p.value}${p.stat === 'crit' ? '%' : ''}`])], b.params[i] || '')}</select></label>`).join('')}</div>
     <div class="ab-config abm-extra">
       <label>메타 종류<select data-abm="kind">${abOptions([['skill', '스킬 메타'], ['concept', '컨셉 메타']], abmState.kind)}</select></label>
       ${modes.some(r => r.mode) ? `<label>운용 성향<select data-abm="mode">${abOptions(modes.map(r => [r.mode || '', r.name]), abStyleRow(b)?.mode || '')}</select></label>` : ''}

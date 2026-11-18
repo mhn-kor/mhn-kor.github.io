@@ -1142,7 +1142,7 @@ check('스타일20 지원 무기 전체의 자동 상승·파라미터·해제·
       const [set, type] = key.split(':'), profile = data.profiles[record.profile];
       const b = { ...bdNewBuild(), w: set, wt: type, st: 1, style20: true };
       for (const stat of ['atk', 'ele', 'crit']) {
-        b.params = [10, 15, 20].map(lv => profile.parameters[lv].some(p => p.stat === stat) ? stat : null);
+        b.params = [10, 15, 20].map(lv => (profile.parameters[lv] || []).some(p => p.stat === stat) ? stat : null);   // 5강 최대(카니발26)는 칸 없음
         const got = stats(b).base;
         for (const k of ['atk', 'ele', 'crit']) assert.strictEqual(got[k], record.base[k] + profile.bonus20[k]
           + [10, 15, 20].reduce((sum, lv, i) => sum + (b.params[i] === k ? profile.parameters[lv].find(p => p.stat === k).value : 0), 0), key + ' ' + k);
@@ -1241,6 +1241,24 @@ check('출처와 다른 사용자 확인 스타일강화는 전용 프로필로 
       assert.strictEqual(base.crit, weapon.crit + 20);
     } finally { delete ctx.manualStyleBuild; }
   }
+});
+
+// 5강까지만 열리는 스타일 (2026-11-18 카니발26: 1~4강 +6/+9/+10/+13 = +38, 5강 스타일 선택, 파라미터 없음).
+check('최대 5강 스타일강화: 카니발26은 Lv5 적용으로 +38, 파라미터 칸은 꺼진다', () => {
+  for (const weapon of BUILD.sets.find(s => s.key === 'carnival-26').weapons) {
+    ctx.manualStyleBuild = { ...bdNewBuild(), w: 'carnival-26', wt: weapon.t, st: 1, style20: true, params: ['atk', 'crit', 'atk'] };
+    try {
+      const [info, base] = ['bdStyleInfo(manualStyleBuild)', 'bdWeaponBase(manualStyleBuild)'].map(c => vm.runInContext(c, ctx));
+      assert.ok(info.selectable && info.active && info.stylePick, weapon.t);
+      assert.strictEqual(vm.runInContext('bdStyleLabel', ctx)(info), '스타일강화 Lv5 적용');
+      assert.strictEqual(base.atk, weapon.atk + 38, '파라미터 없이 +38만');
+      assert.strictEqual(base.crit, weapon.crit);
+      assert.ok([0, 1, 2].every(i => !vm.runInContext('bdParamOpen', ctx)(info, i)));
+    } finally { delete ctx.manualStyleBuild; }
+  }
+  ctx.manualStyleBuild = { ...bdNewBuild(), w: 'narg', wt: 'hammer', style20: true };
+  try { assert.strictEqual(vm.runInContext('bdStyleLabel(bdStyleInfo(manualStyleBuild))', ctx), '스타일강화 Lv20 적용', '20강 무기는 그대로'); }
+  finally { delete ctx.manualStyleBuild; }
 });
 
 check('공식 확인된 4종은 같은 몬스터 강화치로 스타일20 적용과 저장이 가능하다', () => {

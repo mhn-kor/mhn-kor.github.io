@@ -26,5 +26,13 @@
     "source": "사용자 게임 확인 (히든캐논 화면: 1~4·6~9·11~14·16~19강 공격력 +10/+14/+17/+21, 5강 스타일 선택). 나우칼은 무속성1(+352)로 올려 두어 게임과 다름",
     "bonus20": { "atk": 248, "ele": 0, "crit": 0 },
     "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "crit", "value": 10 }]
+  },
+  "carnival-26": {
+    "profile": "manual:carnival-26",
+    "checkedAt": "2026-11-18",
+    "source": "사용자 게임 확인 (해머 화면: 1~4강 공격력 +6/+9/+10/+13, 5강 스타일 선택에서 끝, 2026 → 2064). 나우칼 Carnival2026 과 같음",
+    "maxLevel": 5,
+    "bonus20": { "atk": 38, "ele": 0, "crit": 0 },
+    "parameters": []
   }
 }

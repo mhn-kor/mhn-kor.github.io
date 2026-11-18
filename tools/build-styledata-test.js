@@ -34,7 +34,8 @@ for (const weapon of output.weapons) {
     assert.strictEqual(weapon.style.stats20[stat], weapon.base[stat] + profile.bonus20[stat]);
     assert.ok(Number.isFinite(weapon.style.stats20[stat]));
   }
-  assert.deepStrictEqual(Object.keys(profile.parameters), ['10', '15', '20']);
+  // 파라미터 레벨은 최대 강화 레벨까지만 (5강 최대인 카니발26은 없음, 2026-11-18).
+  assert.deepStrictEqual(Object.keys(profile.parameters), ['10', '15', '20'].filter(lv => +lv <= (profile.maxLevel || 20)));
 }
 // 확인 불가인 원본 무기군·지원 테이블은 0이나 기본 계열로 대체하지 않는다.
 const missing = structuredClone(source);
