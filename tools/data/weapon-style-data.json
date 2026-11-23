@@ -20,8 +20,8 @@
     "crossCheck": "completed_with_source_policy",
     "crossCheckSite": "https://mhnowcalc.com/calc/",
     "counts": {
-      "supported": 322,
-      "unsupported": 440,
+      "supported": 324,
+      "unsupported": 438,
       "unknown": 17
     },
     "nowcalc": {
@@ -37,7 +37,7 @@
     "crossCheckCounts": {
       "compared": 266,
       "inherited": 5,
-      "manual": 51,
+      "manual": 53,
       "baseMatches": 265,
       "bonus20Matches": 220,
       "parametersMatches": 265
@@ -1344,6 +1344,108 @@
           {
             "stat": "ele",
             "value": 50
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ]
+      }
+    },
+    "manual:p-rathi-fire": {
+      "bonus20": {
+        "atk": 184,
+        "ele": 124,
+        "crit": 0
+      },
+      "parameters": {
+        "10": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "15": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "20": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ]
+      }
+    },
+    "manual:p-rathi-dragon": {
+      "bonus20": {
+        "atk": 244,
+        "ele": 152,
+        "crit": 0
+      },
+      "parameters": {
+        "10": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "15": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "20": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
           },
           {
             "stat": "crit",
@@ -8732,7 +8834,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:p-rathi-fire",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 2199,
+          "ele": 876,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -8799,7 +8909,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:p-rathi-dragon",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1793,
+          "ele": 1283,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },

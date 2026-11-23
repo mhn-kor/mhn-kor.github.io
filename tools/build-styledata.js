@@ -93,8 +93,9 @@ function applyCalc(output, calc) {
   // 맞는 기존 프로필이 없으면 'manual:키' 프로필로 사용자 확인값을 그대로 쓴다 (2026-11-14 나르가쿠르가 +248).
   const manual = JSON.parse(fs.readFileSync(path.join(DATA, 'style-manual.json'), 'utf8'));
   for (const weapon of output.weapons) {
-    const m = manual[weapon.set];
-    if (!m || (m.types && !m.types.includes(weapon.type)) || weapon.style.status === 'supported') continue;   // types: 그 무기군만 (속성이 다른 무기가 섞인 소재)
+    // '소재:무기군' 항목이 소재 항목보다 우선한다. types: 소재 항목을 그 무기군에만 (속성이 다른 무기가 섞인 소재, 리오레이아 아종).
+    const m = manual[`${weapon.set}:${weapon.type}`] || manual[weapon.set];
+    if (!m || (m.types && !m.types.includes(weapon.type)) || weapon.style.status === 'supported') continue;
     // maxLevel: 5강까지만 열리는 스타일(카니발26, 2026-11-18). bonus20 은 '최대 레벨까지의 상승'이고 그 위 파라미터 레벨은 없다.
     const levels = [10, 15, 20].filter(lv => lv <= (m.maxLevel || 20));
     if (m.profile.startsWith('manual:')) output.profiles[m.profile] ??= { bonus20: m.bonus20, ...(m.maxLevel ? { maxLevel: m.maxLevel } : {}),

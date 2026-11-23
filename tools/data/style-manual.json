@@ -45,9 +45,23 @@
   "p-rathi": {
     "profile": "manual:p-rathi-poison",
     "checkedAt": "2026-11-23",
-    "source": "사용자 게임 확인 (비룡도【앵화】 화면: 구간마다 속성 +5/+9·공격 +8/+12 → 20강 공격 +80·속성 +56). 나우칼 PinkRathian_Poison 과 같고 선택지도 나우칼 값. 불속성 수렵피리·용속성 활은 계열이 달라 미확인",
+    "source": "사용자 게임 확인 (비룡도【앵화】 화면: 구간마다 속성 +5/+9·공격 +8/+12 → 20강 공격 +80·속성 +56). 나우칼 PinkRathian_Poison 과 같고 선택지도 나우칼 값. 불속성 수렵피리·용속성 활은 계열이 달라 아래 무기군 항목",
     "types": ["shield-sword", "long-sword", "gunlance", "charge-blade"],
     "bonus20": { "atk": 80, "ele": 56, "crit": 0 },
     "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "ele", "value": 50 }, { "stat": "crit", "value": 10 }]
+  },
+  "p-rathi:hunting-horn": {
+    "profile": "manual:p-rathi-fire",
+    "checkedAt": "2026-11-23",
+    "source": "사용자 게임 확인 (로얄리코더 화면: 구간마다 속성 +12/+19·공격 +18/+28 → 20강 공격 +184·속성 +124). 나우칼 PinkRathian_Fire 와 같고 선택지도 나우칼 값",
+    "bonus20": { "atk": 184, "ele": 124, "crit": 0 },
+    "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "ele", "value": 100 }, { "stat": "crit", "value": 10 }]
+  },
+  "p-rathi:bow": {
+    "profile": "manual:p-rathi-dragon",
+    "checkedAt": "2026-11-23",
+    "source": "사용자 게임 확인 (로제스애로우 화면: 구간마다 속성 +14/+24·공격 +23/+38 → 20강 공격 +244·속성 +152). 나우칼 PinkRathian_Dragon 과 같고 선택지도 나우칼 값",
+    "bonus20": { "atk": 244, "ele": 152, "crit": 0 },
+    "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "ele", "value": 100 }, { "stat": "crit", "value": 10 }]
   }
 }
