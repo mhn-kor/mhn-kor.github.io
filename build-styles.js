@@ -21,10 +21,17 @@ const BD_SP = {
   bow: '용화살',
 };
 
-/* 아종의 스타일강화 해금 스킬. 공식 확인된 소재만 등록한다.
-   현재 화면은 Lv20만 지원하므로 Lv10 해금도 적용 시 함께 활성화된다. */
+/* 아종의 스타일강화 해금 스킬. 공식 확인된 소재만 등록한다 (공식 무기 데이터의 requiredCustomEnhancementLevel).
+   스타일강화 적용은 최대 레벨 기준이라 그 아래 해금(Lv10)도 적용 시 함께 활성화된다. t: 그 무기군만 (속성이 다른 무기가 섞인 소재). */
 const BD_STYLE_UNLOCKS = {
   'a-ratha': [{ level: 10, s: '특수 스킬 위력 UP·경지', lv: 1 }],
+  // 2026-11-23 사용자 게임 확인 + 공식 데이터
+  'c-puke': [{ level: 10, s: '물속성 공격 강화·경지', lv: 1 }],
+  'p-rathi': [
+    { level: 10, s: '연격·경지', lv: 1, t: ['shield-sword', 'long-sword', 'gunlance', 'charge-blade'] },
+    { level: 10, s: '불속성 공격 강화·경지', lv: 1, t: ['hunting-horn'] },
+    { level: 10, s: '용속성 공격 강화·경지', lv: 1, t: ['bow'] },
+  ],
 };
 
 const BD_STYLES = {

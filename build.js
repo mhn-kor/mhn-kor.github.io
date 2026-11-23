@@ -92,7 +92,8 @@ function bdWeaponBase(b) {
 
 function bdBuildWSkills(b) {
   const skills = bdWSkills(bdSet(b.w), bdWeaponOf(b));
-  const extra = bdStyleInfo(b).active ? (BD_STYLE_UNLOCKS[b.w] || []).filter(x => x.level <= 20) : [];
+  const info = bdStyleInfo(b);
+  const extra = info.active ? (BD_STYLE_UNLOCKS[b.w] || []).filter(x => x.level <= bdStyleMax(info) && (!x.t || x.t.includes(b.wt))) : [];
   return [...skills, ...extra.map(({ s, lv }) => ({ s, lv }))];
 }
 

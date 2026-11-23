@@ -438,6 +438,28 @@ check('특수 스킬 위력 상승 경지도 부모 체크와 합산 수치를 �
   assert.strictEqual(effects.length, 0, '향후 파괴왕 경지도 HP 대미지에서 제외');
 });
 
+// 2026-11-23 해금 (사용자 게임 확인 + 공식 requiredCustomEnhancementLevel): 무기군마다 다른 경지.
+check('푸케푸케 아종·리오레이아 아종 스타일 10강 해금 경지는 무기군별로 붙고, 불속성 경지는 기본 스킬 Lv5부터 +200', () => {
+  const expect = { 'c-puke': () => '물속성 공격 강화·경지',
+    'p-rathi': t => ({ 'hunting-horn': '불속성 공격 강화·경지', bow: '용속성 공격 강화·경지' })[t] || '연격·경지' };
+  const secrets = ['물속성 공격 강화·경지', '연격·경지', '불속성 공격 강화·경지', '용속성 공격 강화·경지'];
+  for (const [key, skillOf] of Object.entries(expect)) for (const weapon of BUILD.sets.find(s => s.key === key).weapons) {
+    const b = { ...bdNewBuild(), w: key, wt: weapon.t, style20: true }, on = new Map(bdTotals(b));
+    assert.deepStrictEqual(secrets.filter(n => on.has(n)), [skillOf(weapon.t)], `${key} ${weapon.t}`);
+    assert.strictEqual(on.get(skillOf(weapon.t)), 1);
+    assert.ok(!secrets.some(n => new Map(bdTotals({ ...b, style20: false })).has(n)), '스타일강화를 끄면 없음');
+  }
+  const armor = { key: 'fire-secret-test', name: '테스트', weaponSkills: [], weapons: [], pieces: { helm: { name: '테스트', skills: [], slot: 0 } } };
+  BUILD.sets.push(armor);
+  try {
+    const ele = lv => { armor.pieces.helm.skills = [{ s: '불속성 공격 강화', lv }];
+      ctx.unlockBuild = { ...bdNewBuild(), w: 'p-rathi', wt: 'hunting-horn', style20: true, helm: armor.key };
+      return vm.runInContext('bdStats(unlockBuild).now.ele', ctx); };
+    const flat = lv => +/수치가 (\d+) 증가/.exec(bdSkillDesc('불속성 공격 강화', lv))[1];
+    assert.strictEqual(ele(5) - ele(4), flat(5) - flat(4) + 200);
+  } finally { BUILD.sets.pop(); delete ctx.unlockBuild; }
+});
+
 check('리오레우스 아종은 스타일20에서만 경지 Lv1을 얻고 기본 스킬 Lv5부터 반영한다', () => {
   const skill = '특수 스킬 위력 UP·경지', base = '특수 스킬 위력 상승';
   const set = BUILD.sets.find(s => s.key === 'a-ratha');
