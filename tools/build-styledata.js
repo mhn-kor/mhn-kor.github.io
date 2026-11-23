@@ -94,7 +94,7 @@ function applyCalc(output, calc) {
   const manual = JSON.parse(fs.readFileSync(path.join(DATA, 'style-manual.json'), 'utf8'));
   for (const weapon of output.weapons) {
     const m = manual[weapon.set];
-    if (!m || weapon.style.status === 'supported') continue;
+    if (!m || (m.types && !m.types.includes(weapon.type)) || weapon.style.status === 'supported') continue;   // types: 그 무기군만 (속성이 다른 무기가 섞인 소재)
     // maxLevel: 5강까지만 열리는 스타일(카니발26, 2026-11-18). bonus20 은 '최대 레벨까지의 상승'이고 그 위 파라미터 레벨은 없다.
     const levels = [10, 15, 20].filter(lv => lv <= (m.maxLevel || 20));
     if (m.profile.startsWith('manual:')) output.profiles[m.profile] ??= { bonus20: m.bonus20, ...(m.maxLevel ? { maxLevel: m.maxLevel } : {}),

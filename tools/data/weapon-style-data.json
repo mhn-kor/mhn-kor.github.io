@@ -20,8 +20,8 @@
     "crossCheck": "completed_with_source_policy",
     "crossCheckSite": "https://mhnowcalc.com/calc/",
     "counts": {
-      "supported": 308,
-      "unsupported": 454,
+      "supported": 322,
+      "unsupported": 440,
       "unknown": 17
     },
     "nowcalc": {
@@ -37,7 +37,7 @@
     "crossCheckCounts": {
       "compared": 266,
       "inherited": 5,
-      "manual": 37,
+      "manual": 51,
       "baseMatches": 265,
       "bonus20Matches": 220,
       "parametersMatches": 265
@@ -1297,6 +1297,108 @@
           {
             "stat": "atk",
             "value": 100
+          }
+        ]
+      }
+    },
+    "manual:p-rathi-poison": {
+      "bonus20": {
+        "atk": 80,
+        "ele": 56,
+        "crit": 0
+      },
+      "parameters": {
+        "10": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 50
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "15": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 50
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "20": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 50
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ]
+      }
+    },
+    "manual:c-puke": {
+      "bonus20": {
+        "atk": 100,
+        "ele": 100,
+        "crit": 0
+      },
+      "parameters": {
+        "10": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "15": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
+          }
+        ],
+        "20": [
+          {
+            "stat": "atk",
+            "value": 100
+          },
+          {
+            "stat": "ele",
+            "value": 100
+          },
+          {
+            "stat": "crit",
+            "value": 10
           }
         ]
       }
@@ -8580,7 +8682,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:p-rathi-poison",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 2183,
+          "ele": 368,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -8597,7 +8707,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:p-rathi-poison",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 2183,
+          "ele": 368,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -8631,7 +8749,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:p-rathi-poison",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 2183,
+          "ele": 368,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -8648,7 +8774,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:p-rathi-poison",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 2183,
+          "ele": 368,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9306,7 +9440,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9323,7 +9465,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9340,7 +9490,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9357,7 +9515,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9374,7 +9540,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9391,7 +9565,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9408,7 +9590,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9425,7 +9615,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9442,7 +9640,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },
@@ -9459,7 +9665,15 @@
       },
       "baseSource": "mhn.quest",
       "style": {
-        "status": "unsupported"
+        "status": "supported",
+        "profile": "manual:c-puke",
+        "source": "manual",
+        "checkedAt": "2026-11-23",
+        "stats20": {
+          "atk": 1563,
+          "ele": 1520,
+          "crit": 0
+        }
       },
       "siteBaseMatches": true
     },

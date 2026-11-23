@@ -1261,6 +1261,24 @@ check('최대 5강 스타일강화: 카니발26은 Lv5 적용으로 +38, 파라�
   finally { delete ctx.manualStyleBuild; }
 });
 
+// 2026-11-23 개방: 푸케푸케 아종(물 +100/+100), 리오레이아 아종 독 무기(+80/+56). 아종의 불 피리·용 활은 계열이 달라 미확인.
+check('푸케푸케 아종·리오레이아 아종 스타일강화 (사용자 확인값)', () => {
+  const cases = [['c-puke', 'great-sword', 100, 100, 100], ['c-puke', 'bow', 100, 100, 100], ['p-rathi', 'long-sword', 80, 56, 50], ['p-rathi', 'charge-blade', 80, 56, 50]];
+  for (const [w, wt, atk, ele, eleParam] of cases) {
+    ctx.manualStyleBuild = { ...bdNewBuild(), w, wt, st: 1, style20: true, params: ['atk', 'ele', 'crit'] };
+    try {
+      const weapon = BUILD.sets.find(s => s.key === w).weapons.find(x => x.t === wt), base = vm.runInContext('bdWeaponBase(manualStyleBuild)', ctx);
+      assert.ok(weapon.styleSelectable, wt);
+      assert.deepStrictEqual(JSON.parse(JSON.stringify(base)), { atk: weapon.atk + atk + 100, ele: weapon.ele + ele + eleParam, crit: weapon.crit + 10 }, `${w} ${wt}`);
+    } finally { delete ctx.manualStyleBuild; }
+  }
+  for (const wt of ['hunting-horn', 'bow']) {
+    ctx.manualStyleBuild = { ...bdNewBuild(), w: 'p-rathi', wt, style20: true };
+    try { const info = vm.runInContext('bdStyleInfo(manualStyleBuild)', ctx); assert.ok(info.selectable && !info.available, `p-rathi ${wt}: 스타일 선택만`); }
+    finally { delete ctx.manualStyleBuild; }
+  }
+});
+
 check('공식 확인된 4종은 같은 몬스터 강화치로 스타일20 적용과 저장이 가능하다', () => {
   const cases = [
     ['rathi', 'great-sword', '발키리블레이드', 1817, 516],

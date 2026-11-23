@@ -950,7 +950,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "pink_rathian_bow": {
   "atk": 1549,
@@ -962,7 +962,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "azure_rathalos_swordshield": {
   "atk": 2015,
@@ -1058,7 +1058,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "ore_dualblades": {
   "atk": 1912,
@@ -1749,7 +1749,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false,
+  "styleSelectable": true,
   "phial": "impact"
  },
  "azure_rathalos_chargeblade": {
@@ -2009,7 +2009,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "coral_pukeipukei_swordshield": {
   "atk": 1463,
@@ -2021,7 +2021,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "coral_pukeipukei_hammer": {
   "atk": 1463,
@@ -2033,7 +2033,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "coral_pukeipukei_lance": {
   "atk": 1463,
@@ -2045,7 +2045,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "coral_pukeipukei_bow": {
   "atk": 1463,
@@ -2057,7 +2057,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "coral_pukeipukei_lightbowgun": {
   "atk": 1463,
@@ -2069,7 +2069,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "kushaladaora_chargeblade": {
   "atk": 1861,
@@ -2657,7 +2657,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false,
+  "styleSelectable": true,
   "shelling": "normal"
  },
  "rathalos_gunlance": {
@@ -3335,7 +3335,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "barioth_heavybowgun": {
   "atk": 1426,
@@ -4556,7 +4556,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "khezu_switchaxe": {
   "atk": 1429,
@@ -5348,7 +5348,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "zinogre_huntinghorn": {
   "atk": 1463,
@@ -5424,7 +5424,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "teostra_huntinghorn": {
   "atk": 2017,
@@ -7681,7 +7681,7 @@
     "lv": 1
    }
   ],
-  "styleSelectable": false
+  "styleSelectable": true
  },
  "odogaron_insectglaive": {
   "atk": 2059,

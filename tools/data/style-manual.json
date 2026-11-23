@@ -34,5 +34,20 @@
     "maxLevel": 5,
     "bonus20": { "atk": 38, "ele": 0, "crit": 0 },
     "parameters": []
+  },
+  "c-puke": {
+    "profile": "manual:c-puke",
+    "checkedAt": "2026-11-23",
+    "source": "사용자 게임 확인 (라그나골렘 화면: 구간마다 속성 +10/+15·공격 +10/+15 → 20강 공격 +100·속성 +100). 나우칼 CoralPukei_Water 와 같고 선택지도 나우칼 값",
+    "bonus20": { "atk": 100, "ele": 100, "crit": 0 },
+    "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "ele", "value": 100 }, { "stat": "crit", "value": 10 }]
+  },
+  "p-rathi": {
+    "profile": "manual:p-rathi-poison",
+    "checkedAt": "2026-11-23",
+    "source": "사용자 게임 확인 (비룡도【앵화】 화면: 구간마다 속성 +5/+9·공격 +8/+12 → 20강 공격 +80·속성 +56). 나우칼 PinkRathian_Poison 과 같고 선택지도 나우칼 값. 불속성 수렵피리·용속성 활은 계열이 달라 미확인",
+    "types": ["shield-sword", "long-sword", "gunlance", "charge-blade"],
+    "bonus20": { "atk": 80, "ele": 56, "crit": 0 },
+    "parameters": [{ "stat": "atk", "value": 100 }, { "stat": "ele", "value": 50 }, { "stat": "crit", "value": 10 }]
   }
 }
