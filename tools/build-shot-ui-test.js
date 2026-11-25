@@ -3,7 +3,7 @@
  *   node tools/build-shot-ui-test.js     (PLAYWRIGHT_MODULE 로 playwright 위치를 줄 수 있습니다)
  *
  * 이미지 변환은 그림 파일을 fetch 로 다시 읽어서 file:// 로는 돌 수 없습니다. 작은 http 서버를 띄웁니다.
- * ?shot=1 이 없으면 버튼이 없고, PC 는 PNG(mhn-build-날짜-시각.png)를 바로 내려받고, 휴대폰은 미리보기 창을 띄우는지,
+ * 모든 카드에 버튼이 있고, PC 는 PNG(mhn-build-날짜-시각.png)를 바로 내려받고, 휴대폰은 미리보기 창을 띄우는지,
  * 상세 수치를 켠 긴 카드도 화면 높이와 상관없이 한 장인지 봅니다. */
 const { chromium, devices } = require(process.env.PLAYWRIGHT_MODULE || 'playwright'), assert = require('assert');
 const http = require('http'), fs = require('fs'), path = require('path');
@@ -26,16 +26,16 @@ const setBuild = page => page.evaluate(() => {
   const base = `http://127.0.0.1:${server.address().port}/index.html`;
   const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch());
   try {
-    // 숨김: 주소에 ?shot=1 이 없으면 버튼이 없다.
+    // 공개 (2026-11-25): 주소에 아무것도 없어도 카드마다 버튼이 있다.
     { const page = await browser.newPage();
       await page.goto(base + '#build'); await setBuild(page);
-      assert.strictEqual(await page.locator('[data-shot]').count(), 0, '?shot=1 없이는 버튼 없음');
+      assert.strictEqual(await page.locator('[data-shot]').count(), 1, '카드마다 이미지 저장 버튼');
       await page.close(); }
 
     // PC: 누르면 «빌드 이름.png» 를 바로 내려받는다. 카드 전체가 2배로 한 장.
     { const ctx = await browser.newContext({ viewport: { width: 1280, height: 700 }, acceptDownloads: true }), page = await ctx.newPage(), errors = [];
       page.on('pageerror', e => errors.push(e.message));
-      await page.goto(base + '?shot=1#build'); await setBuild(page);
+      await page.goto(base + '#build'); await setBuild(page);
       const card = await page.locator('.bd-card').first().boundingBox();
       assert.ok(card.height > 700, '시험 카드는 화면보다 길다');
       const [download] = await Promise.all([page.waitForEvent('download'), page.click('[data-shot="0"]')]);
@@ -55,7 +55,7 @@ const setBuild = page => page.evaluate(() => {
     // 휴대폰: 미리보기 창에 이미지와 길게 눌러 저장 안내.
     { const ctx = await browser.newContext({ ...devices['iPhone 13'] }), page = await ctx.newPage(), errors = [];
       page.on('pageerror', e => errors.push(e.message));
-      await page.goto(base + '?shot=1#build'); await setBuild(page);
+      await page.goto(base + '#build'); await setBuild(page);
       await page.click('[data-shot="0"]');
       await page.locator('#bd-modal[data-view="shot"] .bd-shot-img').waitFor({ state: 'visible', timeout: 20000 });
       const shown = await page.evaluate(() => { const i = document.querySelector('.bd-shot-img'); return { w: i.naturalWidth, h: i.naturalHeight }; });

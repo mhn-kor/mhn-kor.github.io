@@ -995,8 +995,7 @@ const BD_KAKAO_URL_MAX = 340;
    상세 수치를 켜 두었으면 스킬 설명은 그대로 담긴다.
    PC는 바로 내려받고, 휴대폰은 미리보기 창에서 공유(사진에 저장)하거나 길게 눌러 저장한다 —
    만드는 동안 시간이 걸려 공유 창을 바로 띄우면 사파리가 막을 수 있어, 창의 버튼으로 다시 누르게 한다.
-   실기기 확인 전이라 주소에 ?shot=1 이 있을 때만 버튼을 보인다. */
-const BD_SHOT_ON = typeof location !== 'undefined' && /[?&]shot=1(?:&|$)/.test(location.search);
+   아이폰·안드로이드·PC 실기기 확인 후 모두에게 공개 (2026-11-25 사용자). */
 let bdShotLib = null, bdShotURL = null;
 const bdShotLoad = () => bdShotLib ||= new Promise((ok, fail) => {
   const s = document.createElement('script');
@@ -1204,7 +1203,7 @@ function bdCard(b, bi) {
         <button class="bd-ic" data-copy="${bi}" title="복제" aria-label="복제">${BD_I.copy}</button>
         <button class="bd-ic" data-link="${bi}" title="링크 복사" aria-label="링크 복사">${BD_I.link}</button>
         <button class="bd-ic kakao" data-kakao="${bi}" title="카카오톡 공유" aria-label="카카오톡 공유">${BD_I.kakao}</button>
-        ${BD_SHOT_ON ? `<button class="bd-ic" data-shot="${bi}" title="이미지로 저장" aria-label="이미지로 저장">${BD_I.shot}</button>` : ''}
+        <button class="bd-ic" data-shot="${bi}" title="이미지로 저장" aria-label="이미지로 저장">${BD_I.shot}</button>
         <button class="bd-ic danger" data-del="${bi}" title="빌드 삭제" aria-label="빌드 삭제">${BD_I.del}</button>
       </header>
       <div class="bd-rows">${rows}</div>
