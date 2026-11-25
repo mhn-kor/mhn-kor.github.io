@@ -988,6 +988,73 @@ function bdKakaoList(b) {
    템플릿을 바꿔 줄이 늘면 이 값을 같이 내려야 합니다. */
 const BD_KAKAO_URL_MAX = 340;
 
+/* ── 빌드 카드 이미지 저장 (2026-11-25 사용자) ──────────────────────
+   카드 하나를 스크롤과 상관없이 한 장의 PNG로 만든다(vendor/modern-screenshot.js, 누를 때만 불러옴).
+   이미지에서는 머리의 버튼·장비 개수·방어구 일괄선택을 빼고, 맨 아래에 사이트 주소 줄을 붙인다.
+   상세 수치를 켜 두었으면 점수 계산까지 그대로 담는다.
+   PC는 바로 내려받고, 휴대폰은 미리보기 창에서 공유(사진에 저장)하거나 길게 눌러 저장한다 —
+   만드는 동안 시간이 걸려 공유 창을 바로 띄우면 사파리가 막을 수 있어, 창의 버튼으로 다시 누르게 한다.
+   실기기 확인 전이라 주소에 ?shot=1 이 있을 때만 버튼을 보인다. */
+const BD_SHOT_ON = typeof location !== 'undefined' && /[?&]shot=1(?:&|$)/.test(location.search);
+let bdShotLib = null, bdShotURL = null;
+const bdShotLoad = () => bdShotLib ||= new Promise((ok, fail) => {
+  const s = document.createElement('script');
+  s.src = 'vendor/modern-screenshot.js?v=4.7.0';
+  s.onload = () => ok(window.modernScreenshot);
+  s.onerror = () => { bdShotLib = null; fail(new Error('이미지 도구를 불러오지 못했습니다')); };
+  document.head.appendChild(s);
+});
+
+async function bdShotBlob(card) {
+  const lib = await bdShotLoad();
+  const v = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  return lib.domToBlob(card, {
+    scale: 2, type: 'image/png', backgroundColor: getComputedStyle(document.body).backgroundColor,
+    filter: n => !(n.matches && n.matches('.bd-ic, .bd-cnt, .bd-bulk')),
+    /* 복제본에만 붙는 줄이라 화면 CSS가 닿지 않는다. 색 토큰을 읽어 인라인으로 두고,
+       복제본 뿌리에 들어가는 글자 채움색을 덮어야 색이 보인다. */
+    onCloneNode: clone => {
+      if (!clone.classList?.contains('bd-card')) return;
+      const muted = v('--muted'), amber = v('--amber');
+      clone.insertAdjacentHTML('beforeend', `<footer style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px 11px;border-top:1px solid ${v('--line')};font-size:11.5px;line-height:1.4;color:${muted};-webkit-text-fill-color:${muted}"><b style="color:${amber};-webkit-text-fill-color:${amber};font-weight:700;letter-spacing:.02em">몬스터헌터 나우 한국지부</b><span>mhn-kor.github.io</span></footer>`);
+    },
+  });
+}
+
+async function bdShot(bi, btn) {
+  const card = document.querySelector(`#bd-cards .bd-card[data-build-index="${bi}"]`), b = bdState.builds[bi];
+  if (!card || !b || btn.disabled) return;
+  btn.disabled = true;
+  toast('이미지를 만드는 중입니다…');
+  try {
+    const blob = await bdShotBlob(card);
+    /* 파일 이름은 영문+시각. 크롬이 한글 download 이름을 «download»로 바꾸는 경우가 있다 (2026-11-25 확인). */
+    const t = new Date(), p2 = n => String(n).padStart(2, '0');
+    const name = `mhn-build-${t.getFullYear()}${p2(t.getMonth() + 1)}${p2(t.getDate())}-${p2(t.getHours())}${p2(t.getMinutes())}.png`;
+    if (bdShotURL) URL.revokeObjectURL(bdShotURL);
+    bdShotURL = URL.createObjectURL(blob);
+    if (matchMedia('(pointer: coarse)').matches) return bdShotPreview(new File([blob], name, { type: 'image/png' }), b.n || `빌드 ${bi + 1}`);
+    const a = Object.assign(document.createElement('a'), { href: bdShotURL, download: name });
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('이미지를 저장했습니다');
+  } catch (e) {
+    console.error(e);
+    toast('이미지를 만들지 못했습니다');
+  } finally { btn.disabled = false; }
+}
+
+/* 휴대폰: 만든 이미지를 보여 주고, 버튼으로 공유 창(사진에 저장·카톡 전송)을 띄운다.
+   공유를 못 쓰는 곳(카카오톡 안 브라우저 등)은 이미지를 길게 눌러 저장한다. */
+let bdShotFile = null, bdShotTitle = '';
+function bdShotPreview(file, title) {
+  bdShotFile = file; bdShotTitle = title;
+  bdPick = { kind: 'shot' };
+  const canShare = !!navigator.canShare?.({ files: [file] });
+  bdOpen('빌드 이미지', `<img class="bd-shot-img" src="${bdShotURL}" alt="빌드 카드 이미지">
+    ${canShare ? '<button type="button" class="btn primary bd-shot-save" data-shot-share>사진에 저장 · 공유</button>' : ''}
+    <p class="bd-shot-tip">${canShare ? '버튼이 안 되면 ' : ''}이미지를 길게 눌러 저장할 수 있습니다.</p>`, false, { view: 'shot' });
+}
+
 async function bdKakao(b) {
   const url = bdShareAbs(b);
   const { title, desc } = bdShareText(b);
@@ -1023,6 +1090,7 @@ const BD_I = {
   up: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 14.5 7-7 7 7"/></svg>',
   down: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 9.5 7 7 7-7"/></svg>',
   kakao: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 3C6.9 3 2.8 6.2 2.8 10.2c0 2.5 1.6 4.8 4.2 6.1l-.9 3.3c-.1.3.2.5.5.4l3.9-2.4q.7.1 1.5.1c5.1 0 9.2-3.2 9.2-7.5S17.1 3 12 3z"/></svg>',
+  shot: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 9"/></svg>',
 };
 /* 이 이벤트 장비 5종은 몬스터 소재가 아니라서 참조 사이트에도 아이콘이 없습니다(404).
    404 를 띄우지 않고 이벤트 표류석 아이콘으로 대신합니다.
@@ -1130,6 +1198,7 @@ function bdCard(b, bi) {
         <button class="bd-ic" data-copy="${bi}" title="복제" aria-label="복제">${BD_I.copy}</button>
         <button class="bd-ic" data-link="${bi}" title="링크 복사" aria-label="링크 복사">${BD_I.link}</button>
         <button class="bd-ic kakao" data-kakao="${bi}" title="카카오톡 공유" aria-label="카카오톡 공유">${BD_I.kakao}</button>
+        ${BD_SHOT_ON ? `<button class="bd-ic" data-shot="${bi}" title="이미지로 저장" aria-label="이미지로 저장">${BD_I.shot}</button>` : ''}
         <button class="bd-ic danger" data-del="${bi}" title="빌드 삭제" aria-label="빌드 삭제">${BD_I.del}</button>
       </header>
       <div class="bd-rows">${rows}</div>
@@ -1754,6 +1823,8 @@ $('#bd-cards').addEventListener('click', e => {
   if (lk) return bdCopyLink(bdShareURL(bdState.builds[+lk.dataset.link]));
   const kk = t.closest('[data-kakao]');
   if (kk) return bdKakao(bdState.builds[+kk.dataset.kakao]);
+  const sh = t.closest('[data-shot]');
+  if (sh) return bdShot(+sh.dataset.shot, sh);
   const sk = t.closest('[data-sk]');
   if (sk) return bdOpenSkill(sk.dataset.sk, +sk.dataset.sklv);
 });
@@ -1810,6 +1881,10 @@ $('#bd-modal-body').addEventListener('click', e => {
   /* 스킬 사전 칩·장비 고르기의 사전 줄. 칩이 표류석 칸과 같은 .bd-sk 라 그보다 먼저 받습니다. */
   const sd = e.target.closest('[data-sd]');
   if (sd) return bdOpenDictSkill(sd.dataset.sd);
+  if (e.target.closest('[data-shot-share]') && bdShotFile)
+    return navigator.share({ files: [bdShotFile], title: bdShotTitle }).catch(err => {
+      if (err.name !== 'AbortError') toast('공유를 열지 못했습니다 — 이미지를 길게 눌러 저장하세요');
+    });
   const b = bdState.builds[bdPick.bi];
   const go = e.target.closest('[data-build-go]');
   if (go && bdPick.kind === 'list') return bdFocusBuild(+go.dataset.buildGo);

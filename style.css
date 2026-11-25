@@ -814,6 +814,11 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 /* flex:1 은 flex-basis:0 이라 «내용만큼» 을 잴 때 엔진마다 다르게 나올 수 있습니다.
    이 창은 창 높이가 내용에서 나오므로 늘어나지 않게 못 박습니다(줄어들며 스크롤되는 것은 그대로). */
 #bd-modal[data-view="skill"] #bd-modal-body { flex: 0 1 auto; padding-bottom: 18px; }
+/* 빌드 이미지 미리보기(휴대폰). 긴 카드는 창 안에서 스크롤한다. */
+#bd-modal[data-view="shot"] #bd-modal-body { display: grid; gap: 10px; justify-items: center; padding-bottom: 16px; }
+.bd-shot-img { width: 100%; max-width: 420px; height: auto; border: 1px solid var(--line); border-radius: 8px; }
+.bd-shot-save { width: 100%; max-width: 420px; }
+.bd-shot-tip { margin: 0; font-size: .78rem; color: var(--muted); text-align: center; }
 
 /* 무기 종류 격자 */
 .bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; padding-bottom: 4px; }
