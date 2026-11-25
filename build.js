@@ -1020,7 +1020,10 @@ async function bdShotBlob(card) {
   stage.appendChild(copy);
   document.body.appendChild(stage);
   try {
-    return await lib.domToBlob(copy, { scale: 2, type: 'image/png', backgroundColor: getComputedStyle(document.body).backgroundColor });
+    /* 웹 글꼴(Pretendard)은 이미지에 넣지 않는다(font: false). 아이폰 사파리는 이미지 안에서 웹 글꼴을 못 읽어
+       더 넓은 기본 글꼴로 그리는데, 칸 너비는 웹 글꼴 기준이라 글자가 줄바꿈·잘림으로 깨졌다 (2026-11-25 사용자 화면).
+       복사본을 처음부터 기기 기본 글꼴로 배치하면(.bd-shot-stage) 배치와 그림이 같은 글꼴이라 맞는다. */
+    return await lib.domToBlob(copy, { scale: 2, type: 'image/png', font: false, backgroundColor: getComputedStyle(document.body).backgroundColor });
   } finally { stage.remove(); }
 }
 
