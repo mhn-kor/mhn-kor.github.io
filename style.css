@@ -819,6 +819,14 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 .bd-shot-img { width: 100%; max-width: 420px; height: auto; border: 1px solid var(--line); border-radius: 8px; }
 .bd-shot-save { width: 100%; max-width: 420px; }
 .bd-shot-tip { margin: 0; font-size: .78rem; color: var(--muted); text-align: center; }
+/* 이미지로 찍을 카드 복사본을 두는 화면 밖 자리, 그리고 이미지 맨 아래 사이트 주소 줄. */
+.bd-shot-stage { position: fixed; left: -10000px; top: 0; pointer-events: none; }
+.bd-shot-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 9px 12px 11px; border-top: 1px solid var(--line);
+  font-size: .72rem; line-height: 1.4; color: var(--muted);
+}
+.bd-shot-foot b { color: var(--amber); font-weight: 700; letter-spacing: .02em; }
 
 /* 무기 종류 격자 */
 .bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; padding-bottom: 4px; }

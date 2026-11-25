@@ -43,8 +43,11 @@ const setBuild = page => page.evaluate(() => {
       const png = fs.readFileSync(await download.path());
       assert.strictEqual(png.toString('latin1', 1, 4), 'PNG');
       const size = pngSize(png);
-      // 주소 줄이 붙고 일괄선택 버튼이 빠져 높이는 카드와 비슷하다. 화면(700)보다 긴 카드가 한 장에 다 들어가야 한다.
-      assert.ok(Math.abs(size.w - card.width * 2) <= 4 && Math.abs(size.h - card.height * 2) < 200 && size.h > 700 * 2, `한 장 크기 ${size.w}×${size.h}`);
+      // 스킬 합계까지만 담는다: 카드 맨 위 ~ 스킬 합계 끝 + 주소 줄. 화면(700)보다 긴 부분도 한 장에 들어가야 한다.
+      const upToSkills = await page.evaluate(() => { const c = document.querySelector('.bd-card'), r = [...c.querySelectorAll('.bd-sum .bd-tr')].at(-1);
+        return r.getBoundingClientRect().bottom - c.getBoundingClientRect().top - c.querySelector('.bd-bulk').offsetHeight; });
+      assert.ok(Math.abs(size.w - card.width * 2) <= 4 && size.h > 700 * 2 && size.h < card.height * 2 - 300, `한 장 크기 ${size.w}×${size.h}`);
+      assert.ok(Math.abs(size.h / 2 - upToSkills) < 80, `스킬 합계까지 + 주소 줄 (${size.h / 2} ≈ ${upToSkills})`);
       assert.strictEqual(await page.locator('.bd-card .bd-ic').count() > 0, true, '화면의 카드 버튼은 그대로');
       assert.deepStrictEqual(errors, []);
       await ctx.close(); }

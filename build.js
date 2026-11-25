@@ -991,7 +991,8 @@ const BD_KAKAO_URL_MAX = 340;
 /* ── 빌드 카드 이미지 저장 (2026-11-25 사용자) ──────────────────────
    카드 하나를 스크롤과 상관없이 한 장의 PNG로 만든다(vendor/modern-screenshot.js, 누를 때만 불러옴).
    이미지에서는 머리의 버튼·장비 개수·방어구 일괄선택을 빼고, 맨 아래에 사이트 주소 줄을 붙인다.
-   상세 수치를 켜 두었으면 점수 계산까지 그대로 담는다.
+   공유용이라 스킬 합계까지만 담는다 — 공격력·속성·회심 줄, 점수, 계산 과정, 포격 칸은 뺀다 (2026-11-25 사용자).
+   상세 수치를 켜 두었으면 스킬 설명은 그대로 담긴다.
    PC는 바로 내려받고, 휴대폰은 미리보기 창에서 공유(사진에 저장)하거나 길게 눌러 저장한다 —
    만드는 동안 시간이 걸려 공유 창을 바로 띄우면 사파리가 막을 수 있어, 창의 버튼으로 다시 누르게 한다.
    실기기 확인 전이라 주소에 ?shot=1 이 있을 때만 버튼을 보인다. */
@@ -1005,20 +1006,22 @@ const bdShotLoad = () => bdShotLib ||= new Promise((ok, fail) => {
   document.head.appendChild(s);
 });
 
+/* 화면 밖에 카드 복사본을 두고 뺄 부분을 실제로 지운 뒤 찍는다. 원본에서 걸러 내면 이미지 틀이 원래 카드 높이로 잡혀
+   아래가 빈칸으로 남는다. 복사본은 진짜 DOM 이라 주소 줄도 보통 CSS(.bd-shot-foot)를 받는다. 입력칸 값·체크 상태는 복제로 따라온다. */
+const BD_SHOT_DROP = '.bd-ic, .bd-cnt, .bd-bulk, .bd-stats, .bd-score, .bd-calc, .bd-shell';
 async function bdShotBlob(card) {
   const lib = await bdShotLoad();
-  const v = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  return lib.domToBlob(card, {
-    scale: 2, type: 'image/png', backgroundColor: getComputedStyle(document.body).backgroundColor,
-    filter: n => !(n.matches && n.matches('.bd-ic, .bd-cnt, .bd-bulk')),
-    /* 복제본에만 붙는 줄이라 화면 CSS가 닿지 않는다. 색 토큰을 읽어 인라인으로 두고,
-       복제본 뿌리에 들어가는 글자 채움색을 덮어야 색이 보인다. */
-    onCloneNode: clone => {
-      if (!clone.classList?.contains('bd-card')) return;
-      const muted = v('--muted'), amber = v('--amber');
-      clone.insertAdjacentHTML('beforeend', `<footer style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px 11px;border-top:1px solid ${v('--line')};font-size:11.5px;line-height:1.4;color:${muted};-webkit-text-fill-color:${muted}"><b style="color:${amber};-webkit-text-fill-color:${amber};font-weight:700;letter-spacing:.02em">몬스터헌터 나우 한국지부</b><span>mhn-kor.github.io</span></footer>`);
-    },
-  });
+  const stage = Object.assign(document.createElement('div'), { className: 'bd-shot-stage' });
+  stage.style.width = card.offsetWidth + 'px';
+  const copy = card.cloneNode(true);
+  copy.querySelectorAll(BD_SHOT_DROP).forEach(el => el.remove());
+  copy.querySelectorAll('img[loading="lazy"]').forEach(img => { img.loading = 'eager'; });   // 화면 밖이라 늦춰 읽기를 풀어 둔다
+  copy.insertAdjacentHTML('beforeend', '<footer class="bd-shot-foot"><b>몬스터헌터 나우 한국지부</b><span>mhn-kor.github.io</span></footer>');
+  stage.appendChild(copy);
+  document.body.appendChild(stage);
+  try {
+    return await lib.domToBlob(copy, { scale: 2, type: 'image/png', backgroundColor: getComputedStyle(document.body).backgroundColor });
+  } finally { stage.remove(); }
 }
 
 async function bdShot(bi, btn) {
