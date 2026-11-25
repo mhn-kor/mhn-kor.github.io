@@ -825,6 +825,10 @@ h2.sec i { font-style: normal; font-size: .78rem; font-weight: 500; color: var(-
 .bd-shot-stage, .bd-shot-stage * {
   font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif !important;
 }
+/* 안드로이드는 이미지로 그릴 때 글자를 몇 px 넓게 그려, 너비가 고정된 칩 안에서 줄바꿈됐다 (2026-11-25 사용자 화면).
+   한 줄짜리 표시는 줄바꿈을 막아 넓어진 만큼은 칩 안쪽 여백으로 흘려보낸다. */
+.bd-shot-stage :is(.chip, .bd-style, .bd-style-controls label, .bd-nm, .bd-skn, .bd-title, .bd-shot-foot) { white-space: nowrap; }
+.bd-shot-stage .chip { padding-right: 10px; }   /* 넓어진 글자가 테두리에 닿지 않게 여유 3px */
 .bd-shot-foot {
   display: flex; justify-content: space-between; align-items: center; gap: 8px;
   padding: 9px 12px 11px; border-top: 1px solid var(--line);
